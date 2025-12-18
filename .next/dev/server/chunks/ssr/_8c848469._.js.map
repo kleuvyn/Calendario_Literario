@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///home/kleuvyn/Documentos/MeusRepositorios/Calendario_Literario/app/layout.tsx"],"sourcesContent":["export default function RootLayout({\n  children,\n}: Readonly<{\n  children: React.ReactNode\n}>) {\n  return (\n    <html lang=\"pt-BR\">\n      <body className={`${_geist.variable} ${_geistMono.variable} font-sans antialiased`}>\n        <AuthProvider>\n          {children}\n        </AuthProvider>\n        <Analytics />\n      </body>\n    </html>\n  )\n}"],"names":[],"mappings":";;;;;;AAAe,SAAS,WAAW,EACjC,QAAQ,EAGR;IACA,qBACE,8OAAC;QAAK,MAAK;kBACT,cAAA,8OAAC;YAAK,WAAW,GAAG,OAAO,QAAQ,CAAC,CAAC,EAAE,WAAW,QAAQ,CAAC,sBAAsB,CAAC;;8BAChF,8OAAC;8BACE;;;;;;8BAEH,8OAAC;;;;;;;;;;;;;;;;AAIT"}},
+    {"offset": {"line": 44, "column": 0}, "map": {"version":3,"sources":["file:///home/kleuvyn/Documentos/MeusRepositorios/Calendario_Literario/node_modules/next/src/server/route-modules/app-page/vendored/rsc/react-jsx-dev-runtime.ts"],"sourcesContent":["module.exports = (\n  require('../../module.compiled') as typeof import('../../module.compiled')\n).vendored['react-rsc']!.ReactJsxDevRuntime\n"],"names":["module","exports","require","vendored","ReactJsxDevRuntime"],"mappings":"AAAAA,OAAOC,OAAO,GACZC,QAAQ,4HACRC,QAAQ,CAAC,YAAY,CAAEC,kBAAkB","ignoreList":[0]}}]
+}

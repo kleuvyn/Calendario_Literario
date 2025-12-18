@@ -1,100 +1,111 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Sparkles, Moon } from "lucide-react"
-import { getMonthData, saveMonthData, type DayData } from "@/lib/storage"
+import { Loader2 } from "lucide-react"
+import { getReadingData, saveReadingDay } from "@/lib/api-client"
 
-interface MonthCalendarProps {
-  month: string
-  days: number
-  year: number
-  userEmail: string
-  monthIndex: number
-}
+export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any) {
+  const [readings, setReadings] = useState<any[]>([])
+  const [tempBookNames, setTempBookNames] = useState<Record<number, string>>({})
+  const [isUpdating, setIsUpdating] = useState(false)
 
-export function MonthCalendar({ month, days, year, userEmail, monthIndex }: MonthCalendarProps) {
-  const [dayData, setDayData] = useState<Record<number, DayData>>({})
+  const now = new Date()
+  const todayStr = now.toLocaleDateString('en-CA') // YYYY-MM-DD
 
-  useEffect(() => {
-    const savedData = getMonthData(userEmail, monthIndex)
-    setDayData(savedData.days || {})
-  }, [userEmail, monthIndex])
-
-  useEffect(() => {
-    if (Object.keys(dayData).length > 0) {
-      const monthData = getMonthData(userEmail, monthIndex)
-      saveMonthData(userEmail, monthIndex, dayData, monthData.books || {})
+  async function loadData() {
+    if (!userEmail) return
+    try {
+      const data = await getReadingData(userEmail, year, monthIndex + 1)
+      setReadings(Array.isArray(data) ? data : [])
+    } catch (err) {
+      console.error(err)
     }
-  }, [dayData, userEmail, monthIndex])
+  }
 
-  const updateDay = (day: number, field: keyof DayData, value: string) => {
-    setDayData((prev) => ({
-      ...prev,
-      [day]: {
-        ...prev[day],
-        [field]: value,
-      },
-    }))
+  useEffect(() => {
+    loadData()
+  }, [userEmail, monthIndex, year])
+
+  async function handleAction(day: number, action: "START_READING" | "FINISH_READING", bookName?: string) {
+    if (isUpdating || !userEmail) return
+    const name = bookName || tempBookNames[day]
+    if (!name) return
+
+    setIsUpdating(true)
+    const formattedDate = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T12:00:00.000Z`
+
+    try {
+      await saveReadingDay(
+        userEmail, year, monthIndex + 1, day,
+        action === "START_READING" ? formattedDate : "",
+        action === "FINISH_READING" ? formattedDate : "",
+        name, action
+      )
+      setTempBookNames(p => ({ ...p, [day]: "" }))
+      await loadData() 
+    } catch (err) {
+      alert("Erro ao salvar.")
+    } finally {
+      setIsUpdating(false)
+    }
   }
 
   return (
-    <Card className="border-accent/20 bg-card p-6 shadow-lg md:p-10">
-      {/* Header */}
-      <div className="mb-8 text-center">
-        <div className="mb-2 flex items-center justify-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" />
-          <h2 className="font-serif text-3xl font-bold text-foreground md:text-4xl">{month}</h2>
-          <Sparkles className="h-5 w-5 text-primary" />
-        </div>
-        <p className="text-lg text-muted-foreground">{year}</p>
+    <div className="space-y-4">
+      <div className="text-center mb-6">
+        <h2 className="text-4xl font-serif font-bold text-primary capitalize">{month}</h2>
       </div>
 
-      {/* Days Grid */}
-      <div className="grid grid-cols-4 gap-3 md:grid-cols-7 md:gap-4">
-        {Array.from({ length: days }, (_, i) => i + 1).map((day) => (
-          <div
-            key={day}
-            className="group relative rounded-lg border border-border bg-background/50 p-3 transition-all hover:border-primary/40 hover:shadow-md"
-          >
-            {/* Day Number */}
-            <div className="mb-2 flex items-center justify-between">
-              <span className="font-semibold text-primary">{day}</span>
-              {day % 7 === 0 && <Moon className="h-3 w-3 text-muted-foreground" />}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-7 md:gap-4">
+        {Array.from({ length: days || 31 }, (_, i) => i + 1).map((day) => {
+          const currentDayStr = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+          const isToday = currentDayStr === todayStr
+          const isFuture = currentDayStr > todayStr
+
+          const dayReadings = readings.filter((r) => {
+            if (!r.start_date || isFuture) return false
+            const startStr = r.start_date.split('T')[0]
+            const endStr = r.end_date ? r.end_date.split('T')[0] : null
+            return currentDayStr >= startStr && (!endStr || currentDayStr <= endStr)
+          })
+
+          return (
+            <div key={`${monthIndex}-${day}`} className={`min-h-40 rounded-lg border p-2 flex flex-col bg-card shadow-sm ${isToday ? 'ring-2 ring-primary bg-primary/5' : isFuture ? 'opacity-40 grayscale pointer-events-none' : ''}`}>
+              <div className="flex justify-between items-start mb-2">
+                <span className="font-bold text-sm text-muted-foreground">{day}</span>
+                {isToday && <span className="text-[8px] bg-primary text-primary-foreground px-1 rounded">HOJE</span>}
+              </div>
+              
+              <div className="flex-1 space-y-1 overflow-y-auto">
+                {dayReadings.map((r, idx) => (
+                  <div key={idx} className={`p-1.5 rounded text-[10px] border shadow-sm ${r.status === 'lendo' ? 'bg-primary/10 border-primary/30' : 'bg-muted/50 border-border'}`}>
+                    <p className="truncate font-bold text-foreground">{r.book_name.toUpperCase()}</p>
+                    {r.status === "lendo" && (
+                      <Button size="sm" className="h-5 w-full text-[8px] mt-1 font-bold" variant="destructive" onClick={() => handleAction(day, "FINISH_READING", r.book_name)}>
+                        ENCERRAR AQUI
+                      </Button>
+                    )}
+                    {r.status === "finalizado" && (
+                      <div className="text-[7px] text-center text-primary font-bold mt-1 uppercase">✓ Concluído</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {!isFuture && (
+                <div className="mt-2 pt-2 border-t border-border/50">
+                  <Input className="h-7 text-[10px] mb-1" placeholder="Novo livro..." value={tempBookNames[day] || ""} onChange={e => setTempBookNames(p => ({ ...p, [day]: e.target.value }))} />
+                  <Button className="h-7 w-full text-[10px] font-bold" onClick={() => handleAction(day, "START_READING")} disabled={isUpdating || !tempBookNames[day]}>
+                    INICIAR
+                  </Button>
+                </div>
+              )}
             </div>
-
-            {/* Input Fields */}
-            <div className="space-y-2">
-              <Input
-                placeholder="Início"
-                value={dayData[day]?.startDate || ""}
-                onChange={(e) => updateDay(day, "startDate", e.target.value)}
-                className="h-7 border-border/50 bg-background/80 text-xs placeholder:text-xs placeholder:text-muted-foreground"
-              />
-              <Input
-                placeholder="Fim"
-                value={dayData[day]?.endDate || ""}
-                onChange={(e) => updateDay(day, "endDate", e.target.value)}
-                className="h-7 border-border/50 bg-background/80 text-xs placeholder:text-xs placeholder:text-muted-foreground"
-              />
-              <Input
-                placeholder="Livro"
-                value={dayData[day]?.bookName || ""}
-                onChange={(e) => updateDay(day, "bookName", e.target.value)}
-                className="h-7 border-border/50 bg-background/80 text-xs placeholder:text-xs placeholder:text-muted-foreground"
-              />
-            </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
-
-      {/* Footer Decoration */}
-      <div className="mt-8 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-        <div className="h-px w-12 bg-border" />
-        <span>✦</span>
-        <div className="h-px w-12 bg-border" />
-      </div>
-    </Card>
+    </div>
   )
 }

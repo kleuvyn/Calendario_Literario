@@ -1,186 +1,156 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Star, BookMarked, PlusCircle, XCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { getMonthData, saveMonthData, type BookData } from "@/lib/storage"
+import { Star, Loader2, Save, BookOpen, Calendar, TrendingUp, BookMarked } from "lucide-react"
+import { getReadingData } from "@/lib/api-client"
 
-interface MonthReviewProps {
-  month: string
-  userEmail: string
-  monthIndex: number
-}
+export function MonthReview({ month, userEmail, monthIndex, year }: any) {
+  const [allBooks, setAllBooks] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [bookEdits, setBookEdits] = useState<Record<string, { cover: string, rating: number, pages: number }>>({})
+  const [isSaving, setIsSaving] = useState<string | null>(null)
 
-const emptyBook: BookData = { title: "", cover: "", rating: 0 }
+  const loadData = async () => {
+    if (!userEmail) return
+    try {
+      // Buscamos TODOS os livros do ano. Não filtramos mês na API para não sumir nada.
+      const data = await getReadingData(userEmail, year)
+      setAllBooks(data)
 
-export function MonthReview({ month, userEmail, monthIndex }: MonthReviewProps) {
-  const [books, setBooks] = useState<Record<number, BookData>>({})
-
-  useEffect(() => {
-    const savedData = getMonthData(userEmail, monthIndex)
-    if (savedData.books && Object.keys(savedData.books).length > 0) {
-      setBooks(savedData.books)
-    } else {
-      setBooks({ 0: emptyBook })
+      const initialEdits: any = {}
+      data.forEach((b: any) => {
+        initialEdits[b.book_name] = {
+          cover: b.cover_url || "",
+          rating: Number(b.rating) || 0,
+          pages: Number(b.total_pages) || 0
+        }
+      })
+      setBookEdits(initialEdits)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
     }
-  }, [userEmail, monthIndex])
-
-  useEffect(() => {
-    const monthData = getMonthData(userEmail, monthIndex)
-    saveMonthData(userEmail, monthIndex, monthData.days || {}, books)
-  }, [books, userEmail, monthIndex])
-
-  const updateBook = (index: number, field: keyof BookData, value: string | number) => {
-    setBooks((prev) => ({
-      ...prev,
-      [index]: {
-        ...prev[index],
-        [field]: value,
-      },
-    }))
   }
 
-  const setRating = (bookIndex: number, rating: number) => {
-    updateBook(bookIndex, "rating", rating)
-  }
+  useEffect(() => { loadData() }, [userEmail, year, monthIndex])
 
-  const addBook = () => {
-    setBooks((prev) => {
-      const currentIndices = Object.keys(prev).map(Number)
-      const newIndex = currentIndices.length > 0 ? Math.max(...currentIndices) + 1 : 0
-      
-      return {
-        ...prev,
-        [newIndex]: emptyBook,
+  // Lógica de Filtro: O que aparece neste mês?
+  const filteredBooks = useMemo(() => {
+    const currentM = monthIndex + 1
+    return allBooks.filter(b => {
+      // Se finalizado: aparece APENAS no mês que terminou (finish_month)
+      if (b.status === "finalizado") {
+        return Number(b.finish_month) === currentM
       }
+      // Se está lendo: aparece no mês que começou
+      return Number(b.month) === currentM
     })
-  }
-  
-  const removeBook = (indexToRemove: number) => {
-    setBooks((prev) => {
-      const { [indexToRemove]: _, ...rest } = prev
-      
-      // Garante que haja sempre pelo menos um campo vazio se a lista ficar vazia
-      if (Object.keys(rest).length === 0) {
-        return { 0: emptyBook }
-      }
-      
-      return rest
-    })
+  }, [allBooks, monthIndex])
+
+  const stats = useMemo(() => {
+    const getPages = (book: any) => Number(bookEdits[book.book_name]?.pages) || Number(book.total_pages) || 0
+    
+    return {
+      monthTotal: filteredBooks.length,
+      monthPages: filteredBooks.reduce((acc, b) => acc + getPages(b), 0),
+      yearTotal: allBooks.filter(b => b.status === "finalizado").length,
+      yearPages: allBooks.filter(b => b.status === "finalizado").reduce((acc, b) => acc + getPages(b), 0)
+    }
+  }, [allBooks, filteredBooks, bookEdits])
+
+  const handleSave = async (bookName: string) => {
+    setIsSaving(bookName)
+    try {
+      const data = bookEdits[bookName]
+      await fetch("/api/reading-data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "UPDATE_REVIEW",
+          email: userEmail,
+          bookName: bookName,
+          rating: Number(data.rating),
+          coverUrl: data.cover,
+          totalPages: Number(data.pages),
+          year: Number(year),
+          month: monthIndex + 1
+        }),
+      })
+      await loadData() 
+    } catch (err: any) {
+      alert("Erro: " + err.message)
+    } finally {
+      setIsSaving(null)
+    }
   }
 
-  const bookEntries = Object.entries(books).sort(([a], [b]) => Number(a) - Number(b))
+  if (loading) return <div className="flex justify-center p-10"><Loader2 className="animate-spin text-primary" /></div>
 
   return (
-    <Card className="border-accent/20 bg-card p-6 shadow-lg md:p-10">
-      <div className="mb-8 text-center">
-        <div className="mb-2 flex items-center justify-center gap-2">
-          <BookMarked className="h-5 w-5 text-primary" />
-          <h2 className="font-serif text-2xl font-bold text-foreground md:text-3xl">Livros Lidos em {month}</h2>
-        </div>
-        <p className="text-sm text-muted-foreground">Registre suas leituras do mês</p>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card className="p-4 bg-primary/5 border-primary/20">
+          <p className="text-[10px] font-bold uppercase text-muted-foreground flex items-center gap-2"><Calendar size={12}/> Resumo {month}</p>
+          <div className="flex justify-around mt-2">
+            <div className="text-center"><span className="text-2xl font-black">{stats.monthTotal}</span><p className="text-[10px] uppercase text-muted-foreground">Lidos</p></div>
+            <div className="text-center"><span className="text-2xl font-black">{stats.monthPages}</span><p className="text-[10px] uppercase text-muted-foreground">Páginas</p></div>
+          </div>
+        </Card>
+        <Card className="p-4 bg-green-500/5 border-green-500/20">
+          <p className="text-[10px] font-bold uppercase text-muted-foreground flex items-center gap-2"><TrendingUp size={12}/> Meta Anual {year}</p>
+          <div className="flex justify-around mt-2">
+            <div className="text-center"><span className="text-2xl font-black text-green-700">{stats.yearTotal}</span><p className="text-[10px] uppercase text-muted-foreground">Total</p></div>
+            <div className="text-center"><span className="text-2xl font-black text-green-700">{stats.yearPages}</span><p className="text-[10px] uppercase text-muted-foreground">Páginas</p></div>
+          </div>
+        </Card>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-2">
-        {bookEntries.map(([index, book], arrayIndex) => (
-          <div
-            key={index}
-            className="group relative rounded-lg border border-border bg-background/50 p-4 transition-all hover:border-primary/40 hover:shadow-md"
-          >
-            <Button
-              onClick={() => removeBook(Number(index))}
-              variant="ghost"
-              size="icon"
-              className="absolute right-1 top-1 h-6 w-6 rounded-full text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-500/10 hover:text-red-500"
-              title="Remover Livro"
-            >
-              <XCircle className="h-4 w-4" />
-            </Button>
-            
-            <div className="flex gap-4">
-              <div className="h-32 w-24 shrink-0 overflow-hidden rounded-md border-2 border-border bg-background/80 transition-colors group-hover:border-primary/40">
-                {book.cover ? (
-                  <img
-                    src={book.cover || "/placeholder.svg"}
-                    alt={book.title || "Capa do livro"}
-                    className="h-full w-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none"
-                      const parent = e.currentTarget.parentElement
-                      if (parent) {
-                        parent.innerHTML =
-                          '<div class="flex h-full items-center justify-center"><div class="text-center"><svg class="mx-auto mb-1 h-6 w-6 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg><p class="text-[10px] text-muted-foreground">Sem capa</p></div></div>'
-                      }
-                    }}
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center">
-                    <div className="text-center">
-                      <BookMarked className="mx-auto mb-1 h-6 w-6 text-muted-foreground" />
-                      <p className="text-[10px] text-muted-foreground">Sem capa</p>
-                    </div>
-                  </div>
-                )}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {filteredBooks.map((book, idx) => {
+          const currentCover = bookEdits[book.book_name]?.cover || book.cover_url;
+          return (
+            <Card key={idx} className="p-4 flex gap-4">
+              <div className="w-20 h-28 bg-muted rounded border overflow-hidden shrink-0">
+                {currentCover ? <img src={currentCover} className="w-full h-full object-cover" /> : 
+                <div className="w-full h-full flex items-center justify-center bg-accent/10"><BookMarked className="opacity-20" size={24} /></div>}
               </div>
-
-              <div className="flex flex-1 flex-col justify-between">
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-muted-foreground">Livro #{arrayIndex + 1}</p>
-                  <Input
-                    placeholder="URL da capa"
-                    value={book.cover || ""}
-                    onChange={(e) => updateBook(Number(index), "cover", e.target.value)}
-                    className="h-8 border-border/50 bg-background text-xs"
+              <div className="flex-1 flex flex-col gap-2 min-w-0">
+                <h3 className="font-black text-xs uppercase text-primary truncate">{book.book_name}</h3>
+                <Input 
+                  placeholder="Link da Capa" 
+                  className="h-7 text-[10px]" 
+                  value={bookEdits[book.book_name]?.cover || ""}
+                  onChange={(e) => setBookEdits(prev => ({...prev, [book.book_name]: {...prev[book.book_name], cover: e.target.value}}))}
+                />
+                <div className="flex items-center gap-2">
+                  <BookOpen size={12} className="text-primary" />
+                  <Input 
+                    type="number" 
+                    className="h-7 w-20 text-[10px]" 
+                    value={bookEdits[book.book_name]?.pages || ""}
+                    onChange={(e) => setBookEdits(prev => ({...prev, [book.book_name]: {...prev[book.book_name], pages: Number(e.target.value)}}))}
                   />
-                  <Input
-                    placeholder="Nome do livro"
-                    value={book.title || ""}
-                    onChange={(e) => updateBook(Number(index), "title", e.target.value)}
-                    className="h-8 border-border/50 bg-background text-sm"
-                  />
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground">Páginas</span>
                 </div>
-                <div>
-                  <p className="mb-1 text-xs text-muted-foreground">Avaliação</p>
+                <div className="mt-auto flex justify-between items-center border-t pt-2">
                   <div className="flex gap-1">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        onClick={() => setRating(Number(index), star)}
-                        className="transition-transform hover:scale-110"
-                      >
-                        <Star
-                          className={`h-5 w-5 ${
-                            star <= (book.rating || 0) ? "fill-primary text-primary" : "text-border"
-                          }`}
-                        />
-                      </button>
+                    {[1,2,3,4,5].map(s => (
+                      <Star key={s} size={14} className={`cursor-pointer ${s <= (bookEdits[book.book_name]?.rating || 0) ? "fill-primary text-primary" : "text-border"}`} onClick={() => setBookEdits(prev => ({...prev, [book.book_name]: {...prev[book.book_name], rating: s}}))} />
                     ))}
                   </div>
+                  <Button size="sm" className="h-7 w-7 rounded-full" onClick={() => handleSave(book.book_name)} disabled={isSaving === book.book_name}>
+                    {isSaving === book.book_name ? <Loader2 className="animate-spin" size={12} /> : <Save size={14} />}
+                  </Button>
                 </div>
               </div>
-            </div>
-          </div>
-        ))}
-        
-        <div className="col-span-full mt-4 flex justify-center">
-          <Button 
-            onClick={addBook} 
-            variant="outline" 
-            className="flex items-center gap-2 border-dashed border-border/70 text-muted-foreground hover:bg-background/80"
-          >
-            <PlusCircle className="h-4 w-4" />
-            Adicionar Livro
-          </Button>
-        </div>
+            </Card>
+          )
+        })}
       </div>
-
-      <div className="mt-8 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-        <div className="h-px w-12 bg-border" />
-        <span>✦</span>
-        <div className="h-px w-12 bg-border" />
-      </div>
-    </Card>
+    </div>
   )
 }
