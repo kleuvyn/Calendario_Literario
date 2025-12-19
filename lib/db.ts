@@ -1,12 +1,10 @@
 import { Pool } from 'pg';
 
 const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: parseInt(process.env.DB_PORT || '5432'),
-  database: process.env.DB_NAME,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  options: "-c search_path=public"
+  connectionString: process.env.DATABASE_URL || process.env.POSTGRES_URL,
+  ssl: {
+    rejectUnauthorized: false 
+  }
 });
 
 export async function executeQuery(query: string, params: any[] = []) {
