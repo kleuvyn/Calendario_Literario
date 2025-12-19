@@ -66,17 +66,20 @@ var __turbopack_async_dependencies__ = __turbopack_handle_async_dependencies__([
 ]);
 [__TURBOPACK__imported__module__$5b$externals$5d2f$pg__$5b$external$5d$__$28$pg$2c$__esm_import$29$__] = __turbopack_async_dependencies__.then ? (await __turbopack_async_dependencies__)() : __turbopack_async_dependencies__;
 ;
-console.log("Conectando ao banco:", process.env.DB_NAME, "no host:", process.env.DB_HOST);
 const pool = new __TURBOPACK__imported__module__$5b$externals$5d2f$pg__$5b$external$5d$__$28$pg$2c$__esm_import$29$__["Pool"]({
-    host: process.env.DB_HOST,
-    port: parseInt(process.env.DB_PORT || '5432'),
-    database: process.env.DB_NAME,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    options: "-c search_path=public"
+    connectionString: process.env.DATABASE_URL || process.env.POSTGRES_URL,
+    ssl: {
+        rejectUnauthorized: false
+    }
 });
 async function executeQuery(query, params = []) {
     try {
+        await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT;');
+        await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS image TEXT;');
+        await pool.query('ALTER TABLE reading_data ADD COLUMN IF NOT EXISTS author TEXT;');
+        await pool.query('ALTER TABLE reading_data ADD COLUMN IF NOT EXISTS rating INTEGER;');
+        await pool.query('ALTER TABLE reading_data ADD COLUMN IF NOT EXISTS cover_url TEXT;');
+        await pool.query('ALTER TABLE reading_data ADD COLUMN IF NOT EXISTS email TEXT;');
         const result = await pool.query(query, params);
         return result.rows;
     } catch (error) {
@@ -92,10 +95,10 @@ __turbopack_async_result__();
 return __turbopack_context__.a(async (__turbopack_handle_async_dependencies__, __turbopack_async_result__) => { try {
 
 __turbopack_context__.s([
-    "GET",
-    ()=>GET,
-    "POST",
-    ()=>POST
+    "DELETE",
+    ()=>DELETE,
+    "PATCH",
+    ()=>PATCH
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/server.js [app-route] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/db.ts [app-route] (ecmascript)");
@@ -105,47 +108,69 @@ var __turbopack_async_dependencies__ = __turbopack_handle_async_dependencies__([
 [__TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__] = __turbopack_async_dependencies__.then ? (await __turbopack_async_dependencies__)() : __turbopack_async_dependencies__;
 ;
 ;
-async function GET(request) {
-    const { searchParams } = new URL(request.url);
-    const email = searchParams.get("email");
-    if (!email) return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-        data: []
-    });
+async function PATCH(request, { params }) {
     try {
-        // Busca as leituras usando a coluna 'email' (ajustado conforme seu erro de banco)
-        const data = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])("SELECT * FROM reading_data WHERE email = $1 ORDER BY start_date ASC", [
+        const { id } = await params;
+        const { title: newName } = await request.json();
+        const currentData = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])("SELECT book_name, user_id, email FROM public.reading_data WHERE id = $1", [
+            id
+        ]);
+        if (!currentData || currentData.length === 0) {
+            return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+                error: "Não encontrado"
+            }, {
+                status: 404
+            });
+        }
+        const oldName = currentData[0].book_name;
+        const userId = currentData[0].user_id;
+        const email = currentData[0].email;
+        await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`UPDATE public.reading_data SET book_name = $1 WHERE book_name = $2 AND (user_id = $3 OR email = $4)`, [
+            newName,
+            oldName,
+            userId,
             email
         ]);
+        await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`UPDATE public.book_reviews SET title = $1 WHERE title = $2 AND user_id = $3`, [
+            newName,
+            oldName,
+            userId
+        ]);
+        await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`UPDATE public.books SET title = $1 WHERE title = $2`, [
+            newName,
+            oldName
+        ]);
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-            data: data || []
+            message: "Sucesso"
         });
     } catch (error) {
-        console.error("Erro no Banco de Dados:", error.message);
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-            error: error.message,
-            data: []
+            error: error.message
         }, {
             status: 500
         });
     }
 }
-async function POST(request) {
+async function DELETE(request, { params }) {
     try {
-        const body = await request.json();
-        const { email, bookName, action } = body;
-        if (action === "START_READING") {
-            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])("INSERT INTO reading_data (email, book_name, status, start_date) VALUES ($1, $2, 'lendo', NOW())", [
-                email,
-                bookName
+        const { id } = await params;
+        const data = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])("SELECT book_name, user_id, email FROM public.reading_data WHERE id = $1", [
+            id
+        ]);
+        if (data.length > 0) {
+            const { book_name, user_id, email } = data[0];
+            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])("DELETE FROM public.reading_data WHERE book_name = $1 AND (user_id = $2 OR email = $3)", [
+                book_name,
+                user_id,
+                email
             ]);
-        } else if (action === "FINISH_READING") {
-            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])("UPDATE reading_data SET status = 'concluido', end_date = NOW() WHERE email = $1 AND book_name = $2 AND status = 'lendo'", [
-                email,
-                bookName
+            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])("DELETE FROM public.book_reviews WHERE title = $1 AND user_id = $2", [
+                book_name,
+                user_id
             ]);
         }
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-            success: true
+            message: "Excluído"
         });
     } catch (error) {
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({

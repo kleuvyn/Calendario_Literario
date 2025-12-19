@@ -1087,8 +1087,8 @@
     max-width: var(--container-6xl);
   }
 
-  .max-w-\[120px\] {
-    max-width: 120px;
+  .max-w-30 {
+    max-width: calc(var(--spacing) * 30);
   }
 
   .max-w-\[calc\(100\%-2rem\)\] {
@@ -1147,7 +1147,7 @@
     flex: 1;
   }
 
-  .flex-shrink-0, .shrink-0 {
+  .shrink-0 {
     flex-shrink: 0;
   }
 
@@ -2082,10 +2082,6 @@
 
   .text-\[0\.8rem\] {
     font-size: .8rem;
-  }
-
-  .text-\[7px\] {
-    font-size: 7px;
   }
 
   .text-\[8px\] {
@@ -3033,6 +3029,12 @@
   @media (hover: hover) {
     .hover\:text-muted-foreground:hover {
       color: var(--muted-foreground);
+    }
+  }
+
+  @media (hover: hover) {
+    .hover\:text-primary:hover {
+      color: var(--primary);
     }
   }
 

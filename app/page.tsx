@@ -1,12 +1,12 @@
 "use client"
 
 import { useState, useCallback, useMemo } from "react"
-import { useSession, signOut } from "next-auth/react"
+import { useSession, signOut, signIn } from "next-auth/react"
 import { MonthCalendar } from "@/components/month-calendar"
 import { MonthReview } from "@/components/month-review"
 import { LoginScreen } from "@/components/login-screen"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, BookOpen, LogOut, Loader2, User } from "lucide-react"
+import { ChevronLeft, ChevronRight, LogOut, Loader2, User } from "lucide-react"
 import { UserData } from "@/lib/storage"
 
 export default function Home() {
@@ -55,6 +55,24 @@ export default function Home() {
     }
   }
 
+  const handleLogin = async (userData: UserData) => {
+    if (userData.password) {
+      // O redirect: false impede que o NextAuth abra aquela página feia de login dele
+      const result = await signIn("credentials", {
+        email: userData.email,
+        password: userData.password,
+        redirect: false, 
+      })
+
+      if (result?.error) {
+        alert("E-mail ou senha incorretos! Tente novamente ou cadastre-se.")
+      }
+      // Não precisa de redirect manual aqui, o useSession vai detectar o login e atualizar a tela
+    } else {
+      await signIn("google")
+    }
+  }
+
   if (status === "loading") {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -63,16 +81,16 @@ export default function Home() {
     )
   }
 
-  if (!session) return <LoginScreen onLogin={function (userData: UserData): void {
-    throw new Error("Function not implemented.")
-  } } />
+  if (!session) {
+    return <LoginScreen onLogin={handleLogin} />
+  }
 
   return (
     <main className="min-h-screen bg-background p-4 md:p-8">
       <div className="mx-auto max-w-6xl">
         <div className="mb-8 flex items-center justify-between bg-card p-4 rounded-2xl border shadow-sm">
           <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-full border-2 border-primary overflow-hidden shadow-sm bg-muted flex-shrink-0">
+            <div className="h-12 w-12 rounded-full border-2 border-primary overflow-hidden shadow-sm bg-muted shrink-0">
               {session.user?.image ? (
                 <img 
                   src={session.user.image} 
@@ -100,7 +118,7 @@ export default function Home() {
           <div className="flex items-center gap-2">
             <div className="hidden md:flex flex-col items-end mr-2">
                <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">Conta Ativa</span>
-               <span className="text-[9px] text-primary truncate max-w-[120px]">{session.user?.email}</span>
+               <span className="text-[9px] text-primary truncate max-w-30">{session.user?.email}</span>
             </div>
             <Button variant="outline" size="icon" onClick={handleLogout} className="h-9 w-9 border-destructive/20 text-destructive hover:bg-destructive/5">
               <LogOut className="h-4 w-4" />

@@ -3,16 +3,17 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Loader2 } from "lucide-react"
+import { Loader2, Trash2, Edit2 } from "lucide-react" // Adicionado Edit2
 import { getReadingData, saveReadingDay } from "@/lib/api-client"
 
 export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any) {
   const [readings, setReadings] = useState<any[]>([])
   const [tempBookNames, setTempBookNames] = useState<Record<number, string>>({})
   const [isUpdating, setIsUpdating] = useState(false)
+  const [isDeleting, setIsDeleting] = useState<string | null>(null)
 
   const now = new Date()
-  const todayStr = now.toLocaleDateString('en-CA') // YYYY-MM-DD
+  const todayStr = now.toLocaleDateString('en-CA')
 
   async function loadData() {
     if (!userEmail) return
@@ -27,6 +28,41 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
   useEffect(() => {
     loadData()
   }, [userEmail, monthIndex, year])
+
+  // NOVA FUNÇÃO: handleEditName
+  async function handleEditName(bookId: string, oldName: string) {
+    const newName = prompt("Editar nome do livro:", oldName)
+    if (!newName || newName === oldName) return
+
+    setIsUpdating(true)
+    try {
+      const res = await fetch(`/api/books/${bookId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: newName }),
+      })
+      if (res.ok) {
+        await loadData()
+      }
+    } catch (err) {
+      alert("Erro ao atualizar nome.")
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  async function handleDelete(bookId: string, bookName: string) {
+    if (!confirm(`Excluir totalmente "${bookName}"?`)) return
+    setIsDeleting(bookId)
+    try {
+      const res = await fetch(`/api/books/${bookId}`, { method: "DELETE" })
+      if (res.ok) await loadData()
+    } catch (err) {
+      alert("Erro ao excluir.")
+    } finally {
+      setIsDeleting(null)
+    }
+  }
 
   async function handleAction(day: number, action: "START_READING" | "FINISH_READING", bookName?: string) {
     if (isUpdating || !userEmail) return
@@ -75,20 +111,39 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
             <div key={`${monthIndex}-${day}`} className={`min-h-40 rounded-lg border p-2 flex flex-col bg-card shadow-sm ${isToday ? 'ring-2 ring-primary bg-primary/5' : isFuture ? 'opacity-40 grayscale pointer-events-none' : ''}`}>
               <div className="flex justify-between items-start mb-2">
                 <span className="font-bold text-sm text-muted-foreground">{day}</span>
-                {isToday && <span className="text-[8px] bg-primary text-primary-foreground px-1 rounded">HOJE</span>}
               </div>
               
               <div className="flex-1 space-y-1 overflow-y-auto">
                 {dayReadings.map((r, idx) => (
-                  <div key={idx} className={`p-1.5 rounded text-[10px] border shadow-sm ${r.status === 'lendo' ? 'bg-primary/10 border-primary/30' : 'bg-muted/50 border-border'}`}>
-                    <p className="truncate font-bold text-foreground">{r.book_name.toUpperCase()}</p>
+                  <div key={idx} className={`p-1.5 rounded text-[10px] border shadow-sm relative ${r.status === 'lendo' ? 'bg-primary/10 border-primary/30' : 'bg-muted/50 border-border'}`}>
+                    <div className="flex justify-between items-start gap-1">
+                      {/* NOME DO LIVRO CLICÁVEL PARA EDITAR */}
+                      <p 
+                        className="truncate font-black text-foreground flex-1 cursor-pointer hover:underline"
+                        onClick={() => handleEditName(r.id, r.book_name)}
+                        title="Clique para editar o nome"
+                      >
+                        {r.book_name.toUpperCase()}
+                      </p>
+                      
+                      <div className="flex gap-1">
+                        <button onClick={() => handleEditName(r.id, r.book_name)} className="text-muted-foreground hover:text-primary">
+                          <Edit2 size={8} />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(r.id, r.book_name)}
+                          className="text-muted-foreground hover:text-destructive"
+                          disabled={isDeleting === r.id}
+                        >
+                          {isDeleting === r.id ? <Loader2 size={8} className="animate-spin" /> : <Trash2 size={8} />}
+                        </button>
+                      </div>
+                    </div>
+
                     {r.status === "lendo" && (
                       <Button size="sm" className="h-5 w-full text-[8px] mt-1 font-bold" variant="destructive" onClick={() => handleAction(day, "FINISH_READING", r.book_name)}>
                         ENCERRAR AQUI
                       </Button>
-                    )}
-                    {r.status === "finalizado" && (
-                      <div className="text-[7px] text-center text-primary font-bold mt-1 uppercase">✓ Concluído</div>
                     )}
                   </div>
                 ))}

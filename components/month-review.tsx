@@ -4,7 +4,8 @@ import { useState, useEffect, useMemo } from "react"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Star, Loader2, Save, BookOpen, Calendar, TrendingUp, BookMarked } from "lucide-react"
+// Adicionado Trash2 aqui
+import { Star, Loader2, Save, BookOpen, Calendar, TrendingUp, BookMarked, Trash2 } from "lucide-react"
 import { getReadingData } from "@/lib/api-client"
 
 export function MonthReview({ month, userEmail, monthIndex, year }: any) {
@@ -12,11 +13,11 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
   const [loading, setLoading] = useState(true)
   const [bookEdits, setBookEdits] = useState<Record<string, { cover: string, rating: number, pages: number }>>({})
   const [isSaving, setIsSaving] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState<string | null>(null) // Estado para loading de exclusão
 
   const loadData = async () => {
     if (!userEmail) return
     try {
-      // Buscamos TODOS os livros do ano. Não filtramos mês na API para não sumir nada.
       const data = await getReadingData(userEmail, year)
       setAllBooks(data)
 
@@ -38,15 +39,12 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
 
   useEffect(() => { loadData() }, [userEmail, year, monthIndex])
 
-  // Lógica de Filtro: O que aparece neste mês?
   const filteredBooks = useMemo(() => {
     const currentM = monthIndex + 1
     return allBooks.filter(b => {
-      // Se finalizado: aparece APENAS no mês que terminou (finish_month)
       if (b.status === "finalizado") {
         return Number(b.finish_month) === currentM
       }
-      // Se está lendo: aparece no mês que começou
       return Number(b.month) === currentM
     })
   }, [allBooks, monthIndex])
@@ -88,6 +86,27 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
     }
   }
 
+  // NOVA FUNÇÃO: handleDelete
+  const handleDelete = async (bookId: string, bookName: string) => {
+    if (!confirm(`Deseja realmente excluir "${bookName}" da sua lista?`)) return
+    
+    setIsDeleting(bookId)
+    try {
+      const res = await fetch(`/api/books/${bookId}`, {
+        method: "DELETE",
+      })
+      if (res.ok) {
+        await loadData()
+      } else {
+        alert("Erro ao excluir o livro.")
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsDeleting(null)
+    }
+  }
+
   if (loading) return <div className="flex justify-center p-10"><Loader2 className="animate-spin text-primary" /></div>
 
   return (
@@ -119,7 +138,18 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
                 <div className="w-full h-full flex items-center justify-center bg-accent/10"><BookMarked className="opacity-20" size={24} /></div>}
               </div>
               <div className="flex-1 flex flex-col gap-2 min-w-0">
-                <h3 className="font-black text-xs uppercase text-primary truncate">{book.book_name}</h3>
+                <div className="flex justify-between items-start gap-2">
+                    <h3 className="font-black text-xs uppercase text-primary truncate">{book.book_name}</h3>
+                    {/* BOTÃO EXCLUIR */}
+                    <button 
+                      onClick={() => handleDelete(book.id, book.book_name)}
+                      className="text-muted-foreground hover:text-destructive transition-colors"
+                      disabled={isDeleting === book.id}
+                    >
+                      {isDeleting === book.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                    </button>
+                </div>
+                
                 <Input 
                   placeholder="Link da Capa" 
                   className="h-7 text-[10px]" 

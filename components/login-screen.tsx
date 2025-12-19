@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card" 
 import { Button } from "@/components/ui/button" 
 import { Input } from "@/components/ui/input" 
-import { BookOpen } from "lucide-react" 
+import { BookOpen, Loader2 } from "lucide-react" 
 import { type UserData } from "@/lib/storage"
 
 interface LoginScreenProps {
@@ -25,24 +25,44 @@ const GoogleIcon = () => (
 export function LoginScreen({ onLogin }: LoginScreenProps) {
   const [email, setEmail] = useState("")
   const [name, setName] = useState("")
+  const [password, setPassword] = useState("")
+  const [isRegistering, setIsRegistering] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
-  const handleEmailLogin = (e: React.FormEvent) => {
+  const handleEmailAction = async (e: React.FormEvent) => {
     e.preventDefault()
+    setIsLoading(true)
 
-    if (email && name) {
-      setIsLoading(true)
-      
+    if (isRegistering) {
+      // Lógica de CADASTRO (Cria o usuário no banco primeiro)
+      try {
+        const res = await fetch("/api/register", {
+          method: "POST",
+          body: JSON.stringify({ name, email, password }),
+          headers: { "Content-Type": "application/json" },
+        })
+
+        if (res.ok) {
+          alert("Conta criada com sucesso! Agora faça o login.")
+          setIsRegistering(false)
+        } else {
+          alert("Erro ao criar conta. Verifique se o e-mail já existe.")
+        }
+      } catch (error) {
+        alert("Erro de conexão.")
+      }
+    } else {
+      // Lógica de LOGIN (Chama a função da Home que executa o signIn)
       onLogin({
         name,
         email,
+        password, // Agora passamos a senha!
         provider: "credentials"
       })
-      
-      router.push("/") 
-      setIsLoading(false)
     }
+    
+    setIsLoading(false)
   }
 
   const handleGoogleLogin = async () => {
@@ -56,44 +76,65 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
         <div className="mb-8 text-center">
           <div className="mb-4 flex justify-center">
             <div className="rounded-2xl bg-primary/10 p-4">
-              < BookOpen className="h-12 w-12 text-primary" />
+              <BookOpen className="h-12 w-12 text-primary" />
             </div>
           </div>
           <h1 className="mb-2 font-serif text-3xl font-bold text-foreground">Literário</h1>
-          <p className="text-muted-foreground">Entre para acessar seu diário de leituras</p>
+          <p className="text-muted-foreground">
+            {isRegistering ? "Crie sua conta para começar" : "Entre para acessar suas leituras"}
+          </p>
         </div>
 
-        <form onSubmit={handleEmailLogin} className="space-y-4">
-          <div>
-            <label htmlFor="name" className="mb-2 block text-sm font-medium text-foreground">Nome</label>
-            <Input
-              id="name"
-              type="text"
-              placeholder="Seu nome"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="bg-background"
-              required
-            />
-          </div>
+        <form onSubmit={handleEmailAction} className="space-y-4">
+          {isRegistering && (
+            <div>
+              <label className="mb-2 block text-sm font-medium">Nome</label>
+              <Input
+                type="text"
+                placeholder="Seu nome"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+          )}
 
           <div>
-            <label htmlFor="email" className="mb-2 block text-sm font-medium text-foreground">Email</label>
+            <label className="mb-2 block text-sm font-medium">Email</label>
             <Input
-              id="email"
               type="email"
               placeholder="seu@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="bg-background"
               required
             />
           </div>
 
-          <Button type="submit" className="w-full gap-2" size="lg" disabled={!email || !name || isLoading}>
-            {isLoading ? "Entrando..." : "Entrar com Email"}
+          <div>
+            <label className="mb-2 block text-sm font-medium">Senha</label>
+            <Input
+              type="password"
+              placeholder="Sua senha"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          <Button type="submit" className="w-full gap-2" size="lg" disabled={isLoading}>
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (isRegistering ? "Criar Conta" : "Entrar com Email")}
           </Button>
         </form>
+
+        <div className="mt-4 text-center">
+          <button 
+            type="button"
+            onClick={() => setIsRegistering(!isRegistering)}
+            className="text-sm text-primary hover:underline"
+          >
+            {isRegistering ? "Já tem conta? Entre aqui" : "Não tem conta? Cadastre-se"}
+          </button>
+        </div>
 
         <div className="my-6 flex items-center gap-3">
           <div className="h-px flex-1 bg-border" />
@@ -105,16 +146,12 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
           type="button"
           onClick={handleGoogleLogin}
           disabled={isLoading}
-          className="w-full gap-3 bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"
+          className="w-full gap-3 bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 shadow-sm"
           size="lg"
         >
           <GoogleIcon />
           Entrar com Google
         </Button>
-
-        <p className="mt-6 text-center text-xs text-muted-foreground">
-          Entre para iniciar a sessão com o provedor escolhido.
-        </p>
       </Card>
     </div>
   )

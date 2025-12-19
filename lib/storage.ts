@@ -1,4 +1,5 @@
 export interface UserData {
+  password: any
   email: string
   name: string
   provider: string
