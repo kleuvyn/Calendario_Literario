@@ -42,7 +42,7 @@ export async function loginUser(email: string, name?: string, image?: string): P
   return data.user;
 }
 
-export async function getReadingData(email: string, year: number, month?: number): Promise<ReadingDay[]> {
+export async function getReadingData(email: string, year: number, month?: number, signal?: AbortSignal): Promise<ReadingDay[]> {
   let url = `/api/reading-data?email=${encodeURIComponent(email)}&year=${year}`;
   
   if (month !== undefined) {

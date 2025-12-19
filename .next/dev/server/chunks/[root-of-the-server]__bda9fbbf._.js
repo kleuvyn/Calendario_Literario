@@ -112,7 +112,7 @@ async function GET(request) {
     const { searchParams } = new URL(request.url);
     const email = searchParams.get("email");
     const year = Number(searchParams.get("year"));
-    const month = searchParams.get("month");
+    const month = Number(searchParams.get("month"));
     if (!email) return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
         data: []
     });
@@ -125,17 +125,18 @@ async function GET(request) {
       FROM public.reading_data rd
       LEFT JOIN public.book_reviews br ON rd.user_id = br.user_id AND rd.book_name = br.title
       WHERE (rd.email = $1 OR rd.user_id = (SELECT id FROM public.users WHERE email = $1 LIMIT 1))
-      AND rd.year = $2
+      AND (
+        (rd.status = 'lendo') 
+        OR 
+        (rd.year = $2 AND rd.month = $3)
+      )
+      ORDER BY rd.status DESC, rd.start_date ASC
     `;
         const params = [
             email,
-            year
+            year,
+            month
         ];
-        if (month && !isNaN(Number(month))) {
-            query += ` AND rd.month = $3`;
-            params.push(Number(month));
-        }
-        query += ` ORDER BY rd.start_date ASC`;
         const rows = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(query, params);
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
             data: rows
@@ -164,8 +165,8 @@ async function POST(request) {
         const userId = userResult[0].id;
         if (action === "START_READING") {
             await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`
-        INSERT INTO public.reading_data (email, user_id, user_email, book_name, start_date, year, month, status, total_pages)
-        VALUES ($1, $2, $1, $3, $4, $5, $6, 'lendo', 0)
+        INSERT INTO public.reading_data (email, user_id, book_name, start_date, year, month, status, total_pages)
+        VALUES ($1, $2, $3, $4, $5, $6, 'lendo', 0)
       `, [
                 email,
                 userId,
@@ -177,14 +178,20 @@ async function POST(request) {
         } else if (action === "FINISH_READING") {
             await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`
         UPDATE public.reading_data 
-        SET end_date = $1, status = 'finalizado', total_pages = $2
+        SET end_date = $1, 
+            status = 'finalizado', 
+            total_pages = $2,
+            month = $6,
+            year = $7
         WHERE (email = $3 OR user_id = $5) AND book_name = $4 AND status = 'lendo'
       `, [
                 endDate,
                 pages,
                 email,
                 bookName,
-                userId
+                userId,
+                month,
+                year
             ]);
             await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`
         INSERT INTO public.book_reviews (user_id, year, month, title, rating, cover_url, total_pages)
