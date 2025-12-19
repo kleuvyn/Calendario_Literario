@@ -111,38 +111,39 @@ var __turbopack_async_dependencies__ = __turbopack_handle_async_dependencies__([
 async function PATCH(request, { params }) {
     try {
         const { id } = await params;
-        const { title } = await request.json();
-        const currentData = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])("SELECT book_name, email FROM reading_data WHERE id = $1", [
+        const { title: newName } = await request.json();
+        const currentData = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])("SELECT book_name, user_id, email FROM public.reading_data WHERE id = $1", [
             id
         ]);
         if (!currentData || currentData.length === 0) {
             return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-                error: "Livro não encontrado"
+                error: "Não encontrado"
             }, {
                 status: 404
             });
         }
         const oldName = currentData[0].book_name;
-        const userEmail = currentData[0].email;
-        await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`UPDATE reading_data SET book_name = $1 WHERE book_name = $2 AND email = $3`, [
-            title,
+        const userId = currentData[0].user_id;
+        const email = currentData[0].email;
+        await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`UPDATE public.reading_data SET book_name = $1 WHERE book_name = $2 AND (user_id = $3 OR email = $4)`, [
+            newName,
             oldName,
-            userEmail
+            userId,
+            email
         ]);
-        try {
-            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`UPDATE book_reviews SET book_name = $1 WHERE book_name = $2 AND user_email = $3`, [
-                title,
-                oldName,
-                userEmail
-            ]);
-        } catch (e) {
-            console.log("Tabela book_reviews não encontrada ou coluna diferente, pulando...");
-        }
+        await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`UPDATE public.book_reviews SET title = $1 WHERE title = $2 AND user_id = $3`, [
+            newName,
+            oldName,
+            userId
+        ]);
+        await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`UPDATE public.books SET title = $1 WHERE title = $2`, [
+            newName,
+            oldName
+        ]);
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-            message: "Atualizado com sucesso!"
+            success: true
         });
     } catch (error) {
-        console.error("Erro Crítico na API:", error);
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
             error: error.message
         }, {
@@ -153,26 +154,27 @@ async function PATCH(request, { params }) {
 async function DELETE(request, { params }) {
     try {
         const { id } = await params;
-        const data = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])("SELECT book_name, email FROM reading_data WHERE id = $1", [
+        const data = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])("SELECT book_name, user_id, email FROM public.reading_data WHERE id = $1", [
             id
         ]);
         if (data.length > 0) {
-            const { book_name, email } = data[0];
-            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])("DELETE FROM reading_data WHERE book_name = $1 AND email = $2", [
+            const { book_name, user_id, email } = data[0];
+            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])("DELETE FROM public.reading_data WHERE book_name = $1 AND (user_id = $2 OR email = $3)", [
                 book_name,
+                user_id,
                 email
             ]);
-            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])("DELETE FROM book_reviews WHERE book_name = $1 AND user_email = $2", [
+            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])("DELETE FROM public.book_reviews WHERE title = $1 AND user_id = $2", [
                 book_name,
-                email
+                user_id
             ]);
         }
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-            message: "Excluído de todo o sistema"
+            message: "Excluído"
         });
     } catch (error) {
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-            error: "Erro ao deletar"
+            error: error.message
         }, {
             status: 500
         });

@@ -141,9 +141,8 @@ async function GET(request) {
             data: rows
         });
     } catch (error) {
-        console.error("Erro no Banco:", error);
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-            error: "Erro ao carregar dados. Verifique as tabelas."
+            error: "Erro ao carregar dados"
         }, {
             status: 500
         });
@@ -165,8 +164,8 @@ async function POST(request) {
         const userId = userResult[0].id;
         if (action === "START_READING") {
             await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`
-        INSERT INTO public.reading_data (email, user_id, book_name, start_date, year, month, status, total_pages)
-        VALUES ($1, $2, $3, $4, $5, $6, 'lendo', 0)
+        INSERT INTO public.reading_data (email, user_id, user_email, book_name, start_date, year, month, status, total_pages)
+        VALUES ($1, $2, $1, $3, $4, $5, $6, 'lendo', 0)
       `, [
                 email,
                 userId,
@@ -190,7 +189,10 @@ async function POST(request) {
             await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`
         INSERT INTO public.book_reviews (user_id, year, month, title, rating, cover_url, total_pages)
         VALUES ($1, $2, $3, $4, 0, '', $5)
-        ON CONFLICT (user_id, title) DO UPDATE SET total_pages = EXCLUDED.total_pages
+        ON CONFLICT (user_id, title) DO UPDATE SET 
+          year = EXCLUDED.year, 
+          month = EXCLUDED.month,
+          total_pages = EXCLUDED.total_pages
       `, [
                 userId,
                 year,
@@ -212,6 +214,15 @@ async function POST(request) {
                 rating,
                 coverUrl,
                 pages
+            ]);
+            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`
+        UPDATE public.reading_data 
+        SET total_pages = $1
+        WHERE user_id = $2 AND book_name = $3
+      `, [
+                pages,
+                userId,
+                bookName
             ]);
         }
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
