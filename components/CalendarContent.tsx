@@ -1,131 +1,79 @@
-"use client"
+import { executeQuery } from "@/lib/db";
+import { NextResponse } from "next/server";
 
-import { useSession, signOut } from "next-auth/react"
-import { useState, useMemo } from "react"
-import { MonthCalendar } from "@/components/month-calendar"
-import { MonthReview } from "@/components/month-review"
-import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, BookOpen, LogOut } from "lucide-react"
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const email = searchParams.get("email");
+  const year = Number(searchParams.get("year"));
 
-const getMonthsForYear = (year: number) => {
-  const isLeapYear = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0
-  return [
-    { name: "Janeiro", days: 31 },
-    { name: "Fevereiro", days: isLeapYear ? 29 : 28 },
-    { name: "Março", days: 31 },
-    { name: "Abril", days: 30 },
-    { name: "Maio", days: 31 },
-    { name: "Junho", days: 30 },
-    { name: "Julho", days: 31 },
-    { name: "Agosto", days: 31 },
-    { name: "Setembro", days: 30 },
-    { name: "Outubro", days: 31 },
-    { name: "Novembro", days: 30 },
-    { name: "Dezembro", days: 31 },
-  ]
+  if (!email || !year) return NextResponse.json({ data: [] });
+
+  try {
+    const query = `
+      SELECT rd.*, 
+             br.rating, 
+             br.cover_url, 
+             COALESCE(br.total_pages, rd.total_pages) as display_pages
+      FROM public.reading_data rd
+      LEFT JOIN public.book_reviews br ON rd.user_id = br.user_id AND rd.book_name = br.title
+      WHERE (rd.email = $1 OR rd.user_id = (SELECT id FROM public.users WHERE email = $1 LIMIT 1))
+      AND rd.year = $2
+      ORDER BY rd.month ASC, rd.status DESC
+    `;
+    
+    const rows = await executeQuery(query, [email, year]);
+    return NextResponse.json({ data: rows });
+  } catch (error: any) {
+    return NextResponse.json({ error: "Erro ao carregar dados" }, { status: 500 });
+  }
 }
 
-export function CalendarContent() {
-  const { data: session } = useSession()
-  const [currentYear, setCurrentYear] = useState(2025)
-  const [currentMonth, setCurrentMonth] = useState(() => new Date().getMonth())
-  const [showBack, setShowBack] = useState(false)
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const { email, bookName, startDate, endDate, year, month, action, rating, coverUrl, totalPages } = body;
+    const pages = Number(totalPages) || 0;
 
-  const months = useMemo(() => getMonthsForYear(currentYear), [currentYear])
+    const userResult = await executeQuery(`SELECT id FROM public.users WHERE email = $1`, [email]);
+    if (!userResult || userResult.length === 0) return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
+    const userId = userResult[0].id;
 
-  if (!session?.user) return null
+    if (action === "START_READING") {
+      await executeQuery(`
+        INSERT INTO public.reading_data (email, user_id, book_name, start_date, year, month, status, total_pages)
+        VALUES ($1, $2, $3, $4, $5, $6, 'lendo', 0)
+      `, [email, userId, bookName, startDate, year, month]);
+    } 
+    else if (action === "FINISH_READING") {
+      await executeQuery(`
+        UPDATE public.reading_data 
+        SET end_date = $1, status = 'finalizado', total_pages = $2, month = $6, year = $7
+        WHERE (email = $3 OR user_id = $5) AND book_name = $4 AND status = 'lendo'
+      `, [endDate, pages, email, bookName, userId, month, year]);
 
-  const handlePrevMonth = () => {
-    setShowBack(false)
-    if (currentMonth > 0) {
-      setCurrentMonth(currentMonth - 1)
-    } else {
-      setCurrentYear(currentYear - 1)
-      setCurrentMonth(11)
+      await executeQuery(`
+        INSERT INTO public.book_reviews (user_id, year, month, title, rating, cover_url, total_pages)
+        VALUES ($1, $2, $3, $4, 0, '', $5)
+        ON CONFLICT (user_id, title) DO UPDATE SET 
+          year = EXCLUDED.year, month = EXCLUDED.month, total_pages = EXCLUDED.total_pages
+      `, [userId, year, month, bookName, pages]);
     }
-  }
+    else if (action === "UPDATE_REVIEW") {
+      await executeQuery(`
+        INSERT INTO public.book_reviews (user_id, title, rating, cover_url, total_pages, year, month)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        ON CONFLICT (user_id, title) DO UPDATE SET 
+          rating = EXCLUDED.rating, cover_url = EXCLUDED.cover_url, total_pages = EXCLUDED.total_pages, year = EXCLUDED.year, month = EXCLUDED.month
+      `, [userId, bookName, rating, coverUrl, pages, year, month]);
 
-  const handleNextMonth = () => {
-    setShowBack(false)
-    if (currentMonth < 11) {
-      setCurrentMonth(currentMonth + 1)
-    } else {
-      setCurrentYear(currentYear + 1)
-      setCurrentMonth(0)
+      await executeQuery(`
+        UPDATE public.reading_data SET total_pages = $1, year = $4, month = $5
+        WHERE user_id = $2 AND book_name = $3
+      `, [pages, userId, bookName, year, month]);
     }
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
-
-  return (
-    <main className="min-h-screen bg-background p-4 md:p-8">
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-8 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-primary/10 p-2">
-              <BookOpen className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <h1 className="font-serif text-2xl font-bold text-foreground md:text-4xl">
-                Literário {currentYear}
-              </h1>
-              <p className="text-sm text-muted-foreground">Olá, {session.user.name}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="icon" 
-              onClick={() => signOut({ callbackUrl: '/' })} 
-              className="bg-transparent"
-            >
-              <LogOut className="h-4 w-4 text-foreground" />
-            </Button>
-            <Button 
-              variant="outline" 
-              size="icon" 
-              onClick={handlePrevMonth} 
-              className="bg-transparent"
-            >
-              <ChevronLeft className="h-4 w-4 text-foreground" />
-            </Button>
-            <Button 
-              variant="outline" 
-              size="icon" 
-              onClick={handleNextMonth} 
-              className="bg-transparent"
-            >
-              <ChevronRight className="h-4 w-4 text-foreground" />
-            </Button>
-          </div>
-        </div>
-
-        <div className="relative min-h-150">
-          {!showBack ? (
-            <MonthCalendar
-              month={months[currentMonth].name}
-              days={months[currentMonth].days}
-              year={currentYear}
-              userEmail={session.user.email ?? ""}
-              monthIndex={currentMonth}
-            />
-          ) : (
-            <MonthReview 
-              month={months[currentMonth].name} 
-              userEmail={session.user.email ?? ""}
-              monthIndex={currentMonth} 
-            />
-          )}
-        </div>
-
-        <div className="mt-6 flex justify-center">
-          <Button 
-            onClick={() => setShowBack(!showBack)} 
-            variant="secondary" 
-            className="gap-2 px-6"
-          >
-            {showBack ? "← Ver Calendário" : "Ver Livros Lidos →"}
-          </Button>
-        </div>
-      </div>
-    </main>
-  )
 }

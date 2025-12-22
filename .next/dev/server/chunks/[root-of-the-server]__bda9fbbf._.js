@@ -112,123 +112,81 @@ async function GET(request) {
     const { searchParams } = new URL(request.url);
     const email = searchParams.get("email");
     const year = Number(searchParams.get("year"));
-    const month = Number(searchParams.get("month"));
-    if (!email) return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+    if (!email || !year) return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
         data: []
     });
     try {
-        let query = `
+        const query = `
       SELECT rd.*, 
              br.rating, 
-             br.cover_url, 
-             COALESCE(br.total_pages, rd.total_pages) as display_pages
+             br.cover_url,
+             br.genre,
+             br.review,
+             -- O nome precisa ser total_pages para o cálculo de stats
+             COALESCE(br.total_pages, rd.total_pages, 0) as total_pages
       FROM public.reading_data rd
-      LEFT JOIN public.book_reviews br ON rd.user_id = br.user_id AND rd.book_name = br.title
-      WHERE (rd.email = $1 OR rd.user_id = (SELECT id FROM public.users WHERE email = $1 LIMIT 1))
-      AND (
-        (rd.status = 'lendo') 
-        OR 
-        (rd.year = $2 AND rd.month = $3)
-      )
-      ORDER BY rd.status DESC, rd.start_date ASC
+      LEFT JOIN public.users u ON u.email = rd.email
+      LEFT JOIN public.book_reviews br ON (u.id = br.user_id AND rd.book_name = br.title)
+      WHERE rd.email = $1 AND rd.year = $2
+      ORDER BY rd.month ASC, rd.status DESC
     `;
-        const params = [
+        const rows = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(query, [
             email,
-            year,
-            month
-        ];
-        const rows = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(query, params);
+            year
+        ]);
+        // Garantimos que os campos críticos sejam números para os cálculos de stats
+        const cleanRows = rows.map((b)=>({
+                ...b,
+                rating: Number(b.rating) || 0,
+                total_pages: Number(b.total_pages) || 0,
+                month: Number(b.month)
+            }));
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-            data: rows
+            data: cleanRows
         });
     } catch (error) {
+        console.error("Erro na API:", error);
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-            error: "Erro ao carregar dados"
-        }, {
-            status: 500
+            data: []
         });
     }
 }
 async function POST(request) {
     try {
         const body = await request.json();
-        const { email, bookName, startDate, endDate, year, month, action, rating, coverUrl, totalPages } = body;
+        const { email, bookName, action, rating, coverUrl, totalPages, review, genre, year, month } = body;
         const pages = Number(totalPages) || 0;
-        const userResult = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`SELECT id FROM public.users WHERE email = $1`, [
+        const userRes = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`SELECT id FROM public.users WHERE email = $1`, [
             email
         ]);
-        if (userResult.length === 0) return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+        if (userRes.length === 0) return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
             error: "Usuário não encontrado"
-        }, {
-            status: 404
         });
-        const userId = userResult[0].id;
-        if (action === "START_READING") {
+        const userId = userRes[0].id;
+        if (action === "UPDATE_REVIEW") {
             await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`
-        INSERT INTO public.reading_data (email, user_id, book_name, start_date, year, month, status, total_pages)
-        VALUES ($1, $2, $3, $4, $5, $6, 'lendo', 0)
-      `, [
-                email,
-                userId,
-                bookName,
-                startDate,
-                year,
-                month
-            ]);
-        } else if (action === "FINISH_READING") {
-            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`
-        UPDATE public.reading_data 
-        SET end_date = $1, 
-            status = 'finalizado', 
-            total_pages = $2,
-            month = $6,
-            year = $7
-        WHERE (email = $3 OR user_id = $5) AND book_name = $4 AND status = 'lendo'
-      `, [
-                endDate,
-                pages,
-                email,
-                bookName,
-                userId,
-                month,
-                year
-            ]);
-            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`
-        INSERT INTO public.book_reviews (user_id, year, month, title, rating, cover_url, total_pages)
-        VALUES ($1, $2, $3, $4, 0, '', $5)
-        ON CONFLICT (user_id, title) DO UPDATE SET 
-          year = EXCLUDED.year, 
-          month = EXCLUDED.month,
-          total_pages = EXCLUDED.total_pages
-      `, [
-                userId,
-                year,
-                month,
-                bookName,
-                pages
-            ]);
-        } else if (action === "UPDATE_REVIEW") {
-            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`
-        INSERT INTO public.book_reviews (user_id, title, rating, cover_url, total_pages)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO public.book_reviews (user_id, title, rating, cover_url, total_pages, genre, review, year, month)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         ON CONFLICT (user_id, title) DO UPDATE SET 
           rating = EXCLUDED.rating, 
           cover_url = EXCLUDED.cover_url, 
-          total_pages = EXCLUDED.total_pages
+          total_pages = EXCLUDED.total_pages,
+          genre = EXCLUDED.genre,
+          review = EXCLUDED.review
       `, [
                 userId,
                 bookName,
                 rating,
                 coverUrl,
-                pages
-            ]);
-            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`
-        UPDATE public.reading_data 
-        SET total_pages = $1
-        WHERE user_id = $2 AND book_name = $3
-      `, [
                 pages,
-                userId,
+                genre,
+                review,
+                year,
+                month
+            ]);
+            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`UPDATE public.reading_data SET total_pages = $1 WHERE email = $2 AND book_name = $3`, [
+                pages,
+                email,
                 bookName
             ]);
         }
