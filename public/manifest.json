@@ -10,7 +10,7 @@
   "orientation": "portrait",
   "scope": "/",
   "lang": "pt-BR",
-  "categories": ["lifestyle", "education"],
+  "categories": ["books", "lifestyle", "education"],
   "icons": [
     {
       "src": "/icon-192.png",
