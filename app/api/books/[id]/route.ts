@@ -1,5 +1,3 @@
-"use client"
-
 import { NextResponse } from "next/server";
 import { executeQuery } from "@/lib/db";
 
@@ -76,7 +74,7 @@ export async function DELETE(
       );
     }
 
-    return NextResponse.json({ message: "Excluído" });
+    return NextResponse.json({ message: "Excluído com sucesso" });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
