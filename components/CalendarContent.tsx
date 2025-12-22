@@ -1,79 +1,82 @@
-import { executeQuery } from "@/lib/db";
-import { NextResponse } from "next/server";
+"use client"
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const email = searchParams.get("email");
-  const year = Number(searchParams.get("year"));
+import { useState } from "react"
+import { useSession } from "next-auth/react"
+import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react"
+import { MonthReview } from "./month-review"
 
-  if (!email || !year) return NextResponse.json({ data: [] });
+const MONTHS = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+];
 
-  try {
-    const query = `
-      SELECT rd.*, 
-             br.rating, 
-             br.cover_url, 
-             COALESCE(br.total_pages, rd.total_pages) as display_pages
-      FROM public.reading_data rd
-      LEFT JOIN public.book_reviews br ON rd.user_id = br.user_id AND rd.book_name = br.title
-      WHERE (rd.email = $1 OR rd.user_id = (SELECT id FROM public.users WHERE email = $1 LIMIT 1))
-      AND rd.year = $2
-      ORDER BY rd.month ASC, rd.status DESC
-    `;
-    
-    const rows = await executeQuery(query, [email, year]);
-    return NextResponse.json({ data: rows });
-  } catch (error: any) {
-    return NextResponse.json({ error: "Erro ao carregar dados" }, { status: 500 });
+export function CalendarContent() {
+  const { data: session } = useSession();
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+
+  if (selectedMonth !== null) {
+    return (
+      <div className="p-4">
+        <Button 
+          variant="ghost" 
+          onClick={() => setSelectedMonth(null)}
+          className="mb-6 hover:bg-slate-100 font-bold uppercase text-[10px] tracking-widest"
+        >
+          <ChevronLeft className="mr-2 h-4 w-4" /> Voltar ao Calendário
+        </Button>
+        <MonthReview 
+          month={MONTHS[selectedMonth]} 
+          monthIndex={selectedMonth}
+          year={currentYear}
+          userEmail={session?.user?.email}
+        />
+      </div>
+    );
   }
-}
 
-export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    const { email, bookName, startDate, endDate, year, month, action, rating, coverUrl, totalPages } = body;
-    const pages = Number(totalPages) || 0;
+  return (
+    <div className="p-6 max-w-5xl mx-auto">
+      <div className="flex items-center justify-between mb-10">
+        <div className="flex items-center gap-3">
+          <div className="bg-primary p-2 rounded-lg text-white">
+            <CalendarIcon size={20} />
+          </div>
+          <h1 className="text-2xl font-black uppercase tracking-tighter text-slate-800">
+            Calendário <span className="text-primary">{currentYear}</span>
+          </h1>
+        </div>
+        
+        <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl">
+          <Button variant="ghost" size="icon" onClick={() => setCurrentYear(prev => prev - 1)}>
+            <ChevronLeft size={16} />
+          </Button>
+          <span className="px-4 font-black text-sm">{currentYear}</span>
+          <Button variant="ghost" size="icon" onClick={() => setCurrentYear(prev => prev + 1)}>
+            <ChevronRight size={16} />
+          </Button>
+        </div>
+      </div>
 
-    const userResult = await executeQuery(`SELECT id FROM public.users WHERE email = $1`, [email]);
-    if (!userResult || userResult.length === 0) return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
-    const userId = userResult[0].id;
-
-    if (action === "START_READING") {
-      await executeQuery(`
-        INSERT INTO public.reading_data (email, user_id, book_name, start_date, year, month, status, total_pages)
-        VALUES ($1, $2, $3, $4, $5, $6, 'lendo', 0)
-      `, [email, userId, bookName, startDate, year, month]);
-    } 
-    else if (action === "FINISH_READING") {
-      await executeQuery(`
-        UPDATE public.reading_data 
-        SET end_date = $1, status = 'finalizado', total_pages = $2, month = $6, year = $7
-        WHERE (email = $3 OR user_id = $5) AND book_name = $4 AND status = 'lendo'
-      `, [endDate, pages, email, bookName, userId, month, year]);
-
-      await executeQuery(`
-        INSERT INTO public.book_reviews (user_id, year, month, title, rating, cover_url, total_pages)
-        VALUES ($1, $2, $3, $4, 0, '', $5)
-        ON CONFLICT (user_id, title) DO UPDATE SET 
-          year = EXCLUDED.year, month = EXCLUDED.month, total_pages = EXCLUDED.total_pages
-      `, [userId, year, month, bookName, pages]);
-    }
-    else if (action === "UPDATE_REVIEW") {
-      await executeQuery(`
-        INSERT INTO public.book_reviews (user_id, title, rating, cover_url, total_pages, year, month)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-        ON CONFLICT (user_id, title) DO UPDATE SET 
-          rating = EXCLUDED.rating, cover_url = EXCLUDED.cover_url, total_pages = EXCLUDED.total_pages, year = EXCLUDED.year, month = EXCLUDED.month
-      `, [userId, bookName, rating, coverUrl, pages, year, month]);
-
-      await executeQuery(`
-        UPDATE public.reading_data SET total_pages = $1, year = $4, month = $5
-        WHERE user_id = $2 AND book_name = $3
-      `, [pages, userId, bookName, year, month]);
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {MONTHS.map((month, index) => (
+          <Card 
+            key={month}
+            className="group cursor-pointer hover:border-primary transition-all duration-300 overflow-hidden border-slate-100"
+            onClick={() => setSelectedMonth(index)}
+          >
+            <div className="p-6 text-center">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 group-hover:text-primary transition-colors">
+                Mês {index + 1}
+              </p>
+              <h3 className="text-lg font-black uppercase text-slate-800 mt-1">{month}</h3>
+            </div>
+            <div className="h-1 bg-slate-50 group-hover:bg-primary transition-colors" />
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
 }
