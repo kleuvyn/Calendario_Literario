@@ -2,12 +2,15 @@ import type { Metadata } from "next"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import AuthProvider from '@/components/AuthProvider' 
+import Script from 'next/script'
 
 export const metadata: Metadata = {
   title: "Calendário Literário 2026 | Diário de Leituras",
   description: "Planejador literário elegante para registrar suas leituras ao longo do ano de 2026",
+  manifest: "/manifest.json", 
+  themeColor: "#ffffff", 
   icons: {
-    icon: 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%236366f1%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M4 19.5A2.5 2.5 0 0 1 6.5 17H20%22/><path d=%22M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z%22/></svg>',
+    apple: "/icon-512.png",
   },
 }
 
@@ -23,6 +26,20 @@ export default function RootLayout({
           {children}
         </AuthProvider>
         <Analytics />
+
+        <Script id="register-sw" strategy="afterInteractive">
+          {`
+            if ('serviceWorker' in navigator) {
+              window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                  console.log('ServiceWorker registrado com sucesso: ', registration.scope);
+                }, function(err) {
+                  console.log('Falha ao registrar o ServiceWorker: ', err);
+                });
+              });
+            }
+          `}
+        </Script>
       </body>
     </html>
   )
