@@ -1,25 +1,33 @@
 {
-  "short_name": "Calendário",
   "name": "Calendário Literário 2026",
-  "description": "Diário de leituras e planejamento literário para 2026.",
+  "short_name": "Calendário",
+  "description": "Diário de leituras e planejamento literário para o ano de 2026.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#6366f1",
+  "orientation": "portrait",
+  "scope": "/",
+  "lang": "pt-BR",
+  "categories": ["lifestyle", "education"],
   "icons": [
     {
-      "src": "/icon-192.png",
-      "type": "image/png",
+      "src": "./icon-192.png",
       "sizes": "192x192",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icon-512.png",
-      "type": "image/png",
+      "src": "./icon-512.png",
       "sizes": "512x512",
+      "type": "image/png",
       "purpose": "maskable"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
     }
-  ],
-  "start_url": "/",
-  "display": "standalone",
-  "theme_color": "#ffffff",
-  "background_color": "#ffffff",
-  "orientation": "portrait",
-  "scope": "/"
+  ]
 }
