@@ -23,12 +23,14 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
-    },
+    }
+  ],
+  "shortcuts": [
     {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
+      "name": "Ver Calendário",
+      "url": "/",
+      "description": "Abrir o calendário de leituras",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ],
   "screenshots": [
@@ -37,14 +39,14 @@
       "sizes": "512x512",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "Tela inicial do Calendário"
+      "label": "Tela Inicial"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Tela inicial do Calendário"
+      "label": "Tela Inicial"
     }
   ]
 }
