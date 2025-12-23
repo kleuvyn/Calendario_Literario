@@ -1,8 +1,8 @@
-import { NextAuthOptions } from "next-auth"
-import GoogleProvider from "next-auth/providers/google"
-import CredentialsProvider from "next-auth/providers/credentials"
-import { executeQuery } from "@/lib/db"
-import bcrypt from "bcrypt"
+import { NextAuthOptions } from "next-auth";
+import GoogleProvider from "next-auth/providers/google";
+import CredentialsProvider from "next-auth/providers/credentials";
+import { executeQuery } from "@/lib/db";
+import bcrypt from "bcrypt";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -19,34 +19,38 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null
+        if (!credentials?.email || !credentials?.password) return null;
         
         const users = await executeQuery(
           "SELECT * FROM users WHERE email = $1", 
           [credentials.email]
-        ) as any[]
+        ) as any[];
 
-        const user = users[0]
+        const user = users[0];
         if (user && user.password && await bcrypt.compare(credentials.password, user.password)) {
           return { 
             id: user.id.toString(), 
             name: user.name, 
             email: user.email,
             image: user.image 
-          }
+          };
         }
-        return null 
+        return null;
       }
     }),
   ],
   callbacks: {
     async jwt({ token, user }) {
-      if (user) token.id = user.id;
-      return token
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
     },
     async session({ session, token }) {
-      if (session.user) (session.user as any).id = token.id;
-      return session
+      if (session.user) {
+        (session.user as any).id = token.id;
+      }
+      return session;
     },
     async signIn({ user, account }) {
       if (account?.provider === "google") {
@@ -63,4 +67,4 @@ export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
   secret: process.env.NEXTAUTH_SECRET,
   pages: { signIn: '/' }
-}
+};
