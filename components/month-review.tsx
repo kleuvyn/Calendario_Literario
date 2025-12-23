@@ -16,7 +16,6 @@ const GENRES = [
   "Ficção", "Não-Ficção", "Autoajuda", "Outro"
 ];
 
-// Imagem estável para evitar o erro de console src=""
 const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?q=80&w=300&auto=format&fit=crop";
 
 export function MonthReview({ month, userEmail, monthIndex, year }: any) {
@@ -25,6 +24,7 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
   const [bookEdits, setBookEdits] = useState<Record<string, { cover: string, rating: number, pages: number, review: string, genre: string }>>({})
   const [isSaving, setIsSaving] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
+  const [isSearching, setIsSearching] = useState<string | null>(null);
 
   const isDecember = monthIndex === 11;
 
@@ -56,18 +56,13 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
 
   useEffect(() => { loadData() }, [loadData, monthIndex])
 
-  // LÓGICA DE ESTATÍSTICAS CORRIGIDA (Soma os 5 livros e as páginas)
   const stats = useMemo(() => {
     const currentMonthBooks = allBooks.filter(b => Number(b.month) === (monthIndex + 1));
-    
-    // Consideramos lido tudo que não é 'lendo', para aceitar 'finalizado' e 'lido'
     const finishedYear = allBooks.filter(b => b.status !== 'lendo');
     const finishedMonth = currentMonthBooks.filter(b => b.status !== 'lendo');
 
-    // Soma as páginas garantindo conversão numérica
     const totalPagesYear = finishedYear.reduce((acc, b) => acc + (Number(b.total_pages) || 0), 0);
     const monthPages = finishedMonth.reduce((acc, b) => {
-        // Pega do estado de edição ou do banco
         const p = Number(bookEdits[b.book_name]?.pages) || Number(b.total_pages) || 0;
         return acc + p;
     }, 0);
@@ -97,6 +92,39 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
     return allBooks.filter(b => Number(b.month) === (monthIndex + 1))
   }, [allBooks, monthIndex])
 
+  // FUNÇÃO DE BUSCA CORRIGIDA PARA ATUALIZAÇÃO IMEDIATA
+  const buscarCapaAutomatica = async (bookName: string) => {
+    setIsSearching(bookName);
+    const minhaChave = "AIzaSyB5F5pCIBIgZWCIpKwmBvKhh9RTSTwU9tw";
+    const url = `https://www.googleapis.com/books/v1/volumes?q=intitle:${encodeURIComponent(bookName)}&key=${minhaChave}&maxResults=1`;
+
+    try {
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.items && data.items[0].volumeInfo.imageLinks) {
+        let capaUrl = data.items[0].volumeInfo.imageLinks.thumbnail;
+        capaUrl = capaUrl.replace("http://", "https://");
+
+        // Atualiza o estado local para que a imagem mude no ecrã na hora
+        setBookEdits(prev => ({
+          ...prev,
+          [bookName]: { 
+            ...prev[bookName], 
+            cover: capaUrl 
+          }
+        }));
+      } else {
+        alert("Capa não encontrada.");
+      }
+    } catch (error) {
+      console.error("Erro na API:", error);
+      alert("Erro ao procurar capa.");
+    } finally {
+      setIsSearching(null);
+    }
+  };
+
   const handleSave = async (bookName: string) => {
     setIsSaving(bookName)
     try {
@@ -121,7 +149,6 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
     try {
       const res = await fetch(`/api/books/${bookId}`, { method: "DELETE" })
       if (res.ok) {
-        // Remove do estado local para ser instantâneo
         setAllBooks(prev => prev.filter(b => b.id !== bookId))
       }
     } finally { setIsDeleting(null) }
@@ -131,7 +158,6 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
 
   return (
     <div className="space-y-8 pb-20 max-w-6xl mx-auto px-4">
-      
       {/* 1. QUADRO DE FAVORITOS DO ANO */}
       {isDecember && stats.yearlyFavorites.length > 0 && (
         <Card className="p-8 border-none bg-gradient-to-br from-amber-500/10 via-transparent to-primary/5 shadow-sm">
@@ -146,7 +172,11 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
             {stats.yearlyFavorites.map((fav, i) => (
               <div key={i} className="group relative w-24 sm:w-32 text-center transition-transform hover:scale-105">
                 <div className="aspect-[2/3] rounded-lg shadow-xl overflow-hidden border-2 border-amber-400 mb-2 bg-slate-200">
-                  <img src={bookEdits[fav.book_name]?.cover || fav.cover_url || PLACEHOLDER_IMAGE} className="w-full h-full object-cover" alt="" />
+                  <img 
+                    src={bookEdits[fav.book_name]?.cover || fav.cover_url || PLACEHOLDER_IMAGE} 
+                    className="w-full h-full object-cover" 
+                    alt="" 
+                  />
                 </div>
                 <p className="text-[9px] font-black uppercase leading-tight truncate px-1 text-slate-700">{fav.book_name}</p>
               </div>
@@ -183,7 +213,7 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
         </div>
       </Card>
 
-      {/* 3. DESTAQUES */}
+      {/* 3. DESTAQUES NO TOPO */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="space-y-4">
           <div className="flex items-center gap-2 px-1">
@@ -216,7 +246,11 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
               stats.favoritesList.slice(0, 4).map((fav, i) => (
                 <div key={i} className="flex items-center gap-3 p-3 bg-white border border-amber-100/50 rounded-xl shadow-sm text-left">
                   <div className="w-12 h-16 bg-slate-100 rounded shadow-sm overflow-hidden shrink-0">
-                    <img src={bookEdits[fav.book_name]?.cover || fav.cover_url || PLACEHOLDER_IMAGE} className="w-full h-full object-cover" alt="" />
+                    <img 
+                      src={bookEdits[fav.book_name]?.cover || fav.cover_url || PLACEHOLDER_IMAGE} 
+                      className="w-full h-full object-cover" 
+                      alt="" 
+                    />
                   </div>
                   <div className="overflow-hidden">
                     <p className="text-[10px] font-black uppercase text-slate-700 truncate mb-1">{fav.book_name}</p>
@@ -244,10 +278,18 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
       <div className="grid grid-cols-1 gap-6">
         {currentMonthBooks.map((book, idx) => {
           const isFav = Number(bookEdits[book.book_name]?.rating || book.rating) === 5;
+          
+          // Pegamos a capa do estado de edição para ela mudar AO CLICAR NO BOTÃO
+          const currentCover = bookEdits[book.book_name]?.cover || book.cover_url || PLACEHOLDER_IMAGE;
+
           return (
             <Card key={idx} className={`flex flex-col sm:flex-row min-h-[220px] overflow-hidden shadow-md transition-all ${isFav ? 'border-amber-200 bg-amber-50/5' : 'border-slate-100'}`}>
               <div className="w-full sm:w-44 bg-slate-100 shrink-0 relative">
-                <img src={bookEdits[book.book_name]?.cover || book.cover_url || PLACEHOLDER_IMAGE} className="w-full h-full object-cover" alt="capa" />
+                <img 
+                  src={currentCover} 
+                  className="w-full h-full object-cover" 
+                  alt="capa" 
+                />
                 {isFav && <div className="absolute top-3 left-3 bg-amber-500 text-white p-1.5 rounded-sm shadow-lg"><Crown size={14} fill="white" /></div>}
               </div>
               
@@ -266,8 +308,23 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
                   <div className="space-y-4">
                     <div className="flex gap-4">
                       <div className="flex-1 text-left">
-                        <p className="text-[8px] font-black text-slate-400 uppercase mb-1">Capa URL</p>
-                        <Input className="h-9 text-xs bg-slate-50 border-none" value={bookEdits[book.book_name]?.cover || ""} onChange={(e) => setBookEdits(p => ({...p, [book.book_name]: {...p[book.book_name], cover: e.target.value}}))} />
+                        <p className="text-[8px] font-black text-slate-400 uppercase mb-1 flex justify-between items-center">
+                          Capa URL
+                          <button 
+                            type="button" 
+                            onClick={() => buscarCapaAutomatica(book.book_name)}
+                            disabled={isSearching === book.book_name}
+                            className="text-primary hover:text-blue-700 flex items-center gap-1 font-bold disabled:opacity-50"
+                          >
+                            {isSearching === book.book_name ? <Loader2 size={10} className="animate-spin" /> : <Zap size={10} className="fill-current" />}
+                            BUSCAR CAPA
+                          </button>
+                        </p>
+                        <Input 
+                          className="h-9 text-xs bg-slate-50 border-none" 
+                          value={bookEdits[book.book_name]?.cover || ""} 
+                          onChange={(e) => setBookEdits(p => ({...p, [book.book_name]: {...p[book.book_name], cover: e.target.value}}))} 
+                        />
                       </div>
                       <div className="w-24 text-left">
                         <p className="text-[8px] font-black text-slate-400 uppercase mb-1">Páginas</p>
