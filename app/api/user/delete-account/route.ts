@@ -10,6 +10,7 @@ export async function DELETE() {
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.email) {
+      console.error("Tentativa de exclusão sem sessão válida.");
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
@@ -23,16 +24,19 @@ export async function DELETE() {
       const userId = userResult[0].id;
 
       await executeQuery("DELETE FROM public.book_reviews WHERE user_id = $1", [userId]);
+      
       await executeQuery("DELETE FROM public.reading_data WHERE user_id = $1 OR email = $2", [userId, email]);
-      await executeQuery("DELETE FROM public.books WHERE user_email = $1", [email]);
+      
+      await executeQuery("DELETE FROM public.books WHERE email = $1", [email]);
+      
       await executeQuery("DELETE FROM public.users WHERE id = $1", [userId]);
       
-      console.log(`LGPD: Dados de ${email} removidos.`);
+      console.log(`LGPD: Todos os dados de ${email} foram removidos com sucesso.`);
     }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error("Erro na deleção:", error);
-    return NextResponse.json({ error: "Erro interno" }, { status: 500 });
+    console.error("Erro detalhado na deleção:", error.message);
+    return NextResponse.json({ error: "Erro interno no servidor" }, { status: 500 });
   }
 }
