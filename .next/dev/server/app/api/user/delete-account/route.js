@@ -1,0 +1,10 @@
+var R=require("../../../../chunks/[turbopack]_runtime.js")("server/app/api/user/delete-account/route.js")
+R.c("server/chunks/node_modules_next_8906a813._.js")
+R.c("server/chunks/node_modules_next-auth_2be3ed28._.js")
+R.c("server/chunks/node_modules_openid-client_d15f72b3._.js")
+R.c("server/chunks/node_modules_jose_dist_node_cjs_bd88468e._.js")
+R.c("server/chunks/node_modules_95786673._.js")
+R.c("server/chunks/[root-of-the-server]__7d58e57b._.js")
+R.c("server/chunks/_next-internal_server_app_api_user_delete-account_route_actions_5ef58113.js")
+R.m("[project]/node_modules/next/dist/esm/build/templates/app-route.js { INNER_APP_ROUTE => \"[project]/app/api/user/delete-account/route.ts [app-route] (ecmascript)\" } [app-route] (ecmascript)")
+module.exports=R.m("[project]/node_modules/next/dist/esm/build/templates/app-route.js { INNER_APP_ROUTE => \"[project]/app/api/user/delete-account/route.ts [app-route] (ecmascript)\" } [app-route] (ecmascript)").exports

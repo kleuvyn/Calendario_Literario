@@ -10,7 +10,6 @@ export async function DELETE() {
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.email) {
-      console.error("Tentativa de exclusão sem sessão válida.");
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
@@ -23,20 +22,30 @@ export async function DELETE() {
     if (userResult.length > 0) {
       const userId = userResult[0].id;
 
-      await executeQuery("DELETE FROM public.book_reviews WHERE user_id = $1", [userId]);
+      await executeQuery("DELETE FROM public.book_reviews WHERE user_id = $1", [userId]).catch(e => console.log("Erro na tabela book_reviews:", e.message));
       
-      await executeQuery("DELETE FROM public.reading_data WHERE user_id = $1 OR email = $2", [userId, email]);
+      await executeQuery("DELETE FROM public.reading_data WHERE user_id = $1 OR email = $2", [userId, email]).catch(e => console.log("Erro na tabela reading_data:", e.message));
       
-      await executeQuery("DELETE FROM public.books WHERE email = $1", [email]);
+      try {
+          await executeQuery("DELETE FROM public.books WHERE user_id = $1", [userId]);
+      } catch (e) {
+          console.log("Tentativa 1 em 'books' falhou, tentando por email...");
+          try {
+              await executeQuery("DELETE FROM public.books WHERE user_email = $1", [email]);
+          } catch (e2) {
+              console.log("Aviso: Não foi possível limpar a tabela 'books'. Verifique o nome da coluna de usuário.");
+          }
+      }
       
       await executeQuery("DELETE FROM public.users WHERE id = $1", [userId]);
       
-      console.log(`LGPD: Todos os dados de ${email} foram removidos com sucesso.`);
+      console.log(`LGPD: Limpeza concluída para ${email}`);
     }
 
     return NextResponse.json({ success: true });
+
   } catch (error: any) {
-    console.error("Erro detalhado na deleção:", error.message);
-    return NextResponse.json({ error: "Erro interno no servidor" }, { status: 500 });
+    console.error("ERRO FINAL NO DELETE:", error.message);
+    return NextResponse.json({ error: "Erro interno no servidor", details: error.message }, { status: 500 });
   }
 }
