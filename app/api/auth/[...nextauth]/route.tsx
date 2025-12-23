@@ -1,82 +1,40 @@
-import NextAuth from "next-auth"
-import GoogleProvider from "next-auth/providers/google"
-import CredentialsProvider from "next-auth/providers/credentials"
-import { executeQuery } from "@/lib/db"
-import bcrypt from "bcrypt"
-import type { NextAuthOptions } from "next-auth"
+export const dynamic = "force-dynamic";
 
-export const authOptions: NextAuthOptions = {
-  providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      authorization: { params: { prompt: "select_account" } },
-      allowDangerousEmailAccountLinking: true, 
-    }),
-    CredentialsProvider({
-      name: "Credentials",
-      credentials: {
-        email: { label: "Email", type: "text" },
-        password: { label: "Password", type: "password" }
-      },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null
-        
-        const users = await executeQuery(
-          "SELECT * FROM users WHERE email = $1", 
-          [credentials.email]
-        ) as any[]
+import { NextResponse } from "next/server";
+import { executeQuery } from "@/lib/db";
+import { getServerSession } from "next-auth/next"; 
+import { authOptions } from "@/lib/auth"; 
 
-        const user = users[0]
-        if (user && user.password && await bcrypt.compare(credentials.password, user.password)) {
-          return { 
-            id: user.id.toString(), 
-            name: user.name, 
-            email: user.email,
-            image: user.image 
-          }
-        }
-        return null 
-      }
-    }),
-  ],
-  callbacks: {
-    async jwt({ token, user, trigger, session }) {
-      if (user) {
-        token.id = user.id;
-        token.picture = (user as any).image; 
-      }
-      
-      if (trigger === "update" && session?.image) {
-        token.picture = session.image;
-      }
-      
-      return token
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        (session.user as any).id = token.id;
-        session.user.image = token.picture as string; 
-      }
-      return session
-    },
+export async function DELETE() {
+  try {
+    const session = await getServerSession(authOptions);
     
-    async signIn({ user, account }) {
-      if (account?.provider === "google") {
-        await executeQuery(
-          `INSERT INTO users (name, email, image) 
-           VALUES ($1, $2, $3) 
-           ON CONFLICT (email) DO UPDATE SET name = $1`, 
-          [user.name, user.email, user.image]
-        );
-      }
-      return true;
+    if (!session?.user?.email) {
+      console.error("Tentativa de exclusão sem sessão válida.");
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
-  },
-  session: { strategy: "jwt" },
-  secret: process.env.NEXTAUTH_SECRET,
-  pages: { signIn: '/' }
-}
 
-const handler = NextAuth(authOptions)
-export { handler as GET, handler as POST }
+    const email = session.user.email;
+    const userResult = await executeQuery(
+      "SELECT id FROM public.users WHERE email = $1",
+      [email]
+    ) as any[];
+
+    if (userResult.length > 0) {
+      const userId = userResult[0].id;
+
+      await executeQuery("DELETE FROM public.book_reviews WHERE user_id = $1", [userId]);
+      await executeQuery("DELETE FROM public.reading_data WHERE user_id = $1 OR email = $2", [userId, email]);
+      await executeQuery("DELETE FROM public.books WHERE user_email = $1", [email]);
+      
+      await executeQuery("DELETE FROM public.users WHERE id = $1", [userId]);
+      
+      console.log(`LGPD: Todos os dados de ${email} foram removidos.`);
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error("Erro crítico na deleção:", error);
+    return NextResponse.json({ error: "Erro interno ao processar exclusão" }, { status: 500 });
+  }
+}
