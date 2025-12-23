@@ -122,6 +122,7 @@ async function GET(request) {
              br.cover_url,
              br.genre,
              br.review,
+             -- Prioriza as páginas da review, depois da leitura, senão 0
              COALESCE(br.total_pages, rd.total_pages, 0) as total_pages
       FROM public.reading_data rd
       LEFT JOIN public.users u ON u.email = rd.email
@@ -137,13 +138,14 @@ async function GET(request) {
                 ...b,
                 rating: Number(b.rating) || 0,
                 total_pages: Number(b.total_pages) || 0,
-                month: Number(b.month)
+                month: Number(b.month),
+                status: b.status || 'lendo'
             }));
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
             data: cleanRows
         });
     } catch (error) {
-        console.error("Erro na API:", error);
+        console.error("Erro na API GET:", error);
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
             data: []
         });
@@ -154,7 +156,6 @@ async function POST(request) {
         const body = await request.json();
         const { email, bookName, action, rating, coverUrl, totalPages, review, genre, year, month, startDate, endDate } = body;
         const pages = Number(totalPages) || 0;
-        // 1. LÓGICA PARA INICIAR LEITURA (O QUE FALTAVA)
         if (action === "START_READING") {
             await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`
         INSERT INTO public.reading_data (email, book_name, start_date, status, year, month)
@@ -171,7 +172,6 @@ async function POST(request) {
                 success: true
             });
         }
-        // 2. LÓGICA PARA ENCERRAR LEITURA (O QUE FALTAVA)
         if (action === "FINISH_READING") {
             await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`
         UPDATE public.reading_data 
@@ -186,7 +186,6 @@ async function POST(request) {
                 success: true
             });
         }
-        // 3. SUA LÓGICA DE REVIEW (MANTIDA)
         if (action === "UPDATE_REVIEW") {
             const userRes = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`SELECT id FROM public.users WHERE email = $1`, [
                 email

@@ -15,6 +15,7 @@ export async function GET(request: Request) {
              br.cover_url,
              br.genre,
              br.review,
+             -- Prioriza as páginas da review, depois da leitura, senão 0
              COALESCE(br.total_pages, rd.total_pages, 0) as total_pages
       FROM public.reading_data rd
       LEFT JOIN public.users u ON u.email = rd.email
@@ -29,12 +30,13 @@ export async function GET(request: Request) {
       ...b,
       rating: Number(b.rating) || 0,
       total_pages: Number(b.total_pages) || 0,
-      month: Number(b.month)
+      month: Number(b.month),
+      status: b.status || 'lendo' 
     }));
 
     return NextResponse.json({ data: cleanRows });
   } catch (error: any) {
-    console.error("Erro na API:", error);
+    console.error("Erro na API GET:", error);
     return NextResponse.json({ data: [] });
   }
 }
@@ -42,10 +44,14 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, bookName, action, rating, coverUrl, totalPages, review, genre, year, month, startDate, endDate } = body;
+    const { 
+      email, bookName, action, rating, coverUrl, 
+      totalPages, review, genre, year, month, 
+      startDate, endDate 
+    } = body;
+    
     const pages = Number(totalPages) || 0;
 
-    // 1. LÓGICA PARA INICIAR LEITURA (O QUE FALTAVA)
     if (action === "START_READING") {
       await executeQuery(`
         INSERT INTO public.reading_data (email, book_name, start_date, status, year, month)
@@ -55,7 +61,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true });
     }
 
-    // 2. LÓGICA PARA ENCERRAR LEITURA (O QUE FALTAVA)
     if (action === "FINISH_READING") {
       await executeQuery(`
         UPDATE public.reading_data 
@@ -65,7 +70,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true });
     }
 
-    // 3. SUA LÓGICA DE REVIEW (MANTIDA)
     if (action === "UPDATE_REVIEW") {
       const userRes = await executeQuery(`SELECT id FROM public.users WHERE email = $1`, [email]);
       if (userRes.length === 0) return NextResponse.json({ error: "Usuário não encontrado" });
@@ -86,6 +90,7 @@ export async function POST(request: Request) {
         `UPDATE public.reading_data SET total_pages = $1 WHERE email = $2 AND book_name = $3`,
         [pages, email, bookName]
       );
+      
       return NextResponse.json({ success: true });
     }
 

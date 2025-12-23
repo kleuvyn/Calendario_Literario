@@ -671,7 +671,6 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$re
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$crown$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Crown$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/crown.js [app-ssr] (ecmascript) <export default as Crown>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$trophy$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Trophy$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/trophy.js [app-ssr] (ecmascript) <export default as Trophy>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$heart$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Heart$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/heart.js [app-ssr] (ecmascript) <export default as Heart>");
-var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$zap$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Zap$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/zap.js [app-ssr] (ecmascript) <export default as Zap>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$quote$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Quote$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/quote.js [app-ssr] (ecmascript) <export default as Quote>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$book$2d$open$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__BookOpen$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/book-open.js [app-ssr] (ecmascript) <export default as BookOpen>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$layers$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Layers$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/layers.js [app-ssr] (ecmascript) <export default as Layers>");
@@ -700,6 +699,8 @@ const GENRES = [
     "Autoajuda",
     "Outro"
 ];
+// Imagem estável para evitar o erro de console src=""
+const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?q=80&w=300&auto=format&fit=crop";
 function MonthReview({ month, userEmail, monthIndex, year }) {
     const [allBooks, setAllBooks] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])([]);
     const [loading, setLoading] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(true);
@@ -740,22 +741,29 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
         loadData,
         monthIndex
     ]);
+    // LÓGICA DE ESTATÍSTICAS CORRIGIDA (Soma os 5 livros e as páginas)
     const stats = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useMemo"])(()=>{
         const currentMonthBooks = allBooks.filter((b)=>Number(b.month) === monthIndex + 1);
-        const getPages = (book)=>Number(bookEdits[book.book_name]?.pages) || Number(book.total_pages) || 0;
-        const favoritesListData = currentMonthBooks.filter((b)=>Number(bookEdits[b.book_name]?.rating || b.rating) === 5);
-        const biggestBookObj = [
-            ...currentMonthBooks
-        ].filter((b)=>getPages(b) > 0).sort((a, b)=>getPages(b) - getPages(a))[0];
-        const finishedYear = allBooks.filter((b)=>b.status === "finalizado");
-        const finishedMonth = currentMonthBooks.filter((b)=>b.status === "finalizado");
+        // Consideramos lido tudo que não é 'lendo', para aceitar 'finalizado' e 'lido'
+        const finishedYear = allBooks.filter((b)=>b.status !== 'lendo');
+        const finishedMonth = currentMonthBooks.filter((b)=>b.status !== 'lendo');
+        // Soma as páginas garantindo conversão numérica
         const totalPagesYear = finishedYear.reduce((acc, b)=>acc + (Number(b.total_pages) || 0), 0);
+        const monthPages = finishedMonth.reduce((acc, b)=>{
+            // Pega do estado de edição ou do banco
+            const p = Number(bookEdits[b.book_name]?.pages) || Number(b.total_pages) || 0;
+            return acc + p;
+        }, 0);
         const dayOfYear = Math.max(1, Math.floor((new Date().getTime() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000));
         const pagesPerDay = (totalPagesYear / dayOfYear).toFixed(1);
         const yearlyFavs = allBooks.filter((b)=>Number(bookEdits[b.book_name]?.rating || b.rating) === 5);
+        const favoritesListData = currentMonthBooks.filter((b)=>Number(bookEdits[b.book_name]?.rating || b.rating) === 5);
+        const biggestBookObj = [
+            ...currentMonthBooks
+        ].sort((a, b)=>(Number(bookEdits[b.book_name]?.pages || b.total_pages) || 0) - (Number(bookEdits[a.book_name]?.pages || a.total_pages) || 0))[0];
         return {
             monthTotal: finishedMonth.length,
-            monthPages: finishedMonth.reduce((acc, b)=>acc + getPages(b), 0),
+            monthPages,
             yearTotal: finishedYear.length,
             yearPages: totalPagesYear,
             pagesPerDay,
@@ -807,10 +815,13 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
         if (!confirm(`Excluir "${bookName}"?`)) return;
         setIsDeleting(bookId);
         try {
-            await fetch(`/api/books/${bookId}`, {
+            const res = await fetch(`/api/books/${bookId}`, {
                 method: "DELETE"
             });
-            await loadData();
+            if (res.ok) {
+                // Remove do estado local para ser instantâneo
+                setAllBooks((prev)=>prev.filter((b)=>b.id !== bookId));
+            }
         } finally{
             setIsDeleting(null);
         }
@@ -821,19 +832,19 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
             className: "animate-spin text-primary"
         }, void 0, false, {
             fileName: "[project]/components/month-review.tsx",
-            lineNumber: 118,
+            lineNumber: 130,
             columnNumber: 65
         }, this)
     }, void 0, false, {
         fileName: "[project]/components/month-review.tsx",
-        lineNumber: 118,
+        lineNumber: 130,
         columnNumber: 23
     }, this);
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
         className: "space-y-8 pb-20 max-w-6xl mx-auto px-4",
         children: [
             isDecember && stats.yearlyFavorites.length > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Card"], {
-                className: "p-8 border-none bg-linear-to-br from-amber-500/10 via-transparent to-primary/5 shadow-sm",
+                className: "p-8 border-none bg-gradient-to-br from-amber-500/10 via-transparent to-primary/5 shadow-sm",
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         className: "flex items-center gap-3 mb-6",
@@ -843,10 +854,11 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                 size: 24
                             }, void 0, false, {
                                 fileName: "[project]/components/month-review.tsx",
-                                lineNumber: 127,
+                                lineNumber: 139,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "text-left",
                                 children: [
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
                                         className: "text-2xl font-black uppercase tracking-tighter text-slate-800",
@@ -856,7 +868,7 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 129,
+                                        lineNumber: 141,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -864,19 +876,19 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                         children: "Sua Galeria de Ouro"
                                     }, void 0, false, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 130,
+                                        lineNumber: 142,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/month-review.tsx",
-                                lineNumber: 128,
+                                lineNumber: 140,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/month-review.tsx",
-                        lineNumber: 126,
+                        lineNumber: 138,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -885,19 +897,19 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                 className: "group relative w-24 sm:w-32 text-center transition-transform hover:scale-105",
                                 children: [
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "aspect-2/3 rounded-lg shadow-xl overflow-hidden border-2 border-amber-400 mb-2 bg-slate-200",
+                                        className: "aspect-[2/3] rounded-lg shadow-xl overflow-hidden border-2 border-amber-400 mb-2 bg-slate-200",
                                         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
-                                            src: bookEdits[fav.book_name]?.cover || fav.cover_url,
+                                            src: bookEdits[fav.book_name]?.cover || fav.cover_url || PLACEHOLDER_IMAGE,
                                             className: "w-full h-full object-cover",
                                             alt: ""
                                         }, void 0, false, {
                                             fileName: "[project]/components/month-review.tsx",
-                                            lineNumber: 137,
+                                            lineNumber: 149,
                                             columnNumber: 19
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 136,
+                                        lineNumber: 148,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -905,24 +917,24 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                         children: fav.book_name
                                     }, void 0, false, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 139,
+                                        lineNumber: 151,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, i, true, {
                                 fileName: "[project]/components/month-review.tsx",
-                                lineNumber: 135,
+                                lineNumber: 147,
                                 columnNumber: 15
                             }, this))
                     }, void 0, false, {
                         fileName: "[project]/components/month-review.tsx",
-                        lineNumber: 133,
+                        lineNumber: 145,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/month-review.tsx",
-                lineNumber: 125,
+                lineNumber: 137,
                 columnNumber: 9
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Card"], {
@@ -939,7 +951,7 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                         className: "text-primary"
                                     }, void 0, false, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 150,
+                                        lineNumber: 162,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -950,13 +962,13 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 151,
+                                        lineNumber: 163,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/month-review.tsx",
-                                lineNumber: 149,
+                                lineNumber: 161,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -969,7 +981,7 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                                 children: "Total do Ano"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/month-review.tsx",
-                                                lineNumber: 155,
+                                                lineNumber: 167,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -982,13 +994,13 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/month-review.tsx",
-                                                lineNumber: 156,
+                                                lineNumber: 168,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 154,
+                                        lineNumber: 166,
                                         columnNumber: 14
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chart$2d$column$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__BarChart3$3e$__["BarChart3"], {
@@ -996,19 +1008,19 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                         className: "text-slate-200"
                                     }, void 0, false, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 158,
+                                        lineNumber: 170,
                                         columnNumber: 14
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/month-review.tsx",
-                                lineNumber: 153,
+                                lineNumber: 165,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/month-review.tsx",
-                        lineNumber: 148,
+                        lineNumber: 160,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1022,7 +1034,7 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                         children: stats.monthTotal
                                     }, void 0, false, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 164,
+                                        lineNumber: 176,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1030,13 +1042,13 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                         children: "Livros Lidos no Mês"
                                     }, void 0, false, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 165,
+                                        lineNumber: 177,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/month-review.tsx",
-                                lineNumber: 163,
+                                lineNumber: 175,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1047,7 +1059,7 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                         children: stats.monthPages
                                     }, void 0, false, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 168,
+                                        lineNumber: 180,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1055,25 +1067,25 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                         children: "Páginas Lidas no Mês"
                                     }, void 0, false, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 169,
+                                        lineNumber: 181,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/month-review.tsx",
-                                lineNumber: 167,
+                                lineNumber: 179,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/month-review.tsx",
-                        lineNumber: 162,
+                        lineNumber: 174,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/month-review.tsx",
-                lineNumber: 147,
+                lineNumber: 159,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1090,7 +1102,7 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                         className: "text-blue-500"
                                     }, void 0, false, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 180,
+                                        lineNumber: 190,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
@@ -1098,44 +1110,44 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                         children: "Destaque do Mês"
                                     }, void 0, false, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 181,
+                                        lineNumber: 191,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/month-review.tsx",
-                                lineNumber: 179,
+                                lineNumber: 189,
                                 columnNumber: 11
                             }, this),
                             stats.biggest ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Card"], {
-                                className: "p-6 bg-blue-600 text-white border-none shadow-lg relative overflow-hidden flex flex-col justify-center min-h-45",
+                                className: "p-6 bg-blue-600 text-white border-none shadow-lg relative overflow-hidden flex flex-col justify-center min-h-[180px]",
                                 children: [
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$trophy$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Trophy$3e$__["Trophy"], {
                                         className: "absolute -right-4 -bottom-4 text-blue-500 opacity-30",
                                         size: 100
                                     }, void 0, false, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 185,
+                                        lineNumber: 195,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                        className: "text-[9px] font-black uppercase text-blue-200 mb-2 tracking-widest relative z-10",
+                                        className: "text-[9px] font-black uppercase text-blue-200 mb-2 tracking-widest relative z-10 text-left",
                                         children: "O Mais Longo"
                                     }, void 0, false, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 186,
+                                        lineNumber: 196,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
-                                        className: "text-lg font-black uppercase leading-tight mb-4 line-clamp-2 pr-4 z-10",
+                                        className: "text-lg font-black uppercase leading-tight mb-4 line-clamp-2 pr-4 z-10 text-left",
                                         children: stats.biggest.book_name
                                     }, void 0, false, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 187,
+                                        lineNumber: 197,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "z-10",
+                                        className: "z-10 text-left",
                                         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                             className: "bg-blue-500/50 backdrop-blur-sm border border-blue-400/30 px-3 py-1 rounded-full text-[11px] font-black uppercase",
                                             children: [
@@ -1144,31 +1156,31 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/month-review.tsx",
-                                            lineNumber: 189,
+                                            lineNumber: 199,
                                             columnNumber: 17
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 188,
+                                        lineNumber: 198,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/month-review.tsx",
-                                lineNumber: 184,
+                                lineNumber: 194,
                                 columnNumber: 13
                             }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Card"], {
-                                className: "h-45 bg-slate-50 border-dashed border-2 flex items-center justify-center text-slate-300 text-[10px] font-bold uppercase",
+                                className: "h-[180px] bg-slate-50 border-dashed border-2 flex items-center justify-center text-slate-300 text-[10px] font-bold uppercase",
                                 children: "Sem registros"
                             }, void 0, false, {
                                 fileName: "[project]/components/month-review.tsx",
-                                lineNumber: 195,
+                                lineNumber: 205,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/month-review.tsx",
-                        lineNumber: 178,
+                        lineNumber: 188,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1182,7 +1194,7 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                         className: "text-amber-500"
                                     }, void 0, false, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 202,
+                                        lineNumber: 211,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
@@ -1193,45 +1205,45 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 203,
+                                        lineNumber: 212,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/month-review.tsx",
-                                lineNumber: 201,
+                                lineNumber: 210,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "grid grid-cols-1 sm:grid-cols-2 gap-3",
                                 children: stats.favoritesList.length > 0 ? stats.favoritesList.slice(0, 4).map((fav, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "flex items-center gap-3 p-3 bg-white border border-amber-100/50 rounded-xl shadow-sm",
+                                        className: "flex items-center gap-3 p-3 bg-white border border-amber-100/50 rounded-xl shadow-sm text-left",
                                         children: [
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                 className: "w-12 h-16 bg-slate-100 rounded shadow-sm overflow-hidden shrink-0",
                                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
-                                                    src: bookEdits[fav.book_name]?.cover || fav.cover_url,
+                                                    src: bookEdits[fav.book_name]?.cover || fav.cover_url || PLACEHOLDER_IMAGE,
                                                     className: "w-full h-full object-cover",
                                                     alt: ""
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/month-review.tsx",
-                                                    lineNumber: 210,
+                                                    lineNumber: 219,
                                                     columnNumber: 21
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/components/month-review.tsx",
-                                                lineNumber: 209,
+                                                lineNumber: 218,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                className: "overflow-hidden text-left",
+                                                className: "overflow-hidden",
                                                 children: [
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                                         className: "text-[10px] font-black uppercase text-slate-700 truncate mb-1",
                                                         children: fav.book_name
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/month-review.tsx",
-                                                        lineNumber: 213,
+                                                        lineNumber: 222,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1247,100 +1259,55 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                                                 className: "fill-amber-400 text-amber-400"
                                                             }, s, false, {
                                                                 fileName: "[project]/components/month-review.tsx",
-                                                                lineNumber: 215,
+                                                                lineNumber: 224,
                                                                 columnNumber: 45
                                                             }, this))
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/month-review.tsx",
-                                                        lineNumber: 214,
+                                                        lineNumber: 223,
                                                         columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/month-review.tsx",
-                                                lineNumber: 212,
+                                                lineNumber: 221,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, i, true, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 208,
+                                        lineNumber: 217,
                                         columnNumber: 17
                                     }, this)) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    className: "col-span-2 h-45 flex items-center justify-center border-2 border-dashed rounded-xl text-slate-300 text-[10px] font-bold uppercase",
+                                    className: "col-span-2 h-[180px] flex items-center justify-center border-2 border-dashed rounded-xl text-slate-300 text-[10px] font-bold uppercase",
                                     children: "Nenhum favorito no mês"
                                 }, void 0, false, {
                                     fileName: "[project]/components/month-review.tsx",
-                                    lineNumber: 221,
+                                    lineNumber: 230,
                                     columnNumber: 15
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/month-review.tsx",
-                                lineNumber: 205,
+                                lineNumber: 214,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/month-review.tsx",
-                        lineNumber: 200,
+                        lineNumber: 209,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/month-review.tsx",
-                lineNumber: 175,
-                columnNumber: 7
-            }, this),
-            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "flex items-center justify-between bg-amber-50 border border-amber-100 p-4 rounded-xl",
-                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                    className: "flex items-center gap-3",
-                    children: [
-                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$zap$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Zap$3e$__["Zap"], {
-                            size: 18,
-                            className: "text-amber-500 fill-amber-500"
-                        }, void 0, false, {
-                            fileName: "[project]/components/month-review.tsx",
-                            lineNumber: 230,
-                            columnNumber: 12
-                        }, this),
-                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                            className: "text-[10px] font-black uppercase tracking-widest text-amber-600",
-                            children: [
-                                "Média de Leitura ",
-                                year,
-                                ": ",
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                    className: "text-lg ml-2",
-                                    children: stats.pagesPerDay
-                                }, void 0, false, {
-                                    fileName: "[project]/components/month-review.tsx",
-                                    lineNumber: 232,
-                                    columnNumber: 39
-                                }, this),
-                                " Págs/Dia"
-                            ]
-                        }, void 0, true, {
-                            fileName: "[project]/components/month-review.tsx",
-                            lineNumber: 231,
-                            columnNumber: 12
-                        }, this)
-                    ]
-                }, void 0, true, {
-                    fileName: "[project]/components/month-review.tsx",
-                    lineNumber: 229,
-                    columnNumber: 9
-                }, this)
-            }, void 0, false, {
-                fileName: "[project]/components/month-review.tsx",
-                lineNumber: 228,
+                lineNumber: 187,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("hr", {
                 className: "border-slate-100"
             }, void 0, false, {
                 fileName: "[project]/components/month-review.tsx",
-                lineNumber: 237,
+                lineNumber: 236,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1351,7 +1318,7 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                         className: "text-slate-400"
                     }, void 0, false, {
                         fileName: "[project]/components/month-review.tsx",
-                        lineNumber: 241,
+                        lineNumber: 240,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
@@ -1362,13 +1329,13 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/month-review.tsx",
-                        lineNumber: 242,
+                        lineNumber: 241,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/month-review.tsx",
-                lineNumber: 240,
+                lineNumber: 239,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1376,18 +1343,18 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                 children: currentMonthBooks.map((book, idx)=>{
                     const isFav = Number(bookEdits[book.book_name]?.rating || book.rating) === 5;
                     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Card"], {
-                        className: `flex flex-col sm:flex-row min-h-55 overflow-hidden shadow-md transition-all ${isFav ? 'border-amber-200 bg-amber-50/5' : 'border-slate-100'}`,
+                        className: `flex flex-col sm:flex-row min-h-[220px] overflow-hidden shadow-md transition-all ${isFav ? 'border-amber-200 bg-amber-50/5' : 'border-slate-100'}`,
                         children: [
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "w-full sm:w-44 bg-slate-100 shrink-0 relative",
                                 children: [
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
-                                        src: bookEdits[book.book_name]?.cover || book.cover_url,
+                                        src: bookEdits[book.book_name]?.cover || book.cover_url || PLACEHOLDER_IMAGE,
                                         className: "w-full h-full object-cover",
                                         alt: "capa"
                                     }, void 0, false, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 251,
+                                        lineNumber: 250,
                                         columnNumber: 17
                                     }, this),
                                     isFav && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1397,18 +1364,18 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                             fill: "white"
                                         }, void 0, false, {
                                             fileName: "[project]/components/month-review.tsx",
-                                            lineNumber: 252,
+                                            lineNumber: 251,
                                             columnNumber: 117
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 252,
+                                        lineNumber: 251,
                                         columnNumber: 27
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/month-review.tsx",
-                                lineNumber: 250,
+                                lineNumber: 249,
                                 columnNumber: 15
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1422,7 +1389,7 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                                 children: book.book_name
                                             }, void 0, false, {
                                                 fileName: "[project]/components/month-review.tsx",
-                                                lineNumber: 257,
+                                                lineNumber: 256,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1433,34 +1400,41 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                                         className: "animate-spin text-primary"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/month-review.tsx",
-                                                        lineNumber: 259,
+                                                        lineNumber: 258,
                                                         columnNumber: 53
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                                         onClick: ()=>handleDelete(book.id, book.book_name),
                                                         className: "text-slate-300 hover:text-red-500 transition-colors",
-                                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$trash$2d$2$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Trash2$3e$__["Trash2"], {
+                                                        children: isDeleting === book.id ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$loader$2d$circle$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Loader2$3e$__["Loader2"], {
+                                                            size: 18,
+                                                            className: "animate-spin"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/components/month-review.tsx",
+                                                            lineNumber: 260,
+                                                            columnNumber: 51
+                                                        }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$trash$2d$2$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Trash2$3e$__["Trash2"], {
                                                             size: 18
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/month-review.tsx",
                                                             lineNumber: 260,
-                                                            columnNumber: 147
+                                                            columnNumber: 100
                                                         }, this)
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/month-review.tsx",
-                                                        lineNumber: 260,
+                                                        lineNumber: 259,
                                                         columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/month-review.tsx",
-                                                lineNumber: 258,
+                                                lineNumber: 257,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 256,
+                                        lineNumber: 255,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1480,7 +1454,7 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                                                         children: "Capa URL"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/month-review.tsx",
-                                                                        lineNumber: 268,
+                                                                        lineNumber: 269,
                                                                         columnNumber: 25
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -1495,13 +1469,13 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                                                                 }))
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/month-review.tsx",
-                                                                        lineNumber: 269,
+                                                                        lineNumber: 270,
                                                                         columnNumber: 25
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/month-review.tsx",
-                                                                lineNumber: 267,
+                                                                lineNumber: 268,
                                                                 columnNumber: 23
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1512,7 +1486,7 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                                                         children: "Páginas"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/month-review.tsx",
-                                                                        lineNumber: 272,
+                                                                        lineNumber: 273,
                                                                         columnNumber: 25
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Input"], {
@@ -1528,19 +1502,19 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                                                                 }))
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/month-review.tsx",
-                                                                        lineNumber: 273,
+                                                                        lineNumber: 274,
                                                                         columnNumber: 25
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/month-review.tsx",
-                                                                lineNumber: 271,
+                                                                lineNumber: 272,
                                                                 columnNumber: 23
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/month-review.tsx",
-                                                        lineNumber: 266,
+                                                        lineNumber: 267,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1551,7 +1525,7 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                                                 children: "Gênero"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/month-review.tsx",
-                                                                lineNumber: 277,
+                                                                lineNumber: 278,
                                                                 columnNumber: 23
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
@@ -1570,7 +1544,7 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                                                         children: "Selecionar..."
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/month-review.tsx",
-                                                                        lineNumber: 283,
+                                                                        lineNumber: 284,
                                                                         columnNumber: 25
                                                                     }, this),
                                                                     GENRES.map((g)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -1578,19 +1552,19 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                                                             children: g
                                                                         }, g, false, {
                                                                             fileName: "[project]/components/month-review.tsx",
-                                                                            lineNumber: 284,
+                                                                            lineNumber: 285,
                                                                             columnNumber: 42
                                                                         }, this))
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/month-review.tsx",
-                                                                lineNumber: 278,
+                                                                lineNumber: 279,
                                                                 columnNumber: 23
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/month-review.tsx",
-                                                        lineNumber: 276,
+                                                        lineNumber: 277,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1603,14 +1577,14 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                                                         size: 8
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/month-review.tsx",
-                                                                        lineNumber: 288,
+                                                                        lineNumber: 289,
                                                                         columnNumber: 114
                                                                     }, this),
                                                                     " Notas"
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/month-review.tsx",
-                                                                lineNumber: 288,
+                                                                lineNumber: 289,
                                                                 columnNumber: 23
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$textarea$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Textarea"], {
@@ -1626,19 +1600,19 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                                                         }))
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/month-review.tsx",
-                                                                lineNumber: 289,
+                                                                lineNumber: 290,
                                                                 columnNumber: 23
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/month-review.tsx",
-                                                        lineNumber: 287,
+                                                        lineNumber: 288,
                                                         columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/month-review.tsx",
-                                                lineNumber: 265,
+                                                lineNumber: 266,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1664,12 +1638,12 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                                                         }))
                                                             }, s, false, {
                                                                 fileName: "[project]/components/month-review.tsx",
-                                                                lineNumber: 301,
+                                                                lineNumber: 302,
                                                                 columnNumber: 25
                                                             }, this))
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/month-review.tsx",
-                                                        lineNumber: 299,
+                                                        lineNumber: 300,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
@@ -1679,43 +1653,43 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                                         children: isSaving === book.book_name ? "Salvando..." : "Salvar"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/month-review.tsx",
-                                                        lineNumber: 304,
+                                                        lineNumber: 305,
                                                         columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/month-review.tsx",
-                                                lineNumber: 298,
+                                                lineNumber: 299,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 264,
+                                        lineNumber: 265,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/month-review.tsx",
-                                lineNumber: 255,
+                                lineNumber: 254,
                                 columnNumber: 15
                             }, this)
                         ]
                     }, idx, true, {
                         fileName: "[project]/components/month-review.tsx",
-                        lineNumber: 249,
+                        lineNumber: 248,
                         columnNumber: 13
                     }, this);
                 })
             }, void 0, false, {
                 fileName: "[project]/components/month-review.tsx",
-                lineNumber: 245,
+                lineNumber: 244,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/components/month-review.tsx",
-        lineNumber: 121,
+        lineNumber: 133,
         columnNumber: 5
     }, this);
 }

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea" 
 import { 
-  Star, Loader2, Trash2, Crown, Trophy, Heart, Zap, ChevronDown, Quote, BookOpen, Layers, BarChart3
+  Star, Loader2, Trash2, Crown, Trophy, Heart, Zap, Quote, BookOpen, Layers, BarChart3
 } from "lucide-react"
 import { getReadingData } from "@/lib/api-client"
 
@@ -15,6 +15,9 @@ const GENRES = [
   "Suspense", "Fantasia", "Terror", "Biografia", 
   "Ficção", "Não-Ficção", "Autoajuda", "Outro"
 ];
+
+// Imagem estável para evitar o erro de console src=""
+const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?q=80&w=300&auto=format&fit=crop";
 
 export function MonthReview({ month, userEmail, monthIndex, year }: any) {
   const [allBooks, setAllBooks] = useState<any[]>([])
@@ -53,28 +56,34 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
 
   useEffect(() => { loadData() }, [loadData, monthIndex])
 
+  // LÓGICA DE ESTATÍSTICAS CORRIGIDA (Soma os 5 livros e as páginas)
   const stats = useMemo(() => {
-    const currentMonthBooks = allBooks.filter(b => Number(b.month) === (monthIndex + 1))
-    const getPages = (book: any) => Number(bookEdits[book.book_name]?.pages) || Number(book.total_pages) || 0
+    const currentMonthBooks = allBooks.filter(b => Number(b.month) === (monthIndex + 1));
+    
+    // Consideramos lido tudo que não é 'lendo', para aceitar 'finalizado' e 'lido'
+    const finishedYear = allBooks.filter(b => b.status !== 'lendo');
+    const finishedMonth = currentMonthBooks.filter(b => b.status !== 'lendo');
 
-    const favoritesListData = currentMonthBooks
-      .filter(b => Number(bookEdits[b.book_name]?.rating || b.rating) === 5)
+    // Soma as páginas garantindo conversão numérica
+    const totalPagesYear = finishedYear.reduce((acc, b) => acc + (Number(b.total_pages) || 0), 0);
+    const monthPages = finishedMonth.reduce((acc, b) => {
+        // Pega do estado de edição ou do banco
+        const p = Number(bookEdits[b.book_name]?.pages) || Number(b.total_pages) || 0;
+        return acc + p;
+    }, 0);
+    
+    const dayOfYear = Math.max(1, Math.floor((new Date().getTime() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000));
+    const pagesPerDay = (totalPagesYear / dayOfYear).toFixed(1);
+
+    const yearlyFavs = allBooks.filter(b => Number(bookEdits[b.book_name]?.rating || b.rating) === 5);
+    const favoritesListData = currentMonthBooks.filter(b => Number(bookEdits[b.book_name]?.rating || b.rating) === 5);
 
     const biggestBookObj = [...currentMonthBooks]
-      .filter(b => getPages(b) > 0)
-      .sort((a, b) => getPages(b) - getPages(a))[0]
-
-    const finishedYear = allBooks.filter(b => b.status === "finalizado")
-    const finishedMonth = currentMonthBooks.filter(b => b.status === "finalizado")
-    const totalPagesYear = finishedYear.reduce((acc, b) => acc + (Number(b.total_pages) || 0), 0)
-    
-    const dayOfYear = Math.max(1, Math.floor((new Date().getTime() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000))
-    const pagesPerDay = (totalPagesYear / dayOfYear).toFixed(1)
-    const yearlyFavs = allBooks.filter(b => Number(bookEdits[b.book_name]?.rating || b.rating) === 5)
+      .sort((a, b) => (Number(bookEdits[b.book_name]?.pages || b.total_pages) || 0) - (Number(bookEdits[a.book_name]?.pages || a.total_pages) || 0))[0];
 
     return {
       monthTotal: finishedMonth.length,
-      monthPages: finishedMonth.reduce((acc, b) => acc + getPages(b), 0),
+      monthPages,
       yearTotal: finishedYear.length,
       yearPages: totalPagesYear,
       pagesPerDay,
@@ -110,8 +119,11 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
     if (!confirm(`Excluir "${bookName}"?`)) return
     setIsDeleting(bookId)
     try {
-      await fetch(`/api/books/${bookId}`, { method: "DELETE" })
-      await loadData()
+      const res = await fetch(`/api/books/${bookId}`, { method: "DELETE" })
+      if (res.ok) {
+        // Remove do estado local para ser instantâneo
+        setAllBooks(prev => prev.filter(b => b.id !== bookId))
+      }
     } finally { setIsDeleting(null) }
   }
 
@@ -120,12 +132,12 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
   return (
     <div className="space-y-8 pb-20 max-w-6xl mx-auto px-4">
       
-      {/* 1. QUADRO DE FAVORITOS DO ANO (Apenas em Dezembro) */}
+      {/* 1. QUADRO DE FAVORITOS DO ANO */}
       {isDecember && stats.yearlyFavorites.length > 0 && (
-        <Card className="p-8 border-none bg-linear-to-br from-amber-500/10 via-transparent to-primary/5 shadow-sm">
+        <Card className="p-8 border-none bg-gradient-to-br from-amber-500/10 via-transparent to-primary/5 shadow-sm">
           <div className="flex items-center gap-3 mb-6">
             <Heart className="text-red-500 fill-red-500" size={24} />
-            <div>
+            <div className="text-left">
               <h2 className="text-2xl font-black uppercase tracking-tighter text-slate-800">Os Melhores de {year}</h2>
               <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">Sua Galeria de Ouro</p>
             </div>
@@ -133,8 +145,8 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
           <div className="flex flex-wrap gap-6 justify-center sm:justify-start">
             {stats.yearlyFavorites.map((fav, i) => (
               <div key={i} className="group relative w-24 sm:w-32 text-center transition-transform hover:scale-105">
-                <div className="aspect-2/3 rounded-lg shadow-xl overflow-hidden border-2 border-amber-400 mb-2 bg-slate-200">
-                  <img src={bookEdits[fav.book_name]?.cover || fav.cover_url} className="w-full h-full object-cover" alt="" />
+                <div className="aspect-[2/3] rounded-lg shadow-xl overflow-hidden border-2 border-amber-400 mb-2 bg-slate-200">
+                  <img src={bookEdits[fav.book_name]?.cover || fav.cover_url || PLACEHOLDER_IMAGE} className="w-full h-full object-cover" alt="" />
                 </div>
                 <p className="text-[9px] font-black uppercase leading-tight truncate px-1 text-slate-700">{fav.book_name}</p>
               </div>
@@ -143,7 +155,7 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
         </Card>
       )}
 
-      {/* 2. DASHBOARD DE NÚMEROS (Mês e Acumulado do Ano) */}
+      {/* 2. DASHBOARD DE NÚMEROS */}
       <Card className="p-6 bg-white border-slate-100 shadow-sm">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-2">
@@ -171,32 +183,29 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
         </div>
       </Card>
 
-      {/* 3. SEÇÃO: MAIOR DO MÊS LADO A LADO COM FAVORITOS DO MÊS */}
+      {/* 3. DESTAQUES */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* MAIOR DO MÊS */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 px-1">
             <Trophy size={18} className="text-blue-500" />
             <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Destaque do Mês</h2>
           </div>
           {stats.biggest ? (
-            <Card className="p-6 bg-blue-600 text-white border-none shadow-lg relative overflow-hidden flex flex-col justify-center min-h-45">
+            <Card className="p-6 bg-blue-600 text-white border-none shadow-lg relative overflow-hidden flex flex-col justify-center min-h-[180px]">
               <Trophy className="absolute -right-4 -bottom-4 text-blue-500 opacity-30" size={100} />
-              <p className="text-[9px] font-black uppercase text-blue-200 mb-2 tracking-widest relative z-10">O Mais Longo</p>
-              <h3 className="text-lg font-black uppercase leading-tight mb-4 line-clamp-2 pr-4 z-10">{stats.biggest.book_name}</h3>
-              <div className="z-10">
+              <p className="text-[9px] font-black uppercase text-blue-200 mb-2 tracking-widest relative z-10 text-left">O Mais Longo</p>
+              <h3 className="text-lg font-black uppercase leading-tight mb-4 line-clamp-2 pr-4 z-10 text-left">{stats.biggest.book_name}</h3>
+              <div className="z-10 text-left">
                 <span className="bg-blue-500/50 backdrop-blur-sm border border-blue-400/30 px-3 py-1 rounded-full text-[11px] font-black uppercase">
                   {bookEdits[stats.biggest.book_name]?.pages || stats.biggest.total_pages} Páginas
                 </span>
               </div>
             </Card>
           ) : (
-            <Card className="h-45 bg-slate-50 border-dashed border-2 flex items-center justify-center text-slate-300 text-[10px] font-bold uppercase">Sem registros</Card>
+            <Card className="h-[180px] bg-slate-50 border-dashed border-2 flex items-center justify-center text-slate-300 text-[10px] font-bold uppercase">Sem registros</Card>
           )}
         </div>
 
-        {/* FAVORITOS DO MÊS */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center gap-2 px-1">
             <Crown size={18} className="text-amber-500" />
@@ -205,11 +214,11 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {stats.favoritesList.length > 0 ? (
               stats.favoritesList.slice(0, 4).map((fav, i) => (
-                <div key={i} className="flex items-center gap-3 p-3 bg-white border border-amber-100/50 rounded-xl shadow-sm">
+                <div key={i} className="flex items-center gap-3 p-3 bg-white border border-amber-100/50 rounded-xl shadow-sm text-left">
                   <div className="w-12 h-16 bg-slate-100 rounded shadow-sm overflow-hidden shrink-0">
-                    <img src={bookEdits[fav.book_name]?.cover || fav.cover_url} className="w-full h-full object-cover" alt="" />
+                    <img src={bookEdits[fav.book_name]?.cover || fav.cover_url || PLACEHOLDER_IMAGE} className="w-full h-full object-cover" alt="" />
                   </div>
-                  <div className="overflow-hidden text-left">
+                  <div className="overflow-hidden">
                     <p className="text-[10px] font-black uppercase text-slate-700 truncate mb-1">{fav.book_name}</p>
                     <div className="flex gap-0.5">
                       {[1,2,3,4,5].map(s => <Star key={s} size={10} className="fill-amber-400 text-amber-400" />)}
@@ -218,19 +227,9 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
                 </div>
               ))
             ) : (
-              <div className="col-span-2 h-45 flex items-center justify-center border-2 border-dashed rounded-xl text-slate-300 text-[10px] font-bold uppercase">Nenhum favorito no mês</div>
+              <div className="col-span-2 h-[180px] flex items-center justify-center border-2 border-dashed rounded-xl text-slate-300 text-[10px] font-bold uppercase">Nenhum favorito no mês</div>
             )}
           </div>
-        </div>
-      </div>
-
-      {/* 4. RITMO E META */}
-      <div className="flex items-center justify-between bg-amber-50 border border-amber-100 p-4 rounded-xl">
-        <div className="flex items-center gap-3">
-           <Zap size={18} className="text-amber-500 fill-amber-500" />
-           <p className="text-[10px] font-black uppercase tracking-widest text-amber-600">
-             Média de Leitura {year}: <span className="text-lg ml-2">{stats.pagesPerDay}</span> Págs/Dia
-           </p>
         </div>
       </div>
 
@@ -246,9 +245,9 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
         {currentMonthBooks.map((book, idx) => {
           const isFav = Number(bookEdits[book.book_name]?.rating || book.rating) === 5;
           return (
-            <Card key={idx} className={`flex flex-col sm:flex-row min-h-55 overflow-hidden shadow-md transition-all ${isFav ? 'border-amber-200 bg-amber-50/5' : 'border-slate-100'}`}>
+            <Card key={idx} className={`flex flex-col sm:flex-row min-h-[220px] overflow-hidden shadow-md transition-all ${isFav ? 'border-amber-200 bg-amber-50/5' : 'border-slate-100'}`}>
               <div className="w-full sm:w-44 bg-slate-100 shrink-0 relative">
-                <img src={bookEdits[book.book_name]?.cover || book.cover_url} className="w-full h-full object-cover" alt="capa" />
+                <img src={bookEdits[book.book_name]?.cover || book.cover_url || PLACEHOLDER_IMAGE} className="w-full h-full object-cover" alt="capa" />
                 {isFav && <div className="absolute top-3 left-3 bg-amber-500 text-white p-1.5 rounded-sm shadow-lg"><Crown size={14} fill="white" /></div>}
               </div>
               
@@ -257,7 +256,9 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
                   <h4 className="font-black text-sm uppercase text-slate-800 truncate pr-4">{book.book_name}</h4>
                   <div className="flex gap-2">
                     {isSaving === book.book_name && <Loader2 size={16} className="animate-spin text-primary" />}
-                    <button onClick={() => handleDelete(book.id, book.book_name)} className="text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={18}/></button>
+                    <button onClick={() => handleDelete(book.id, book.book_name)} className="text-slate-300 hover:text-red-500 transition-colors">
+                        {isDeleting === book.id ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18}/>}
+                    </button>
                   </div>
                 </div>
 
