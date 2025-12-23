@@ -122,7 +122,6 @@ async function GET(request) {
              br.cover_url,
              br.genre,
              br.review,
-             -- O nome precisa ser total_pages para o cálculo de stats
              COALESCE(br.total_pages, rd.total_pages, 0) as total_pages
       FROM public.reading_data rd
       LEFT JOIN public.users u ON u.email = rd.email
@@ -134,7 +133,6 @@ async function GET(request) {
             email,
             year
         ]);
-        // Garantimos que os campos críticos sejam números para os cálculos de stats
         const cleanRows = rows.map((b)=>({
                 ...b,
                 rating: Number(b.rating) || 0,
@@ -154,16 +152,49 @@ async function GET(request) {
 async function POST(request) {
     try {
         const body = await request.json();
-        const { email, bookName, action, rating, coverUrl, totalPages, review, genre, year, month } = body;
+        const { email, bookName, action, rating, coverUrl, totalPages, review, genre, year, month, startDate, endDate } = body;
         const pages = Number(totalPages) || 0;
-        const userRes = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`SELECT id FROM public.users WHERE email = $1`, [
-            email
-        ]);
-        if (userRes.length === 0) return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-            error: "Usuário não encontrado"
-        });
-        const userId = userRes[0].id;
+        // 1. LÓGICA PARA INICIAR LEITURA (O QUE FALTAVA)
+        if (action === "START_READING") {
+            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`
+        INSERT INTO public.reading_data (email, book_name, start_date, status, year, month)
+        VALUES ($1, $2, $3, 'lendo', $4, $5)
+        ON CONFLICT DO NOTHING
+      `, [
+                email,
+                bookName,
+                startDate,
+                year,
+                month
+            ]);
+            return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+                success: true
+            });
+        }
+        // 2. LÓGICA PARA ENCERRAR LEITURA (O QUE FALTAVA)
+        if (action === "FINISH_READING") {
+            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`
+        UPDATE public.reading_data 
+        SET end_date = $1, status = 'lido' 
+        WHERE email = $2 AND book_name = $3 AND status = 'lendo'
+      `, [
+                endDate,
+                email,
+                bookName
+            ]);
+            return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+                success: true
+            });
+        }
+        // 3. SUA LÓGICA DE REVIEW (MANTIDA)
         if (action === "UPDATE_REVIEW") {
+            const userRes = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`SELECT id FROM public.users WHERE email = $1`, [
+                email
+            ]);
+            if (userRes.length === 0) return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+                error: "Usuário não encontrado"
+            });
+            const userId = userRes[0].id;
             await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`
         INSERT INTO public.book_reviews (user_id, title, rating, cover_url, total_pages, genre, review, year, month)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -189,11 +220,15 @@ async function POST(request) {
                 email,
                 bookName
             ]);
+            return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+                success: true
+            });
         }
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
             success: true
         });
     } catch (error) {
+        console.error("Erro no POST:", error.message);
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
             error: error.message
         }, {

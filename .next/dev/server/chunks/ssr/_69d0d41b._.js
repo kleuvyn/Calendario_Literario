@@ -248,13 +248,16 @@ function MonthCalendar({ month, days, year, userEmail, monthIndex }) {
     const [tempBookNames, setTempBookNames] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])({});
     const [isUpdating, setIsUpdating] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(false);
     const [isDeleting, setIsDeleting] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(null);
+    // Ajuste para pegar a data de hoje local corretamente sem erro de fuso
     const now = new Date();
-    const todayStr = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     async function loadData() {
         if (!userEmail) return;
         try {
-            const data = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$api$2d$client$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["getReadingData"])(userEmail, year);
-            setReadings(Array.isArray(data) ? data : []);
+            const response = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$api$2d$client$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["getReadingData"])(userEmail, year);
+            // AJUSTE: Verifica se os dados vêm dentro de um objeto .data ou se é o array puro
+            const finalData = response?.data ? response.data : response;
+            setReadings(Array.isArray(finalData) ? finalData : []);
         } catch (err) {
             console.error("Erro ao carregar dados:", err);
         }
@@ -306,7 +309,8 @@ function MonthCalendar({ month, days, year, userEmail, monthIndex }) {
         const name = bookName || tempBookNames[day];
         if (!name) return;
         setIsUpdating(true);
-        const date = new Date(year, monthIndex, day, 12, 0, 0).toISOString();
+        // Formata a data manualmente para YYYY-MM-DD para evitar problemas de fuso horário
+        const dateFormatted = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T12:00:00Z`;
         try {
             await fetch("/api/reading-data", {
                 method: "POST",
@@ -317,8 +321,8 @@ function MonthCalendar({ month, days, year, userEmail, monthIndex }) {
                     action,
                     email: userEmail,
                     bookName: name,
-                    startDate: action === "START_READING" ? date : undefined,
-                    endDate: action === "FINISH_READING" ? date : undefined,
+                    startDate: action === "START_READING" ? dateFormatted : undefined,
+                    endDate: action === "FINISH_READING" ? dateFormatted : undefined,
                     year: year,
                     month: monthIndex + 1
                 })
@@ -344,12 +348,12 @@ function MonthCalendar({ month, days, year, userEmail, monthIndex }) {
                     children: month
                 }, void 0, false, {
                     fileName: "[project]/components/month-calendar.tsx",
-                    lineNumber: 98,
+                    lineNumber: 102,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/components/month-calendar.tsx",
-                lineNumber: 97,
+                lineNumber: 101,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -360,10 +364,12 @@ function MonthCalendar({ month, days, year, userEmail, monthIndex }) {
                     const currentDayStr = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                     const isFuture = currentDayStr > todayStr;
                     const isToday = currentDayStr === todayStr;
+                    // FILTRO CORRIGIDO:
                     const dayReadings = readings.filter((r)=>{
                         if (!r.start_date) return false;
                         const startStr = r.start_date.split('T')[0];
                         const endStr = r.end_date ? r.end_date.split('T')[0] : null;
+                        // Verifica se o dia atual do calendário está entre o início e o fim da leitura
                         return currentDayStr >= startStr && (!endStr || currentDayStr <= endStr);
                     });
                     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -376,12 +382,12 @@ function MonthCalendar({ month, days, year, userEmail, monthIndex }) {
                                     children: day
                                 }, void 0, false, {
                                     fileName: "[project]/components/month-calendar.tsx",
-                                    lineNumber: 117,
+                                    lineNumber: 124,
                                     columnNumber: 17
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/month-calendar.tsx",
-                                lineNumber: 116,
+                                lineNumber: 123,
                                 columnNumber: 15
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -398,7 +404,7 @@ function MonthCalendar({ month, days, year, userEmail, monthIndex }) {
                                                         children: r.book_name.toUpperCase()
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/month-calendar.tsx",
-                                                        lineNumber: 124,
+                                                        lineNumber: 131,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -411,12 +417,12 @@ function MonthCalendar({ month, days, year, userEmail, monthIndex }) {
                                                                     size: 8
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/month-calendar.tsx",
-                                                                    lineNumber: 129,
+                                                                    lineNumber: 136,
                                                                     columnNumber: 27
                                                                 }, this)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/month-calendar.tsx",
-                                                                lineNumber: 128,
+                                                                lineNumber: 135,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -426,27 +432,27 @@ function MonthCalendar({ month, days, year, userEmail, monthIndex }) {
                                                                     size: 8
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/month-calendar.tsx",
-                                                                    lineNumber: 132,
+                                                                    lineNumber: 139,
                                                                     columnNumber: 27
                                                                 }, this)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/month-calendar.tsx",
-                                                                lineNumber: 131,
+                                                                lineNumber: 138,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/month-calendar.tsx",
-                                                        lineNumber: 127,
+                                                        lineNumber: 134,
                                                         columnNumber: 23
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/month-calendar.tsx",
-                                                lineNumber: 123,
+                                                lineNumber: 130,
                                                 columnNumber: 21
                                             }, this),
-                                            r.status === "lendo" && currentDayStr >= r.start_date.split('T')[0] && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
+                                            r.status === "lendo" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
                                                 size: "sm",
                                                 className: "h-5 w-full text-[8px] mt-1 font-bold",
                                                 variant: "destructive",
@@ -454,18 +460,18 @@ function MonthCalendar({ month, days, year, userEmail, monthIndex }) {
                                                 children: "ENCERRAR AQUI"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/month-calendar.tsx",
-                                                lineNumber: 138,
+                                                lineNumber: 145,
                                                 columnNumber: 23
                                             }, this)
                                         ]
                                     }, idx, true, {
                                         fileName: "[project]/components/month-calendar.tsx",
-                                        lineNumber: 122,
+                                        lineNumber: 129,
                                         columnNumber: 19
                                     }, this))
                             }, void 0, false, {
                                 fileName: "[project]/components/month-calendar.tsx",
-                                lineNumber: 120,
+                                lineNumber: 127,
                                 columnNumber: 15
                             }, this),
                             !isFuture && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -481,7 +487,7 @@ function MonthCalendar({ month, days, year, userEmail, monthIndex }) {
                                                 }))
                                     }, void 0, false, {
                                         fileName: "[project]/components/month-calendar.tsx",
-                                        lineNumber: 148,
+                                        lineNumber: 155,
                                         columnNumber: 19
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
@@ -491,31 +497,31 @@ function MonthCalendar({ month, days, year, userEmail, monthIndex }) {
                                         children: "INICIAR"
                                     }, void 0, false, {
                                         fileName: "[project]/components/month-calendar.tsx",
-                                        lineNumber: 154,
+                                        lineNumber: 161,
                                         columnNumber: 19
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/month-calendar.tsx",
-                                lineNumber: 147,
+                                lineNumber: 154,
                                 columnNumber: 17
                             }, this)
                         ]
                     }, `${monthIndex}-${day}`, true, {
                         fileName: "[project]/components/month-calendar.tsx",
-                        lineNumber: 115,
+                        lineNumber: 122,
                         columnNumber: 13
                     }, this);
                 })
             }, void 0, false, {
                 fileName: "[project]/components/month-calendar.tsx",
-                lineNumber: 101,
+                lineNumber: 105,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/components/month-calendar.tsx",
-        lineNumber: 96,
+        lineNumber: 100,
         columnNumber: 5
     }, this);
 }

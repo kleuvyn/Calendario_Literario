@@ -125,20 +125,19 @@ async function PATCH(request, { params }) {
         const oldName = currentData[0].book_name;
         const userId = currentData[0].user_id;
         const email = currentData[0].email;
-        await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`UPDATE public.reading_data SET book_name = $1 WHERE book_name = $2 AND (user_id = $3 OR email = $4)`, [
+        await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`UPDATE public.reading_data SET book_name = $1 WHERE id = $2`, [
             newName,
-            oldName,
-            userId,
-            email
+            id
         ]);
         await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`UPDATE public.book_reviews SET title = $1 WHERE title = $2 AND user_id = $3`, [
             newName,
             oldName,
             userId
         ]);
-        await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`UPDATE public.books SET title = $1 WHERE title = $2`, [
+        await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`UPDATE public.books SET title = $1 WHERE title = $2 AND user_email = $3`, [
             newName,
-            oldName
+            oldName,
+            email
         ]);
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
             success: true
@@ -159,18 +158,20 @@ async function DELETE(request, { params }) {
         ]);
         if (data.length > 0) {
             const { book_name, user_id, email } = data[0];
-            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])("DELETE FROM public.reading_data WHERE book_name = $1 AND (user_id = $2 OR email = $3)", [
-                book_name,
-                user_id,
-                email
+            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])("DELETE FROM public.reading_data WHERE id = $1", [
+                id
             ]);
             await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])("DELETE FROM public.book_reviews WHERE title = $1 AND user_id = $2", [
                 book_name,
                 user_id
             ]);
+            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])("DELETE FROM public.books WHERE title = $1 AND user_email = $2", [
+                book_name,
+                email
+            ]);
         }
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-            message: "Excluído"
+            message: "Excluído com sucesso"
         });
     } catch (error) {
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({

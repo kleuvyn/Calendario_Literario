@@ -12,14 +12,17 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
   const [isUpdating, setIsUpdating] = useState(false)
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
 
+  // Ajuste para pegar a data de hoje local corretamente sem erro de fuso
   const now = new Date()
-  const todayStr = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0]
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 
   async function loadData() {
     if (!userEmail) return
     try {
-      const data = await getReadingData(userEmail, year)
-      setReadings(Array.isArray(data) ? data : [])
+      const response: any = await getReadingData(userEmail, year)
+      // AJUSTE: Verifica se os dados vêm dentro de um objeto .data ou se é o array puro
+      const finalData = response?.data ? response.data : response
+      setReadings(Array.isArray(finalData) ? finalData : [])
     } catch (err) {
       console.error("Erro ao carregar dados:", err)
     }
@@ -67,7 +70,8 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
     if (!name) return
 
     setIsUpdating(true)
-    const date = new Date(year, monthIndex, day, 12, 0, 0).toISOString()
+    // Formata a data manualmente para YYYY-MM-DD para evitar problemas de fuso horário
+    const dateFormatted = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T12:00:00Z`
 
     try {
       await fetch("/api/reading-data", {
@@ -77,8 +81,8 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
           action,
           email: userEmail,
           bookName: name,
-          startDate: action === "START_READING" ? date : undefined,
-          endDate: action === "FINISH_READING" ? date : undefined,
+          startDate: action === "START_READING" ? dateFormatted : undefined,
+          endDate: action === "FINISH_READING" ? dateFormatted : undefined,
           year: year,
           month: monthIndex + 1
         })
@@ -104,10 +108,13 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
           const isFuture = currentDayStr > todayStr
           const isToday = currentDayStr === todayStr
 
+          // FILTRO CORRIGIDO:
           const dayReadings = readings.filter((r) => {
             if (!r.start_date) return false
             const startStr = r.start_date.split('T')[0]
             const endStr = r.end_date ? r.end_date.split('T')[0] : null
+            
+            // Verifica se o dia atual do calendário está entre o início e o fim da leitura
             return currentDayStr >= startStr && (!endStr || currentDayStr <= endStr)
           })
 
@@ -134,7 +141,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
                       </div>
                     </div>
 
-                    {r.status === "lendo" && currentDayStr >= r.start_date.split('T')[0] && (
+                    {r.status === "lendo" && (
                       <Button size="sm" className="h-5 w-full text-[8px] mt-1 font-bold" variant="destructive" onClick={() => handleAction(day, "FINISH_READING", r.book_name)}>
                         ENCERRAR AQUI
                       </Button>

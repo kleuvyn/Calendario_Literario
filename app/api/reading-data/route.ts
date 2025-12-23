@@ -15,7 +15,6 @@ export async function GET(request: Request) {
              br.cover_url,
              br.genre,
              br.review,
-             -- O nome precisa ser total_pages para o cálculo de stats
              COALESCE(br.total_pages, rd.total_pages, 0) as total_pages
       FROM public.reading_data rd
       LEFT JOIN public.users u ON u.email = rd.email
@@ -26,7 +25,6 @@ export async function GET(request: Request) {
     
     const rows = await executeQuery(query, [email, year]);
 
-    // Garantimos que os campos críticos sejam números para os cálculos de stats
     const cleanRows = rows.map((b: any) => ({
       ...b,
       rating: Number(b.rating) || 0,
@@ -44,14 +42,35 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, bookName, action, rating, coverUrl, totalPages, review, genre, year, month } = body;
+    const { email, bookName, action, rating, coverUrl, totalPages, review, genre, year, month, startDate, endDate } = body;
     const pages = Number(totalPages) || 0;
 
-    const userRes = await executeQuery(`SELECT id FROM public.users WHERE email = $1`, [email]);
-    if (userRes.length === 0) return NextResponse.json({ error: "Usuário não encontrado" });
-    const userId = userRes[0].id;
+    // 1. LÓGICA PARA INICIAR LEITURA (O QUE FALTAVA)
+    if (action === "START_READING") {
+      await executeQuery(`
+        INSERT INTO public.reading_data (email, book_name, start_date, status, year, month)
+        VALUES ($1, $2, $3, 'lendo', $4, $5)
+        ON CONFLICT DO NOTHING
+      `, [email, bookName, startDate, year, month]);
+      return NextResponse.json({ success: true });
+    }
 
+    // 2. LÓGICA PARA ENCERRAR LEITURA (O QUE FALTAVA)
+    if (action === "FINISH_READING") {
+      await executeQuery(`
+        UPDATE public.reading_data 
+        SET end_date = $1, status = 'lido' 
+        WHERE email = $2 AND book_name = $3 AND status = 'lendo'
+      `, [endDate, email, bookName]);
+      return NextResponse.json({ success: true });
+    }
+
+    // 3. SUA LÓGICA DE REVIEW (MANTIDA)
     if (action === "UPDATE_REVIEW") {
+      const userRes = await executeQuery(`SELECT id FROM public.users WHERE email = $1`, [email]);
+      if (userRes.length === 0) return NextResponse.json({ error: "Usuário não encontrado" });
+      const userId = userRes[0].id;
+
       await executeQuery(`
         INSERT INTO public.book_reviews (user_id, title, rating, cover_url, total_pages, genre, review, year, month)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -67,9 +86,12 @@ export async function POST(request: Request) {
         `UPDATE public.reading_data SET total_pages = $1 WHERE email = $2 AND book_name = $3`,
         [pages, email, bookName]
       );
+      return NextResponse.json({ success: true });
     }
+
     return NextResponse.json({ success: true });
   } catch (error: any) {
+    console.error("Erro no POST:", error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
