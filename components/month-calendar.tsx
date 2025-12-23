@@ -12,7 +12,6 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
   const [isUpdating, setIsUpdating] = useState(false)
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
 
-  // Ajuste para pegar a data de hoje local corretamente sem erro de fuso
   const now = new Date()
   const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 
@@ -20,7 +19,6 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
     if (!userEmail) return
     try {
       const response: any = await getReadingData(userEmail, year)
-      // AJUSTE: Verifica se os dados vêm dentro de um objeto .data ou se é o array puro
       const finalData = response?.data ? response.data : response
       setReadings(Array.isArray(finalData) ? finalData : [])
     } catch (err) {
@@ -70,7 +68,6 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
     if (!name) return
 
     setIsUpdating(true)
-    // Formata a data manualmente para YYYY-MM-DD para evitar problemas de fuso horário
     const dateFormatted = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T12:00:00Z`
 
     try {
@@ -108,13 +105,11 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
           const isFuture = currentDayStr > todayStr
           const isToday = currentDayStr === todayStr
 
-          // FILTRO CORRIGIDO:
           const dayReadings = readings.filter((r) => {
             if (!r.start_date) return false
             const startStr = r.start_date.split('T')[0]
             const endStr = r.end_date ? r.end_date.split('T')[0] : null
             
-            // Verifica se o dia atual do calendário está entre o início e o fim da leitura
             return currentDayStr >= startStr && (!endStr || currentDayStr <= endStr)
           })
 

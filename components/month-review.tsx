@@ -92,7 +92,6 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
     return allBooks.filter(b => Number(b.month) === (monthIndex + 1))
   }, [allBooks, monthIndex])
 
-  // FUNÇÃO DE BUSCA CORRIGIDA PARA ATUALIZAÇÃO IMEDIATA
   const buscarCapaAutomatica = async (bookName: string) => {
     setIsSearching(bookName);
     const minhaChave = "AIzaSyB5F5pCIBIgZWCIpKwmBvKhh9RTSTwU9tw";
@@ -105,8 +104,6 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
       if (data.items && data.items[0].volumeInfo.imageLinks) {
         let capaUrl = data.items[0].volumeInfo.imageLinks.thumbnail;
         capaUrl = capaUrl.replace("http://", "https://");
-
-        // Atualiza o estado local para que a imagem mude no ecrã na hora
         setBookEdits(prev => ({
           ...prev,
           [bookName]: { 
@@ -158,7 +155,6 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
 
   return (
     <div className="space-y-8 pb-20 max-w-6xl mx-auto px-4">
-      {/* 1. QUADRO DE FAVORITOS DO ANO */}
       {isDecember && stats.yearlyFavorites.length > 0 && (
         <Card className="p-8 border-none bg-gradient-to-br from-amber-500/10 via-transparent to-primary/5 shadow-sm">
           <div className="flex items-center gap-3 mb-6">
@@ -185,7 +181,6 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
         </Card>
       )}
 
-      {/* 2. DASHBOARD DE NÚMEROS */}
       <Card className="p-6 bg-white border-slate-100 shadow-sm">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-2">
@@ -213,7 +208,6 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
         </div>
       </Card>
 
-      {/* 3. DESTAQUES NO TOPO */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="space-y-4">
           <div className="flex items-center gap-2 px-1">
@@ -269,7 +263,6 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
 
       <hr className="border-slate-100" />
 
-      {/* 5. LISTA DE EDIÇÃO GERAL */}
       <div className="flex items-center gap-2 mb-4">
         <BookOpen size={18} className="text-slate-400" />
         <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Gerenciar Livros de {month}</h2>
@@ -278,8 +271,6 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
       <div className="grid grid-cols-1 gap-6">
         {currentMonthBooks.map((book, idx) => {
           const isFav = Number(bookEdits[book.book_name]?.rating || book.rating) === 5;
-          
-          // Pegamos a capa do estado de edição para ela mudar AO CLICAR NO BOTÃO
           const currentCover = bookEdits[book.book_name]?.cover || book.cover_url || PLACEHOLDER_IMAGE;
 
           return (

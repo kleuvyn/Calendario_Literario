@@ -6,7 +6,7 @@ import { MonthCalendar } from "@/components/month-calendar"
 import { MonthReview } from "@/components/month-review"
 import { LoginScreen } from "@/components/login-screen"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, LogOut, Loader2, User, ShieldAlert, Trash2 } from "lucide-react" // Ícones adicionados
+import { ChevronLeft, ChevronRight, LogOut, Loader2, User, ShieldAlert, Trash2 } from "lucide-react" 
 import { UserData } from "@/lib/storage"
 
 export default function Home() {
@@ -15,7 +15,7 @@ export default function Home() {
   const [currentMonth, setCurrentMonth] = useState(() => new Date().getMonth())
   const [showBack, setShowBack] = useState(false)
 
-  // --- Lógica LGPD Adicionada ---
+ 
   const handleDeleteAccount = async () => {
     const confirmed = window.confirm(
       "LGPD - DIREITO AO ESQUECIMENTO:\n\nEsta ação apagará permanentemente todos os seus livros, reviews e dados de conta. Deseja continuar?"

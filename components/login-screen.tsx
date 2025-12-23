@@ -35,7 +35,6 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
     setIsLoading(true)
 
     if (isRegistering) {
-      // Lógica de CADASTRO (Cria o usuário no banco primeiro)
       try {
         const res = await fetch("/api/register", {
           method: "POST",
@@ -53,11 +52,10 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
         alert("Erro de conexão.")
       }
     } else {
-      // Lógica de LOGIN (Chama a função da Home que executa o signIn)
       onLogin({
         name,
         email,
-        password, // Agora passamos a senha!
+        password,
         provider: "credentials"
       })
     }
