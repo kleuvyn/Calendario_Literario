@@ -20,20 +20,10 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
-        
-        const users = await executeQuery(
-          "SELECT * FROM users WHERE email = $1", 
-          [credentials.email]
-        ) as any[];
-
+        const users = await executeQuery("SELECT * FROM users WHERE email = $1", [credentials.email]) as any[];
         const user = users[0];
         if (user && user.password && await bcrypt.compare(credentials.password, user.password)) {
-          return { 
-            id: user.id.toString(), 
-            name: user.name, 
-            email: user.email,
-            image: user.image 
-          };
+          return { id: user.id.toString(), name: user.name, email: user.email, image: user.image };
         }
         return null;
       }
@@ -41,22 +31,17 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-      }
+      if (user) token.id = user.id;
       return token;
     },
     async session({ session, token }) {
-      if (session.user) {
-        (session.user as any).id = token.id;
-      }
+      if (session.user) (session.user as any).id = token.id;
       return session;
     },
     async signIn({ user, account }) {
       if (account?.provider === "google") {
         await executeQuery(
-          `INSERT INTO users (name, email, image) 
-           VALUES ($1, $2, $3) 
+          `INSERT INTO users (name, email, image) VALUES ($1, $2, $3) 
            ON CONFLICT (email) DO UPDATE SET name = $1`, 
           [user.name, user.email, user.image]
         );

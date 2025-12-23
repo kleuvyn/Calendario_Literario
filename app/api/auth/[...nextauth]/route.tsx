@@ -4,6 +4,12 @@ import { NextResponse } from "next/server";
 import { executeQuery } from "@/lib/db";
 import { getServerSession } from "next-auth/next"; 
 import { authOptions } from "@/lib/auth"; 
+import NextAuth from "next-auth";
+
+
+const handler = NextAuth(authOptions);
+
+export { handler as GET, handler as POST };
 
 export async function DELETE() {
   try {
