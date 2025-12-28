@@ -65,22 +65,42 @@ export default function RetrospectivaPage() {
   const handleExportAll = async () => {
     setIsGenerating(true)
     try {
-      await new Promise(r => setTimeout(r, 800));
-      if (storyResumoRef.current) {
-        const url = await domToPng(storyResumoRef.current, { scale: 3, width: 400, height: 850 })
+      await new Promise(r => setTimeout(r, 1000));
+
+      const downloadEl = async (el: HTMLElement, fileName: string) => {
+        const url = await domToPng(el, { 
+          scale: 2,
+          quality: 0.95,
+          width: 400, 
+          height: 850 
+        });
         const link = document.createElement('a');
-        link.download = `01-resumo.png`; link.href = url; link.click();
+        link.download = fileName;
+        link.href = url;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      };
+
+      if (storyResumoRef.current) {
+        await downloadEl(storyResumoRef.current, `01-resumo.png`);
       }
+
+      await new Promise(r => setTimeout(r, 1500));
+
       for (let i = 0; i < paginasLivrosRef.current.length; i++) {
         const el = paginasLivrosRef.current[i];
         if (el) {
-          const url = await domToPng(el, { scale: 3, width: 400, height: 850 })
-          const link = document.createElement('a');
-          link.download = `0${i + 2}-biblioteca-${i + 1}.png`; link.href = url; link.click();
-          await new Promise(r => setTimeout(r, 400));
+          el.scrollIntoView({ block: 'center' });
+          await downloadEl(el, `0${i + 2}-biblioteca-${i + 1}.png`);
+          await new Promise(r => setTimeout(r, 1500)); // Delay maior entre imagens
         }
       }
-    } catch (err) { alert("Erro ao gerar imagens.") } finally { setIsGenerating(false) }
+    } catch (err) { 
+      alert("Erro ao gerar. Tente abrir pelo Safari (fora do Instagram)."); 
+    } finally { 
+      setIsGenerating(false); 
+    }
   }
 
   const genreData = useMemo(() => {
@@ -91,9 +111,9 @@ export default function RetrospectivaPage() {
 
   const stats = useMemo(() => {
     if (allBooks.length === 0) return null
-    const totalPages = allBooks.reduce((acc, b) => acc + (Number(b.total_pages) || 0), 0)
+    const totalPagesYear = allBooks.reduce((acc, b) => acc + (Number(b.total_pages) || 0), 0)
     const topBook = [...allBooks].sort((a, b) => (Number(b.total_pages) || 0) - (Number(a.total_pages) || 0))[0]
-    return { totalBooks: allBooks.length, totalPages, topGenre: genreData[0]?.name || "Nenhum", topBook }
+    return { totalBooks: allBooks.length, totalPagesYear, topGenre: genreData[0]?.name || "Nenhum", topBook }
   }, [allBooks, genreData])
 
   if (loadingData) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin text-rose-500" /></div>
@@ -112,7 +132,7 @@ export default function RetrospectivaPage() {
             ))}
           </div>
           <Button onClick={handleExportAll} disabled={isGenerating || allBooks.length === 0} className="bg-slate-900 text-white rounded-full font-black uppercase text-[10px] px-8 h-11">
-            {isGenerating ? <Loader2 className="animate-spin" size={14}/> : <><Instagram size={14} className="mr-2"/> Exportar {bookChunks.length + 1} Stories</>}
+            {isGenerating ? <Loader2 className="animate-spin" size={14}/> : <><Instagram size={14} className="mr-2"/> Exportar Stories</>}
           </Button>
         </header>
 
@@ -125,21 +145,25 @@ export default function RetrospectivaPage() {
                    <h1 style={{ color: theme.text }} className="text-5xl font-black uppercase italic tracking-tighter leading-none">{currentYear}</h1>
                 </div>
 
-                <div style={{ backgroundColor: theme.card }} className="p-5 rounded-[40px] shadow-sm flex flex-col items-center text-center gap-3 border border-black/5 mx-1 mb-6">
-                   <div className="w-20 h-32 bg-slate-100 rounded-xl overflow-hidden shadow-xl transform -rotate-1 border border-black/5">
-                      <img src={stats?.topBook?.cover_url} className="w-full h-full object-cover" crossOrigin="anonymous" />
-                   </div>
-                   <div className="space-y-1 w-full px-2">
-                      <div className="flex items-center justify-center gap-1.5" style={{ color: theme.primary }}><Crown size={12} fill="currentColor" /><span className="text-[8px] font-black uppercase tracking-widest">Destaque do Ano</span></div>
-                      <p style={{ color: theme.text }} className="text-[13px] font-black uppercase leading-tight line-clamp-2 italic mb-1">{stats?.topBook?.book_name}</p>
-                      <p className="text-[9px] font-black uppercase opacity-30 tracking-widest" style={{ color: theme.text }}>{stats?.totalPages.toLocaleString()} Páginas Lidas</p>
-                   </div>
-                </div>
+                <Link href={`/livro/${stats?.topBook?.id || stats?.topBook?.book_id}`} className="block transition-transform hover:scale-[1.02] active:scale-95">
+                  <div style={{ backgroundColor: theme.card }} className="p-5 rounded-[40px] shadow-sm flex flex-col items-center text-center gap-3 border border-black/5 mx-1 mb-6">
+                    <div className="w-20 h-32 bg-slate-100 rounded-xl overflow-hidden shadow-xl transform -rotate-1 border border-black/5">
+                        <img src={stats?.topBook?.cover_url} className="w-full h-full object-cover" crossOrigin="anonymous" alt="" />
+                    </div>
+                    <div className="space-y-1 w-full px-2">
+                        <div className="flex items-center justify-center gap-1.5" style={{ color: theme.primary }}><Crown size={12} fill="currentColor" /><span className="text-[8px] font-black uppercase tracking-widest">Destaque do Ano</span></div>
+                        <p style={{ color: theme.text }} className="text-[13px] font-black uppercase leading-tight line-clamp-2 italic mb-1">{stats?.topBook?.book_name}</p>
+                        <p className="text-[9px] font-black uppercase opacity-30 tracking-widest" style={{ color: theme.text }}>
+                          {Number(stats?.topBook?.total_pages || 0).toLocaleString()} Páginas
+                        </p>
+                    </div>
+                  </div>
+                </Link>
 
                 <div className="flex items-center justify-between gap-1 mb-8 px-4 text-center">
                   <div><span style={{ color: theme.text }} className="text-3xl font-black tracking-tighter leading-none">{stats?.totalBooks}</span><p className="text-[7px] font-black uppercase opacity-40 mt-1">Lidos</p></div>
                   <div className="px-4"><div style={{ backgroundColor: theme.primary }} className="py-2 px-4 rounded-2xl shadow-md text-white text-[9px] font-black uppercase truncate leading-none">{stats?.topGenre}</div><p className="text-[7px] font-black uppercase opacity-40 mt-1">Favorito</p></div>
-                  <div><span style={{ color: theme.text }} className="text-2xl font-black tracking-tighter leading-none">{stats?.totalPages.toLocaleString()}</span><p className="text-[7px] font-black uppercase opacity-40 mt-1">Págs</p></div>
+                  <div><span style={{ color: theme.text }} className="text-2xl font-black tracking-tighter leading-none">{stats?.totalPagesYear.toLocaleString()}</span><p className="text-[7px] font-black uppercase opacity-40 mt-1">Págs no ano</p></div>
                 </div>
 
                 <div className="flex-1 flex flex-col items-center justify-center min-h-0">
@@ -179,6 +203,7 @@ export default function RetrospectivaPage() {
                 </div>
               ))}
             </div>
+
             <div className="space-y-8 pt-12 border-t border-slate-200 px-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-xs font-black uppercase text-slate-400 flex items-center gap-3 tracking-[0.4em]">
@@ -190,15 +215,15 @@ export default function RetrospectivaPage() {
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-8">
                 {allBooks.map((book, i) => (
-                  <div key={i} className="group cursor-default">
+                  <Link href={`/livro/${book.id || book.book_id}`} key={i} className="group cursor-pointer">
                     <div className="aspect-2/3 rounded-[25px] overflow-hidden shadow-md border-[6px] border-white bg-white transition-all duration-500 group-hover:shadow-2xl group-hover:-translate-y-3 group-hover:rotate-2">
                       <img src={book.cover_url || "https://via.placeholder.com/300x450"} className="w-full h-full object-cover" alt={book.book_name} />
                     </div>
                     <div className="mt-4 px-2">
-                      <p className="text-[10px] font-black uppercase text-slate-800 line-clamp-1 tracking-tight">{book.book_name}</p>
+                      <p className="text-[10px] font-black uppercase text-slate-800 line-clamp-1 tracking-tight group-hover:text-rose-500 transition-colors">{book.book_name}</p>
                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{book.genre}</p>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </div>

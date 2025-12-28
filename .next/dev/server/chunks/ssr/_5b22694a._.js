@@ -348,35 +348,37 @@ function RetrospectivaPage() {
     const handleExportAll = async ()=>{
         setIsGenerating(true);
         try {
-            await new Promise((r)=>setTimeout(r, 800));
-            if (storyResumoRef.current) {
-                const url = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$modern$2d$screenshot$2f$dist$2f$index$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["domToPng"])(storyResumoRef.current, {
-                    scale: 3,
+            await new Promise((r)=>setTimeout(r, 1000));
+            const downloadEl = async (el, fileName)=>{
+                const url = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$modern$2d$screenshot$2f$dist$2f$index$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["domToPng"])(el, {
+                    scale: 2,
+                    quality: 0.95,
                     width: 400,
                     height: 850
                 });
                 const link = document.createElement('a');
-                link.download = `01-resumo.png`;
+                link.download = fileName;
                 link.href = url;
+                document.body.appendChild(link);
                 link.click();
+                document.body.removeChild(link);
+            };
+            if (storyResumoRef.current) {
+                await downloadEl(storyResumoRef.current, `01-resumo.png`);
             }
+            await new Promise((r)=>setTimeout(r, 1500));
             for(let i = 0; i < paginasLivrosRef.current.length; i++){
                 const el = paginasLivrosRef.current[i];
                 if (el) {
-                    const url = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$modern$2d$screenshot$2f$dist$2f$index$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["domToPng"])(el, {
-                        scale: 3,
-                        width: 400,
-                        height: 850
+                    el.scrollIntoView({
+                        block: 'center'
                     });
-                    const link = document.createElement('a');
-                    link.download = `0${i + 2}-biblioteca-${i + 1}.png`;
-                    link.href = url;
-                    link.click();
-                    await new Promise((r)=>setTimeout(r, 400));
+                    await downloadEl(el, `0${i + 2}-biblioteca-${i + 1}.png`);
+                    await new Promise((r)=>setTimeout(r, 1500)); // Delay maior entre imagens
                 }
             }
         } catch (err) {
-            alert("Erro ao gerar imagens.");
+            alert("Erro ao gerar. Tente abrir pelo Safari (fora do Instagram).");
         } finally{
             setIsGenerating(false);
         }
@@ -396,13 +398,13 @@ function RetrospectivaPage() {
     ]);
     const stats = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useMemo"])(()=>{
         if (allBooks.length === 0) return null;
-        const totalPages = allBooks.reduce((acc, b)=>acc + (Number(b.total_pages) || 0), 0);
+        const totalPagesYear = allBooks.reduce((acc, b)=>acc + (Number(b.total_pages) || 0), 0);
         const topBook = [
             ...allBooks
         ].sort((a, b)=>(Number(b.total_pages) || 0) - (Number(a.total_pages) || 0))[0];
         return {
             totalBooks: allBooks.length,
-            totalPages,
+            totalPagesYear,
             topGenre: genreData[0]?.name || "Nenhum",
             topBook
         };
@@ -416,12 +418,12 @@ function RetrospectivaPage() {
             className: "animate-spin text-rose-500"
         }, void 0, false, {
             fileName: "[project]/app/retrospectiva/page.tsx",
-            lineNumber: 99,
+            lineNumber: 119,
             columnNumber: 86
         }, this)
     }, void 0, false, {
         fileName: "[project]/app/retrospectiva/page.tsx",
-        lineNumber: 99,
+        lineNumber: 119,
         columnNumber: 27
     }, this);
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -443,19 +445,19 @@ function RetrospectivaPage() {
                                         className: "mr-2"
                                     }, void 0, false, {
                                         fileName: "[project]/app/retrospectiva/page.tsx",
-                                        lineNumber: 106,
+                                        lineNumber: 126,
                                         columnNumber: 95
                                     }, this),
                                     " Voltar"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/retrospectiva/page.tsx",
-                                lineNumber: 106,
+                                lineNumber: 126,
                                 columnNumber: 26
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/app/retrospectiva/page.tsx",
-                            lineNumber: 106,
+                            lineNumber: 126,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -469,17 +471,17 @@ function RetrospectivaPage() {
                                         fill: currentTheme === t ? THEMES[t].primary : "transparent"
                                     }, void 0, false, {
                                         fileName: "[project]/app/retrospectiva/page.tsx",
-                                        lineNumber: 110,
+                                        lineNumber: 130,
                                         columnNumber: 17
                                     }, this)
                                 }, t, false, {
                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                    lineNumber: 109,
+                                    lineNumber: 129,
                                     columnNumber: 15
                                 }, this))
                         }, void 0, false, {
                             fileName: "[project]/app/retrospectiva/page.tsx",
-                            lineNumber: 107,
+                            lineNumber: 127,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
@@ -491,7 +493,7 @@ function RetrospectivaPage() {
                                 size: 14
                             }, void 0, false, {
                                 fileName: "[project]/app/retrospectiva/page.tsx",
-                                lineNumber: 115,
+                                lineNumber: 135,
                                 columnNumber: 29
                             }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
                                 children: [
@@ -500,23 +502,21 @@ function RetrospectivaPage() {
                                         className: "mr-2"
                                     }, void 0, false, {
                                         fileName: "[project]/app/retrospectiva/page.tsx",
-                                        lineNumber: 115,
+                                        lineNumber: 135,
                                         columnNumber: 79
                                     }, this),
-                                    " Exportar ",
-                                    bookChunks.length + 1,
-                                    " Stories"
+                                    " Exportar Stories"
                                 ]
                             }, void 0, true)
                         }, void 0, false, {
                             fileName: "[project]/app/retrospectiva/page.tsx",
-                            lineNumber: 114,
+                            lineNumber: 134,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/retrospectiva/page.tsx",
-                    lineNumber: 105,
+                    lineNumber: 125,
                     columnNumber: 9
                 }, this),
                 allBooks.length > 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
@@ -544,7 +544,7 @@ function RetrospectivaPage() {
                                                     children: "Retrospectiva Literária"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                                    lineNumber: 124,
+                                                    lineNumber: 144,
                                                     columnNumber: 20
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
@@ -555,103 +555,112 @@ function RetrospectivaPage() {
                                                     children: currentYear
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                                    lineNumber: 125,
+                                                    lineNumber: 145,
                                                     columnNumber: 20
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                            lineNumber: 123,
+                                            lineNumber: 143,
                                             columnNumber: 17
                                         }, this),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            style: {
-                                                backgroundColor: theme.card
-                                            },
-                                            className: "p-5 rounded-[40px] shadow-sm flex flex-col items-center text-center gap-3 border border-black/5 mx-1 mb-6",
-                                            children: [
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                    className: "w-20 h-32 bg-slate-100 rounded-xl overflow-hidden shadow-xl transform -rotate-1 border border-black/5",
-                                                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
-                                                        src: stats?.topBook?.cover_url,
-                                                        className: "w-full h-full object-cover",
-                                                        crossOrigin: "anonymous"
-                                                    }, void 0, false, {
-                                                        fileName: "[project]/app/retrospectiva/page.tsx",
-                                                        lineNumber: 130,
-                                                        columnNumber: 23
-                                                    }, this)
-                                                }, void 0, false, {
-                                                    fileName: "[project]/app/retrospectiva/page.tsx",
-                                                    lineNumber: 129,
-                                                    columnNumber: 20
-                                                }, this),
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                    className: "space-y-1 w-full px-2",
-                                                    children: [
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                            className: "flex items-center justify-center gap-1.5",
-                                                            style: {
-                                                                color: theme.primary
-                                                            },
-                                                            children: [
-                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$crown$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Crown$3e$__["Crown"], {
-                                                                    size: 12,
-                                                                    fill: "currentColor"
-                                                                }, void 0, false, {
-                                                                    fileName: "[project]/app/retrospectiva/page.tsx",
-                                                                    lineNumber: 133,
-                                                                    columnNumber: 114
-                                                                }, this),
-                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                                    className: "text-[8px] font-black uppercase tracking-widest",
-                                                                    children: "Destaque do Ano"
-                                                                }, void 0, false, {
-                                                                    fileName: "[project]/app/retrospectiva/page.tsx",
-                                                                    lineNumber: 133,
-                                                                    columnNumber: 153
-                                                                }, this)
-                                                            ]
-                                                        }, void 0, true, {
-                                                            fileName: "[project]/app/retrospectiva/page.tsx",
-                                                            lineNumber: 133,
-                                                            columnNumber: 23
-                                                        }, this),
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                            style: {
-                                                                color: theme.text
-                                                            },
-                                                            className: "text-[13px] font-black uppercase leading-tight line-clamp-2 italic mb-1",
-                                                            children: stats?.topBook?.book_name
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
+                                            href: `/livro/${stats?.topBook?.id || stats?.topBook?.book_id}`,
+                                            className: "block transition-transform hover:scale-[1.02] active:scale-95",
+                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                style: {
+                                                    backgroundColor: theme.card
+                                                },
+                                                className: "p-5 rounded-[40px] shadow-sm flex flex-col items-center text-center gap-3 border border-black/5 mx-1 mb-6",
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                        className: "w-20 h-32 bg-slate-100 rounded-xl overflow-hidden shadow-xl transform -rotate-1 border border-black/5",
+                                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
+                                                            src: stats?.topBook?.cover_url,
+                                                            className: "w-full h-full object-cover",
+                                                            crossOrigin: "anonymous",
+                                                            alt: ""
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                                            lineNumber: 134,
-                                                            columnNumber: 23
-                                                        }, this),
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                            className: "text-[9px] font-black uppercase opacity-30 tracking-widest",
-                                                            style: {
-                                                                color: theme.text
-                                                            },
-                                                            children: [
-                                                                stats?.totalPages.toLocaleString(),
-                                                                " Páginas Lidas"
-                                                            ]
-                                                        }, void 0, true, {
-                                                            fileName: "[project]/app/retrospectiva/page.tsx",
-                                                            lineNumber: 135,
-                                                            columnNumber: 23
+                                                            lineNumber: 151,
+                                                            columnNumber: 25
                                                         }, this)
-                                                    ]
-                                                }, void 0, true, {
-                                                    fileName: "[project]/app/retrospectiva/page.tsx",
-                                                    lineNumber: 132,
-                                                    columnNumber: 20
-                                                }, this)
-                                            ]
-                                        }, void 0, true, {
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/app/retrospectiva/page.tsx",
+                                                        lineNumber: 150,
+                                                        columnNumber: 21
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                        className: "space-y-1 w-full px-2",
+                                                        children: [
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                className: "flex items-center justify-center gap-1.5",
+                                                                style: {
+                                                                    color: theme.primary
+                                                                },
+                                                                children: [
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$crown$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Crown$3e$__["Crown"], {
+                                                                        size: 12,
+                                                                        fill: "currentColor"
+                                                                    }, void 0, false, {
+                                                                        fileName: "[project]/app/retrospectiva/page.tsx",
+                                                                        lineNumber: 154,
+                                                                        columnNumber: 116
+                                                                    }, this),
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                        className: "text-[8px] font-black uppercase tracking-widest",
+                                                                        children: "Destaque do Ano"
+                                                                    }, void 0, false, {
+                                                                        fileName: "[project]/app/retrospectiva/page.tsx",
+                                                                        lineNumber: 154,
+                                                                        columnNumber: 155
+                                                                    }, this)
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "[project]/app/retrospectiva/page.tsx",
+                                                                lineNumber: 154,
+                                                                columnNumber: 25
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                style: {
+                                                                    color: theme.text
+                                                                },
+                                                                className: "text-[13px] font-black uppercase leading-tight line-clamp-2 italic mb-1",
+                                                                children: stats?.topBook?.book_name
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/retrospectiva/page.tsx",
+                                                                lineNumber: 155,
+                                                                columnNumber: 25
+                                                            }, this),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                className: "text-[9px] font-black uppercase opacity-30 tracking-widest",
+                                                                style: {
+                                                                    color: theme.text
+                                                                },
+                                                                children: [
+                                                                    Number(stats?.topBook?.total_pages || 0).toLocaleString(),
+                                                                    " Páginas"
+                                                                ]
+                                                            }, void 0, true, {
+                                                                fileName: "[project]/app/retrospectiva/page.tsx",
+                                                                lineNumber: 156,
+                                                                columnNumber: 25
+                                                            }, this)
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/app/retrospectiva/page.tsx",
+                                                        lineNumber: 153,
+                                                        columnNumber: 21
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/app/retrospectiva/page.tsx",
+                                                lineNumber: 149,
+                                                columnNumber: 19
+                                            }, this)
+                                        }, void 0, false, {
                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                            lineNumber: 128,
+                                            lineNumber: 148,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -667,7 +676,7 @@ function RetrospectivaPage() {
                                                             children: stats?.totalBooks
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                                            lineNumber: 140,
+                                                            lineNumber: 164,
                                                             columnNumber: 24
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -675,13 +684,13 @@ function RetrospectivaPage() {
                                                             children: "Lidos"
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                                            lineNumber: 140,
+                                                            lineNumber: 164,
                                                             columnNumber: 148
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                                    lineNumber: 140,
+                                                    lineNumber: 164,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -695,7 +704,7 @@ function RetrospectivaPage() {
                                                             children: stats?.topGenre
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                                            lineNumber: 141,
+                                                            lineNumber: 165,
                                                             columnNumber: 41
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -703,13 +712,13 @@ function RetrospectivaPage() {
                                                             children: "Favorito"
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                                            lineNumber: 141,
+                                                            lineNumber: 165,
                                                             columnNumber: 221
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                                    lineNumber: 141,
+                                                    lineNumber: 165,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -719,30 +728,30 @@ function RetrospectivaPage() {
                                                                 color: theme.text
                                                             },
                                                             className: "text-2xl font-black tracking-tighter leading-none",
-                                                            children: stats?.totalPages.toLocaleString()
+                                                            children: stats?.totalPagesYear.toLocaleString()
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                                            lineNumber: 142,
+                                                            lineNumber: 166,
                                                             columnNumber: 24
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                                             className: "text-[7px] font-black uppercase opacity-40 mt-1",
-                                                            children: "Págs"
+                                                            children: "Págs no ano"
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                                            lineNumber: 142,
-                                                            columnNumber: 165
+                                                            lineNumber: 166,
+                                                            columnNumber: 169
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                                    lineNumber: 142,
+                                                    lineNumber: 166,
                                                     columnNumber: 19
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                            lineNumber: 139,
+                                            lineNumber: 163,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -773,27 +782,27 @@ function RetrospectivaPage() {
                                                                         strokeWidth: 2
                                                                     }, index, false, {
                                                                         fileName: "[project]/app/retrospectiva/page.tsx",
-                                                                        lineNumber: 149,
+                                                                        lineNumber: 173,
                                                                         columnNumber: 56
                                                                     }, this))
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/retrospectiva/page.tsx",
-                                                                lineNumber: 148,
+                                                                lineNumber: 172,
                                                                 columnNumber: 33
                                                             }, this)
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                                            lineNumber: 148,
+                                                            lineNumber: 172,
                                                             columnNumber: 23
                                                         }, this)
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/retrospectiva/page.tsx",
-                                                        lineNumber: 147,
+                                                        lineNumber: 171,
                                                         columnNumber: 21
                                                     }, this)
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                                    lineNumber: 146,
+                                                    lineNumber: 170,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -808,7 +817,7 @@ function RetrospectivaPage() {
                                                                     }
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                                                    lineNumber: 156,
+                                                                    lineNumber: 180,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -819,24 +828,24 @@ function RetrospectivaPage() {
                                                                     children: item.name
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                                                    lineNumber: 157,
+                                                                    lineNumber: 181,
                                                                     columnNumber: 25
                                                                 }, this)
                                                             ]
                                                         }, index, true, {
                                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                                            lineNumber: 155,
+                                                            lineNumber: 179,
                                                             columnNumber: 23
                                                         }, this))
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                                    lineNumber: 153,
+                                                    lineNumber: 177,
                                                     columnNumber: 19
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                            lineNumber: 145,
+                                            lineNumber: 169,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -849,18 +858,18 @@ function RetrospectivaPage() {
                                                 children: "estante-literaria.vercel.app"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/retrospectiva/page.tsx",
-                                                lineNumber: 162,
+                                                lineNumber: 186,
                                                 columnNumber: 97
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                            lineNumber: 162,
+                                            lineNumber: 186,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                    lineNumber: 122,
+                                    lineNumber: 142,
                                     columnNumber: 15
                                 }, this),
                                 bookChunks.map((chunk, index)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -885,7 +894,7 @@ function RetrospectivaPage() {
                                                         children: "Minha Biblioteca"
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/retrospectiva/page.tsx",
-                                                        lineNumber: 168,
+                                                        lineNumber: 192,
                                                         columnNumber: 22
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
@@ -900,13 +909,13 @@ function RetrospectivaPage() {
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/app/retrospectiva/page.tsx",
-                                                        lineNumber: 169,
+                                                        lineNumber: 193,
                                                         columnNumber: 22
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/app/retrospectiva/page.tsx",
-                                                lineNumber: 167,
+                                                lineNumber: 191,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -920,17 +929,17 @@ function RetrospectivaPage() {
                                                             alt: ""
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                                            lineNumber: 174,
+                                                            lineNumber: 198,
                                                             columnNumber: 25
                                                         }, this)
                                                     }, bIdx, false, {
                                                         fileName: "[project]/app/retrospectiva/page.tsx",
-                                                        lineNumber: 173,
+                                                        lineNumber: 197,
                                                         columnNumber: 23
                                                     }, this))
                                             }, void 0, false, {
                                                 fileName: "[project]/app/retrospectiva/page.tsx",
-                                                lineNumber: 171,
+                                                lineNumber: 195,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -943,24 +952,24 @@ function RetrospectivaPage() {
                                                     children: "estante-literaria.vercel.app"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                                    lineNumber: 178,
+                                                    lineNumber: 202,
                                                     columnNumber: 105
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/app/retrospectiva/page.tsx",
-                                                lineNumber: 178,
+                                                lineNumber: 202,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, index, true, {
                                         fileName: "[project]/app/retrospectiva/page.tsx",
-                                        lineNumber: 166,
+                                        lineNumber: 190,
                                         columnNumber: 17
                                     }, this))
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/retrospectiva/page.tsx",
-                            lineNumber: 121,
+                            lineNumber: 141,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -977,7 +986,7 @@ function RetrospectivaPage() {
                                                     className: "text-slate-300"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                                    lineNumber: 185,
+                                                    lineNumber: 210,
                                                     columnNumber: 19
                                                 }, this),
                                                 " Sua Biblioteca ",
@@ -985,7 +994,7 @@ function RetrospectivaPage() {
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                            lineNumber: 184,
+                                            lineNumber: 209,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -996,19 +1005,20 @@ function RetrospectivaPage() {
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                            lineNumber: 187,
+                                            lineNumber: 212,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                    lineNumber: 183,
+                                    lineNumber: 208,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                     className: "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-8",
-                                    children: allBooks.map((book, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "group cursor-default",
+                                    children: allBooks.map((book, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
+                                            href: `/livro/${book.id || book.book_id}`,
+                                            className: "group cursor-pointer",
                                             children: [
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                     className: "aspect-2/3 rounded-[25px] overflow-hidden shadow-md border-[6px] border-white bg-white transition-all duration-500 group-hover:shadow-2xl group-hover:-translate-y-3 group-hover:rotate-2",
@@ -1018,23 +1028,23 @@ function RetrospectivaPage() {
                                                         alt: book.book_name
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/retrospectiva/page.tsx",
-                                                        lineNumber: 195,
+                                                        lineNumber: 220,
                                                         columnNumber: 23
                                                     }, this)
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                                    lineNumber: 194,
+                                                    lineNumber: 219,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                     className: "mt-4 px-2",
                                                     children: [
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                            className: "text-[10px] font-black uppercase text-slate-800 line-clamp-1 tracking-tight",
+                                                            className: "text-[10px] font-black uppercase text-slate-800 line-clamp-1 tracking-tight group-hover:text-rose-500 transition-colors",
                                                             children: book.book_name
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                                            lineNumber: 198,
+                                                            lineNumber: 223,
                                                             columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1042,30 +1052,30 @@ function RetrospectivaPage() {
                                                             children: book.genre
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                                            lineNumber: 199,
+                                                            lineNumber: 224,
                                                             columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                                    lineNumber: 197,
+                                                    lineNumber: 222,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, i, true, {
                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                            lineNumber: 193,
+                                            lineNumber: 218,
                                             columnNumber: 19
                                         }, this))
                                 }, void 0, false, {
                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                    lineNumber: 191,
+                                    lineNumber: 216,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/retrospectiva/page.tsx",
-                            lineNumber: 182,
+                            lineNumber: 207,
                             columnNumber: 13
                         }, this)
                     ]
@@ -1074,18 +1084,18 @@ function RetrospectivaPage() {
                     children: "Ainda não há livros lidos"
                 }, void 0, false, {
                     fileName: "[project]/app/retrospectiva/page.tsx",
-                    lineNumber: 207,
+                    lineNumber: 232,
                     columnNumber: 11
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/app/retrospectiva/page.tsx",
-            lineNumber: 103,
+            lineNumber: 123,
             columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/app/retrospectiva/page.tsx",
-        lineNumber: 102,
+        lineNumber: 122,
         columnNumber: 5
     }, this);
 }
