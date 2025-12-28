@@ -6,31 +6,15 @@ import { MonthCalendar } from "@/components/month-calendar"
 import { MonthReview } from "@/components/month-review"
 import { LoginScreen } from "@/components/login-screen"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, LogOut, Loader2, BarChart3, Quote, Target, Settings2, BookOpen } from "lucide-react"
+import { ChevronLeft, ChevronRight, LogOut, Loader2, BarChart3, Quote, Target, Settings2, BookOpen, Trash2 } from "lucide-react"
 import { getReadingData, updateUserGoal, deleteFullAccount } from "@/lib/api-client" 
 import Link from "next/link"
 
 const THEMES = {
-  rose: { 
-    primary: '#f4a6f0', 
-    bg: '#fff5f6', 
-    text: '#a64d9c'
-  },
-  dark: { 
-    primary: '#38bdf8', 
-    bg: '#f0f7ff',
-    text: '#1e293b',
-  },
-  soft: { 
-    primary: '#a855f7', 
-    bg: '#faf5ff', 
-    text: '#5b1c87' 
-  },
-  coffee: { 
-    primary: '#7c3f17', 
-    bg: '#fafaf9', 
-    text: '#4b3832' 
-  }
+  rose: { primary: '#f4a6f0', bg: '#fff5f6', text: '#a64d9c' },
+  dark: { primary: '#38bdf8', bg: '#f0f7ff', text: '#1e293b' },
+  soft: { primary: '#a855f7', bg: '#faf5ff', text: '#5b1c87' },
+  coffee: { primary: '#7c3f17', bg: '#fafaf9', text: '#4b3832' }
 }
 
 const LITERARY_QUOTES = [
@@ -83,19 +67,10 @@ export default function Home() {
         try {
           const response: any = await getReadingData(session.user.email.toLowerCase(), currentYear)
           const books = response?.data || (Array.isArray(response) ? response : [])
-          
-          if (response?.userGoal) {
-            setMyBooksGoal(response.userGoal)
-          }
-
-          const finished = books.filter((b: any) => 
-            b && (b.status === 'lido' || b.end_date)
-          ).length
-          
+          if (response?.userGoal) setMyBooksGoal(response.userGoal)
+          const finished = books.filter((b: any) => b && (b.status === 'lido' || b.end_date)).length
           setTotalReadThisYear(finished)
-        } catch (e) { 
-          console.error(e) 
-        }
+        } catch (e) { console.error(e) }
       }
     }
     fetchData()
@@ -109,41 +84,23 @@ export default function Home() {
       try {
         await updateUserGoal(session.user.email.toLowerCase(), goalNum)
         setMyBooksGoal(goalNum)
-      } catch (error) {
-        console.error(error)
-        alert("Erro ao salvar meta")
-      } finally {
-        setIsSaving(false)
-      }
+      } catch (error) { alert("Erro ao salvar meta") } finally { setIsSaving(false) }
     }
   }
 
   const handleDeleteData = async () => {
-    console.log("Clique no botão de deletar detectado");
-    
     const confirmFirst = confirm("Tem certeza que deseja apagar todos os seus registros? Esta ação é irreversível.");
-    
     if (confirmFirst) {
-      const confirmSecond = confirm("ÚLTIMO AVISO: Sua conta e todos os seus livros serão deletados permanentemente do banco de dados. Confirmar?");
-      
+      const confirmSecond = confirm("ÚLTIMO AVISO: Sua conta e todos os seus livros serão deletados permanentemente. Confirmar?");
       if (confirmSecond) {
         setIsSaving(true);
         try {
-          console.log("Iniciando processo de exclusão na API...");
-          
           await deleteFullAccount();
-          
-          console.log("Exclusão concluída com sucesso no banco.");
-          alert("Sua conta e todos os seus registros foram removidos com sucesso.");
-
+          alert("Sua conta foi removida com sucesso.");
           await signOut({ callbackUrl: "/" });
-          
         } catch (error: any) {
-          console.error("Erro ao apagar dados:", error);
           alert(`Erro técnico: ${error.message || "Não foi possível apagar os dados."}`);
-        } finally {
-          setIsSaving(false);
-        }
+        } finally { setIsSaving(false); }
       }
     }
   }
@@ -192,45 +149,42 @@ export default function Home() {
           </div>
 
           <div className="mb-8 flex flex-col lg:flex-row items-center justify-between bg-white p-4 rounded-2xl border shadow-sm gap-4">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 w-full lg:w-auto">
               <div className="h-12 w-12 rounded-full border-2 overflow-hidden shadow-sm shrink-0" style={{ borderColor: theme.primary }}>
                 {session.user?.image && <img src={session.user.image} alt="Perfil" className="h-full w-full object-cover" />}
               </div>
               <div className="flex flex-col">
-                <h1 className="font-serif text-xl font-bold leading-none" style={{ color: theme.text }}>Calendário Literário {currentYear}</h1>
+                <h1 className="font-serif text-xl font-bold leading-none" style={{ color: theme.text }}>Calendário {currentYear}</h1>
                 <p className="text-xs mt-1 font-medium" style={{ color: theme.text, opacity: 0.6 }}>
                   Boas leituras, <span style={{ color: theme.primary }}>{formatName(session.user?.name)}</span>!
                 </p>
+                <button onClick={handleDeleteData} disabled={isSaving} className="text-[10px] text-red-400 font-bold uppercase mt-1 md:hidden text-left">
+                   {isSaving ? "Apagando..." : "Excluir Conta"}
+                </button>
               </div>
             </div>
 
             <div className="flex bg-slate-50 p-1.5 rounded-full border border-slate-100 gap-1">
               {Object.keys(THEMES).map((t) => (
-                <button 
-                  key={t} 
-                  onClick={() => changeTheme(t as any)} 
-                  className={`p-2 transition-all rounded-full ${activeTheme === t ? 'bg-white shadow-sm scale-110' : 'opacity-20 hover:opacity-100'}`}
-                >
+                <button key={t} onClick={() => changeTheme(t as any)} className={`p-2 transition-all rounded-full ${activeTheme === t ? 'bg-white shadow-sm scale-110' : 'opacity-20 hover:opacity-100'}`}>
                   <BookOpen size={18} color={THEMES[t as keyof typeof THEMES].primary} fill={activeTheme === t ? THEMES[t as keyof typeof THEMES].primary : "transparent"} />
                 </button>
               ))}
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between w-full lg:w-auto gap-2">
               <div className="hidden md:flex flex-col items-end mr-2 text-right">
                  <span className="text-[10px] uppercase font-bold tracking-tighter opacity-40" style={{ color: theme.text }}>Conta Ativa</span>
-                 <span className="text-[9px] truncate max-w-30" style={{ color: theme.primary }}>{session.user?.email?.toLowerCase()}</span>
-                 <button 
-                    onClick={handleDeleteData} 
-                    disabled={isSaving}
-                    className="text-[8px] uppercase font-bold text-red-400 mt-0.5 hover:underline disabled:opacity-50"
-                 >
+                 <button onClick={handleDeleteData} disabled={isSaving} className="text-[9px] uppercase font-bold text-red-400 hover:underline">
                     {isSaving ? "Apagando..." : "Apagar meus dados"}
                  </button>
               </div>
-              <Button variant="outline" size="icon" onClick={() => signOut({ callbackUrl: "/" })} className="h-9 w-9 text-destructive"><LogOut size={16} /></Button>
-              <Button variant="outline" size="icon" onClick={handlePrevMonth} className="h-9 w-9"><ChevronLeft size={16} /></Button>
-              <Button variant="outline" size="icon" onClick={handleNextMonth} className="h-9 w-9"><ChevronRight size={16} /></Button>
+              
+              <div className="flex items-center gap-2 ml-auto">
+                <Button variant="outline" size="icon" onClick={() => signOut({ callbackUrl: "/" })} className="h-9 w-9 text-destructive"><LogOut size={16} /></Button>
+                <Button variant="outline" size="icon" onClick={handlePrevMonth} className="h-9 w-9"><ChevronLeft size={16} /></Button>
+                <Button variant="outline" size="icon" onClick={handleNextMonth} className="h-9 w-9"><ChevronRight size={16} /></Button>
+              </div>
             </div>
           </div>
 
@@ -240,39 +194,28 @@ export default function Home() {
                 <div className="flex items-center gap-2">
                   <Target size={16} style={{ color: theme.primary }} />
                   <span className="text-[11px] font-black uppercase tracking-widest" style={{ color: theme.text }}>Sua Meta Literária</span>
-                  <button onClick={handleSetGoal} disabled={isSaving} className="opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={handleSetGoal} disabled={isSaving} className="md:opacity-0 group-hover:opacity-100 transition-opacity">
                     {isSaving ? <Loader2 size={12} className="animate-spin" /> : <Settings2 size={12} className="text-slate-400" />}
                   </button>
                 </div>
                 <p className="text-[10px] font-bold uppercase" style={{ color: theme.text, opacity: 0.4 }}>
-                  Você leu <span style={{ color: theme.primary }}>{totalReadThisYear}</span> de {myBooksGoal} livros em {currentYear}
+                  Você leu <span style={{ color: theme.primary }}>{totalReadThisYear}</span> de {myBooksGoal} livros
                 </p>
               </div>
               <span className="text-2xl font-black" style={{ color: theme.primary }}>{progressPercent}%</span>
             </div>
             <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden border">
-               <div 
-                className="h-full transition-all duration-1000 ease-in-out" 
-                style={{ width: `${progressPercent}%`, backgroundColor: theme.primary }}
-               ></div>
+               <div className="h-full transition-all duration-1000 ease-in-out" style={{ width: `${progressPercent}%`, backgroundColor: theme.primary }}></div>
             </div>
           </div>
 
           <div className="mt-6 flex flex-col sm:flex-row items-center justify-center mb-8 gap-3">
-            <Button 
-              onClick={() => setShowBack(!showBack)} 
-              className="gap-2 px-8 rounded-full shadow-md font-bold h-11 w-full sm:w-auto text-white transition-transform hover:scale-105"
-              style={{ backgroundColor: theme.primary }}
-            >
-              {showBack ? "← Voltar ao Calendário" : "Ver Livros Lidos →"}
+            <Button onClick={() => setShowBack(!showBack)} className="gap-2 px-8 rounded-full shadow-md font-bold h-11 w-full sm:w-auto text-white" style={{ backgroundColor: theme.primary }}>
+              {showBack ? "← Calendário" : "Livros Lidos →"}
             </Button>
             <Link href="/retrospectiva" className="w-full sm:w-auto">
-              <Button 
-                variant="outline" 
-                className="gap-2 px-8 rounded-full shadow-sm h-11 font-bold w-full sm:w-auto border-2"
-                style={{ borderColor: `${theme.primary}20`, color: theme.primary }}
-              >
-                <BarChart3 size={18} /> Retrospectiva do Ano
+              <Button variant="outline" className="gap-2 px-8 rounded-full shadow-sm h-11 font-bold w-full sm:w-auto border-2" style={{ borderColor: `${theme.primary}20`, color: theme.primary }}>
+                <BarChart3 size={18} /> Retrospectiva
               </Button>
             </Link>
           </div>
@@ -288,7 +231,7 @@ export default function Home() {
       </main>
 
       <footer className="w-full border-t border-slate-100 bg-white p-6 mt-auto">
-        <div className="max-w-6xl mx-auto flex flex-col items-center justify-center gap-2">
+        <div className="max-w-6xl mx-auto flex flex-col items-center justify-center gap-2 text-center">
           <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300">@-Kleuvyn</span>
           <span className="text-[9px] text-slate-400 font-medium">Minha Estante Literária • {currentYear}</span>
         </div>

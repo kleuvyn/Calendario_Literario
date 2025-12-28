@@ -237,7 +237,6 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2d$auth$2f$react$2f$index$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next-auth/react/index.js [app-ssr] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$book$2d$open$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__BookOpen$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/book-open.js [app-ssr] (ecmascript) <export default as BookOpen>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$loader$2d$circle$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Loader2$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/loader-circle.js [app-ssr] (ecmascript) <export default as Loader2>");
-var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$star$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Star$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/star.js [app-ssr] (ecmascript) <export default as Star>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$arrow$2d$left$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__ArrowLeft$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/arrow-left.js [app-ssr] (ecmascript) <export default as ArrowLeft>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$instagram$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Instagram$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/instagram.js [app-ssr] (ecmascript) <export default as Instagram>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$crown$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Crown$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/crown.js [app-ssr] (ecmascript) <export default as Crown>");
@@ -303,8 +302,9 @@ function RetrospectivaPage() {
     const [isGenerating, setIsGenerating] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(false);
     const [currentTheme, setCurrentTheme] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])('rose');
     const currentYear = 2025;
-    const storyRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useRef"])(null);
     const theme = THEMES[currentTheme];
+    const storyResumoRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useRef"])(null);
+    const paginasLivrosRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useRef"])([]);
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
         async function loadData() {
             if (status === "authenticated" && session?.user?.email) {
@@ -327,23 +327,56 @@ function RetrospectivaPage() {
         session,
         currentYear
     ]);
-    const handleExportImage = async ()=>{
-        if (!storyRef.current) return;
+    const bookChunks = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useMemo"])(()=>{
+        const chunks = [];
+        const limit = allBooks.length <= 40 ? 40 : 100;
+        for(let i = 0; i < allBooks.length; i += limit){
+            chunks.push(allBooks.slice(i, i + limit));
+        }
+        return chunks;
+    }, [
+        allBooks
+    ]);
+    const getGridCols = (count)=>{
+        if (count <= 9) return 'grid-cols-3';
+        if (count <= 16) return 'grid-cols-4';
+        if (count <= 25) return 'grid-cols-5';
+        if (count <= 40) return 'grid-cols-6';
+        if (count <= 70) return 'grid-cols-8';
+        return 'grid-cols-10';
+    };
+    const handleExportAll = async ()=>{
         setIsGenerating(true);
         try {
             await new Promise((r)=>setTimeout(r, 800));
-            const dataUrl = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$modern$2d$screenshot$2f$dist$2f$index$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["domToPng"])(storyRef.current, {
-                scale: 3,
-                backgroundColor: theme.bg,
-                width: 400,
-                height: 850
-            });
-            const link = document.createElement('a');
-            link.download = `retro-${currentYear}.png`;
-            link.href = dataUrl;
-            link.click();
+            if (storyResumoRef.current) {
+                const url = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$modern$2d$screenshot$2f$dist$2f$index$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["domToPng"])(storyResumoRef.current, {
+                    scale: 3,
+                    width: 400,
+                    height: 850
+                });
+                const link = document.createElement('a');
+                link.download = `01-resumo.png`;
+                link.href = url;
+                link.click();
+            }
+            for(let i = 0; i < paginasLivrosRef.current.length; i++){
+                const el = paginasLivrosRef.current[i];
+                if (el) {
+                    const url = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$modern$2d$screenshot$2f$dist$2f$index$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["domToPng"])(el, {
+                        scale: 3,
+                        width: 400,
+                        height: 850
+                    });
+                    const link = document.createElement('a');
+                    link.download = `0${i + 2}-biblioteca-${i + 1}.png`;
+                    link.href = url;
+                    link.click();
+                    await new Promise((r)=>setTimeout(r, 400));
+                }
+            }
         } catch (err) {
-            alert("Erro ao gerar imagem.");
+            alert("Erro ao gerar imagens.");
         } finally{
             setIsGenerating(false);
         }
@@ -383,18 +416,18 @@ function RetrospectivaPage() {
             className: "animate-spin text-rose-500"
         }, void 0, false, {
             fileName: "[project]/app/retrospectiva/page.tsx",
-            lineNumber: 76,
+            lineNumber: 99,
             columnNumber: 86
         }, this)
     }, void 0, false, {
         fileName: "[project]/app/retrospectiva/page.tsx",
-        lineNumber: 76,
+        lineNumber: 99,
         columnNumber: 27
     }, this);
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
         className: "min-h-screen bg-slate-50 pb-20 transition-colors duration-500",
         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-            className: "max-w-6xl mx-auto p-4 space-y-12",
+            className: "max-w-7xl mx-auto p-4 space-y-12",
             children: [
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("header", {
                     className: "flex flex-col md:flex-row justify-between items-center gap-6 px-4 no-export",
@@ -410,55 +443,55 @@ function RetrospectivaPage() {
                                         className: "mr-2"
                                     }, void 0, false, {
                                         fileName: "[project]/app/retrospectiva/page.tsx",
-                                        lineNumber: 83,
+                                        lineNumber: 106,
                                         columnNumber: 95
                                     }, this),
                                     " Voltar"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/app/retrospectiva/page.tsx",
-                                lineNumber: 83,
+                                lineNumber: 106,
                                 columnNumber: 26
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/app/retrospectiva/page.tsx",
-                            lineNumber: 83,
+                            lineNumber: 106,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                             className: "flex bg-white/90 backdrop-blur-md p-2 rounded-full shadow-sm border border-slate-200 gap-2",
                             children: Object.keys(THEMES).map((t)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                     onClick: ()=>setCurrentTheme(t),
-                                    className: `p-2 transition-all rounded-full ${currentTheme === t ? 'bg-slate-50 scale-110' : 'opacity-30'}`,
+                                    className: `p-2 transition-all rounded-full ${currentTheme === t ? 'bg-slate-100 scale-110' : 'opacity-30'}`,
                                     children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$book$2d$open$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__BookOpen$3e$__["BookOpen"], {
                                         size: 22,
                                         color: THEMES[t].primary,
                                         fill: currentTheme === t ? THEMES[t].primary : "transparent"
                                     }, void 0, false, {
                                         fileName: "[project]/app/retrospectiva/page.tsx",
-                                        lineNumber: 87,
+                                        lineNumber: 110,
                                         columnNumber: 17
                                     }, this)
                                 }, t, false, {
                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                    lineNumber: 86,
+                                    lineNumber: 109,
                                     columnNumber: 15
                                 }, this))
                         }, void 0, false, {
                             fileName: "[project]/app/retrospectiva/page.tsx",
-                            lineNumber: 84,
+                            lineNumber: 107,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
-                            onClick: handleExportImage,
-                            disabled: isGenerating,
-                            className: "bg-slate-900 text-white rounded-full font-black uppercase text-[10px] px-8 h-11 tracking-widest",
+                            onClick: handleExportAll,
+                            disabled: isGenerating || allBooks.length === 0,
+                            className: "bg-slate-900 text-white rounded-full font-black uppercase text-[10px] px-8 h-11",
                             children: isGenerating ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$loader$2d$circle$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Loader2$3e$__["Loader2"], {
                                 className: "animate-spin",
                                 size: 14
                             }, void 0, false, {
                                 fileName: "[project]/app/retrospectiva/page.tsx",
-                                lineNumber: 92,
+                                lineNumber: 115,
                                 columnNumber: 29
                             }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
                                 children: [
@@ -467,398 +500,467 @@ function RetrospectivaPage() {
                                         className: "mr-2"
                                     }, void 0, false, {
                                         fileName: "[project]/app/retrospectiva/page.tsx",
-                                        lineNumber: 92,
+                                        lineNumber: 115,
                                         columnNumber: 79
                                     }, this),
-                                    " Exportar Story"
+                                    " Exportar ",
+                                    bookChunks.length + 1,
+                                    " Stories"
                                 ]
                             }, void 0, true)
                         }, void 0, false, {
                             fileName: "[project]/app/retrospectiva/page.tsx",
-                            lineNumber: 91,
+                            lineNumber: 114,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/retrospectiva/page.tsx",
-                    lineNumber: 82,
+                    lineNumber: 105,
                     columnNumber: 9
                 }, this),
                 allBooks.length > 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
                     children: [
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                            className: "flex justify-center",
-                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                ref: storyRef,
-                                style: {
-                                    width: '400px',
-                                    height: '850px',
-                                    backgroundColor: theme.bg
-                                },
-                                className: "px-6 py-8 flex flex-col rounded-[50px] shadow-2xl relative overflow-hidden border border-black/5",
-                                children: [
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "text-center mb-6 pt-2",
-                                        children: [
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                style: {
-                                                    color: theme.primary
-                                                },
-                                                className: "text-[10px] font-black uppercase tracking-[0.4em] mb-1",
-                                                children: "Retrospectiva Literária"
-                                            }, void 0, false, {
-                                                fileName: "[project]/app/retrospectiva/page.tsx",
-                                                lineNumber: 102,
-                                                columnNumber: 20
-                                            }, this),
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
-                                                style: {
-                                                    color: theme.text
-                                                },
-                                                className: "text-5xl font-black uppercase italic tracking-tighter leading-none",
-                                                children: currentYear
-                                            }, void 0, false, {
-                                                fileName: "[project]/app/retrospectiva/page.tsx",
-                                                lineNumber: 103,
-                                                columnNumber: 20
-                                            }, this)
-                                        ]
-                                    }, void 0, true, {
-                                        fileName: "[project]/app/retrospectiva/page.tsx",
-                                        lineNumber: 101,
-                                        columnNumber: 17
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        style: {
-                                            backgroundColor: theme.card
-                                        },
-                                        className: "p-5 rounded-[40px] shadow-sm flex flex-col items-center text-center gap-3 border border-black/5 mx-1 mb-6",
-                                        children: [
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                className: "w-20 h-32 bg-slate-100 rounded-xl overflow-hidden shadow-xl transform -rotate-1",
-                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
-                                                    src: stats?.topBook?.cover_url,
-                                                    className: "w-full h-full object-cover",
-                                                    crossOrigin: "anonymous"
+                            className: "flex flex-wrap gap-8 justify-center",
+                            children: [
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    ref: storyResumoRef,
+                                    style: {
+                                        width: '400px',
+                                        height: '850px',
+                                        backgroundColor: theme.bg
+                                    },
+                                    className: "px-6 py-8 flex flex-col rounded-[50px] shadow-2xl relative border border-black/5 shrink-0 overflow-hidden",
+                                    children: [
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            className: "text-center mb-6 pt-2",
+                                            children: [
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                    style: {
+                                                        color: theme.primary
+                                                    },
+                                                    className: "text-[10px] font-black uppercase tracking-[0.4em] mb-1",
+                                                    children: "Retrospectiva Literária"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                                    lineNumber: 108,
-                                                    columnNumber: 23
+                                                    lineNumber: 124,
+                                                    columnNumber: 20
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
+                                                    style: {
+                                                        color: theme.text
+                                                    },
+                                                    className: "text-5xl font-black uppercase italic tracking-tighter leading-none",
+                                                    children: currentYear
+                                                }, void 0, false, {
+                                                    fileName: "[project]/app/retrospectiva/page.tsx",
+                                                    lineNumber: 125,
+                                                    columnNumber: 20
                                                 }, this)
-                                            }, void 0, false, {
-                                                fileName: "[project]/app/retrospectiva/page.tsx",
-                                                lineNumber: 107,
-                                                columnNumber: 20
-                                            }, this),
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                className: "space-y-1 w-full px-2",
-                                                children: [
-                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                        className: "flex items-center justify-center gap-1.5",
-                                                        style: {
-                                                            color: theme.primary
-                                                        },
-                                                        children: [
-                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$crown$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Crown$3e$__["Crown"], {
-                                                                size: 12,
-                                                                fill: "currentColor"
-                                                            }, void 0, false, {
-                                                                fileName: "[project]/app/retrospectiva/page.tsx",
-                                                                lineNumber: 112,
-                                                                columnNumber: 25
-                                                            }, this),
-                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                                className: "text-[8px] font-black uppercase tracking-widest",
-                                                                children: "Destaque do Ano"
-                                                            }, void 0, false, {
-                                                                fileName: "[project]/app/retrospectiva/page.tsx",
-                                                                lineNumber: 113,
-                                                                columnNumber: 25
-                                                            }, this)
-                                                        ]
-                                                    }, void 0, true, {
-                                                        fileName: "[project]/app/retrospectiva/page.tsx",
-                                                        lineNumber: 111,
-                                                        columnNumber: 23
-                                                    }, this),
-                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                        style: {
-                                                            color: theme.text
-                                                        },
-                                                        className: "text-[13px] font-black uppercase leading-tight line-clamp-2 italic mb-1",
-                                                        children: stats?.topBook?.book_name
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "[project]/app/retrospectiva/page.tsx",
+                                            lineNumber: 123,
+                                            columnNumber: 17
+                                        }, this),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            style: {
+                                                backgroundColor: theme.card
+                                            },
+                                            className: "p-5 rounded-[40px] shadow-sm flex flex-col items-center text-center gap-3 border border-black/5 mx-1 mb-6",
+                                            children: [
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "w-20 h-32 bg-slate-100 rounded-xl overflow-hidden shadow-xl transform -rotate-1 border border-black/5",
+                                                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
+                                                        src: stats?.topBook?.cover_url,
+                                                        className: "w-full h-full object-cover",
+                                                        crossOrigin: "anonymous"
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/retrospectiva/page.tsx",
-                                                        lineNumber: 115,
-                                                        columnNumber: 23
-                                                    }, this),
-                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                        className: "text-[9px] font-black uppercase opacity-30 tracking-widest",
-                                                        style: {
-                                                            color: theme.text
-                                                        },
-                                                        children: [
-                                                            stats?.topBook?.total_pages,
-                                                            " Páginas"
-                                                        ]
-                                                    }, void 0, true, {
-                                                        fileName: "[project]/app/retrospectiva/page.tsx",
-                                                        lineNumber: 118,
+                                                        lineNumber: 130,
                                                         columnNumber: 23
                                                     }, this)
-                                                ]
-                                            }, void 0, true, {
-                                                fileName: "[project]/app/retrospectiva/page.tsx",
-                                                lineNumber: 110,
-                                                columnNumber: 20
-                                            }, this)
-                                        ]
-                                    }, void 0, true, {
-                                        fileName: "[project]/app/retrospectiva/page.tsx",
-                                        lineNumber: 106,
-                                        columnNumber: 17
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "flex items-center justify-between gap-1 mb-8",
-                                        children: [
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                className: "flex-1 text-center",
-                                                children: [
-                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                        style: {
-                                                            color: theme.text
-                                                        },
-                                                        className: "text-3xl font-black tracking-tighter leading-none",
-                                                        children: stats?.totalBooks
-                                                    }, void 0, false, {
-                                                        fileName: "[project]/app/retrospectiva/page.tsx",
-                                                        lineNumber: 126,
-                                                        columnNumber: 21
-                                                    }, this),
-                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                        className: "text-[7px] font-black uppercase opacity-40 mt-1",
-                                                        style: {
-                                                            color: theme.text
-                                                        },
-                                                        children: "Lidos"
-                                                    }, void 0, false, {
-                                                        fileName: "[project]/app/retrospectiva/page.tsx",
-                                                        lineNumber: 127,
-                                                        columnNumber: 21
-                                                    }, this)
-                                                ]
-                                            }, void 0, true, {
-                                                fileName: "[project]/app/retrospectiva/page.tsx",
-                                                lineNumber: 125,
-                                                columnNumber: 19
-                                            }, this),
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                className: "flex-[2.2] flex flex-col items-center px-1",
-                                                children: [
-                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                        style: {
-                                                            backgroundColor: theme.primary
-                                                        },
-                                                        className: "w-full py-2.5 px-2 rounded-2xl shadow-md flex items-center justify-center gap-1.5",
-                                                        children: [
-                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$star$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Star$3e$__["Star"], {
-                                                                size: 10,
-                                                                className: "text-white/80 shrink-0",
-                                                                fill: "currentColor"
-                                                            }, void 0, false, {
-                                                                fileName: "[project]/app/retrospectiva/page.tsx",
-                                                                lineNumber: 132,
-                                                                columnNumber: 23
-                                                            }, this),
-                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                                className: "text-white text-[9px] font-black uppercase truncate leading-none",
-                                                                children: stats?.topGenre
-                                                            }, void 0, false, {
-                                                                fileName: "[project]/app/retrospectiva/page.tsx",
-                                                                lineNumber: 133,
-                                                                columnNumber: 23
-                                                            }, this)
-                                                        ]
-                                                    }, void 0, true, {
-                                                        fileName: "[project]/app/retrospectiva/page.tsx",
-                                                        lineNumber: 131,
-                                                        columnNumber: 21
-                                                    }, this),
-                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                        className: "text-[7px] font-black uppercase opacity-40 mt-1",
-                                                        style: {
-                                                            color: theme.text
-                                                        },
-                                                        children: "Gênero Favorito"
-                                                    }, void 0, false, {
-                                                        fileName: "[project]/app/retrospectiva/page.tsx",
-                                                        lineNumber: 135,
-                                                        columnNumber: 21
-                                                    }, this)
-                                                ]
-                                            }, void 0, true, {
-                                                fileName: "[project]/app/retrospectiva/page.tsx",
-                                                lineNumber: 130,
-                                                columnNumber: 19
-                                            }, this),
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                className: "flex-1 text-center",
-                                                children: [
-                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                        style: {
-                                                            color: theme.text
-                                                        },
-                                                        className: "text-2xl font-black tracking-tighter leading-none",
-                                                        children: stats?.totalPages.toLocaleString()
-                                                    }, void 0, false, {
-                                                        fileName: "[project]/app/retrospectiva/page.tsx",
-                                                        lineNumber: 139,
-                                                        columnNumber: 21
-                                                    }, this),
-                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                        className: "text-[7px] font-black uppercase opacity-40 mt-1",
-                                                        style: {
-                                                            color: theme.text
-                                                        },
-                                                        children: "Total Págs"
-                                                    }, void 0, false, {
-                                                        fileName: "[project]/app/retrospectiva/page.tsx",
-                                                        lineNumber: 140,
-                                                        columnNumber: 21
-                                                    }, this)
-                                                ]
-                                            }, void 0, true, {
-                                                fileName: "[project]/app/retrospectiva/page.tsx",
-                                                lineNumber: 138,
-                                                columnNumber: 19
-                                            }, this)
-                                        ]
-                                    }, void 0, true, {
-                                        fileName: "[project]/app/retrospectiva/page.tsx",
-                                        lineNumber: 124,
-                                        columnNumber: 17
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "flex-1 flex flex-col items-center justify-center min-h-0",
-                                        children: [
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                className: "h-56 w-full",
-                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$recharts$2f$es6$2f$component$2f$ResponsiveContainer$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["ResponsiveContainer"], {
-                                                    width: "100%",
-                                                    height: "100%",
-                                                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$recharts$2f$es6$2f$chart$2f$PieChart$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["PieChart"], {
-                                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$recharts$2f$es6$2f$polar$2f$Pie$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Pie"], {
-                                                            data: genreData,
-                                                            innerRadius: 45,
-                                                            outerRadius: 80,
-                                                            paddingAngle: 4,
-                                                            dataKey: "value",
-                                                            isAnimationActive: false,
-                                                            label: ({ percent })=>`${(percent * 100).toFixed(0)}%`,
-                                                            labelLine: {
-                                                                stroke: theme.text,
-                                                                strokeWidth: 1.5,
-                                                                opacity: 0.2
+                                                }, void 0, false, {
+                                                    fileName: "[project]/app/retrospectiva/page.tsx",
+                                                    lineNumber: 129,
+                                                    columnNumber: 20
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "space-y-1 w-full px-2",
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            className: "flex items-center justify-center gap-1.5",
+                                                            style: {
+                                                                color: theme.primary
                                                             },
-                                                            children: genreData.map((_, index)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$recharts$2f$es6$2f$component$2f$Cell$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Cell"], {
-                                                                    fill: GENRE_COLORS[index % GENRE_COLORS.length],
-                                                                    stroke: theme.bg,
-                                                                    strokeWidth: 2
-                                                                }, index, false, {
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$crown$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Crown$3e$__["Crown"], {
+                                                                    size: 12,
+                                                                    fill: "currentColor"
+                                                                }, void 0, false, {
                                                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                                                    lineNumber: 159,
-                                                                    columnNumber: 29
-                                                                }, this))
+                                                                    lineNumber: 133,
+                                                                    columnNumber: 114
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                    className: "text-[8px] font-black uppercase tracking-widest",
+                                                                    children: "Destaque do Ano"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/app/retrospectiva/page.tsx",
+                                                                    lineNumber: 133,
+                                                                    columnNumber: 153
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/app/retrospectiva/page.tsx",
+                                                            lineNumber: 133,
+                                                            columnNumber: 23
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                            style: {
+                                                                color: theme.text
+                                                            },
+                                                            className: "text-[13px] font-black uppercase leading-tight line-clamp-2 italic mb-1",
+                                                            children: stats?.topBook?.book_name
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/retrospectiva/page.tsx",
+                                                            lineNumber: 134,
+                                                            columnNumber: 23
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                            className: "text-[9px] font-black uppercase opacity-30 tracking-widest",
+                                                            style: {
+                                                                color: theme.text
+                                                            },
+                                                            children: [
+                                                                stats?.totalPages.toLocaleString(),
+                                                                " Páginas Lidas"
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/app/retrospectiva/page.tsx",
+                                                            lineNumber: 135,
+                                                            columnNumber: 23
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/app/retrospectiva/page.tsx",
+                                                    lineNumber: 132,
+                                                    columnNumber: 20
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "[project]/app/retrospectiva/page.tsx",
+                                            lineNumber: 128,
+                                            columnNumber: 17
+                                        }, this),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            className: "flex items-center justify-between gap-1 mb-8 px-4 text-center",
+                                            children: [
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            style: {
+                                                                color: theme.text
+                                                            },
+                                                            className: "text-3xl font-black tracking-tighter leading-none",
+                                                            children: stats?.totalBooks
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/retrospectiva/page.tsx",
+                                                            lineNumber: 140,
+                                                            columnNumber: 24
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                            className: "text-[7px] font-black uppercase opacity-40 mt-1",
+                                                            children: "Lidos"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/retrospectiva/page.tsx",
+                                                            lineNumber: 140,
+                                                            columnNumber: 148
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/app/retrospectiva/page.tsx",
+                                                    lineNumber: 140,
+                                                    columnNumber: 19
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "px-4",
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            style: {
+                                                                backgroundColor: theme.primary
+                                                            },
+                                                            className: "py-2 px-4 rounded-2xl shadow-md text-white text-[9px] font-black uppercase truncate leading-none",
+                                                            children: stats?.topGenre
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/retrospectiva/page.tsx",
+                                                            lineNumber: 141,
+                                                            columnNumber: 41
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                            className: "text-[7px] font-black uppercase opacity-40 mt-1",
+                                                            children: "Favorito"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/retrospectiva/page.tsx",
+                                                            lineNumber: 141,
+                                                            columnNumber: 221
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/app/retrospectiva/page.tsx",
+                                                    lineNumber: 141,
+                                                    columnNumber: 19
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            style: {
+                                                                color: theme.text
+                                                            },
+                                                            className: "text-2xl font-black tracking-tighter leading-none",
+                                                            children: stats?.totalPages.toLocaleString()
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/retrospectiva/page.tsx",
+                                                            lineNumber: 142,
+                                                            columnNumber: 24
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                            className: "text-[7px] font-black uppercase opacity-40 mt-1",
+                                                            children: "Págs"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/retrospectiva/page.tsx",
+                                                            lineNumber: 142,
+                                                            columnNumber: 165
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/app/retrospectiva/page.tsx",
+                                                    lineNumber: 142,
+                                                    columnNumber: 19
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "[project]/app/retrospectiva/page.tsx",
+                                            lineNumber: 139,
+                                            columnNumber: 17
+                                        }, this),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            className: "flex-1 flex flex-col items-center justify-center min-h-0",
+                                            children: [
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "h-52 w-full",
+                                                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$recharts$2f$es6$2f$component$2f$ResponsiveContainer$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["ResponsiveContainer"], {
+                                                        width: "100%",
+                                                        height: "100%",
+                                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$recharts$2f$es6$2f$chart$2f$PieChart$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["PieChart"], {
+                                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$recharts$2f$es6$2f$polar$2f$Pie$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Pie"], {
+                                                                data: genreData,
+                                                                innerRadius: 45,
+                                                                outerRadius: 75,
+                                                                paddingAngle: 4,
+                                                                dataKey: "value",
+                                                                isAnimationActive: false,
+                                                                label: ({ percent })=>`${(percent * 100).toFixed(0)}%`,
+                                                                labelLine: {
+                                                                    stroke: theme.text,
+                                                                    strokeWidth: 1.5,
+                                                                    opacity: 0.2
+                                                                },
+                                                                children: genreData.map((_, index)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$recharts$2f$es6$2f$component$2f$Cell$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Cell"], {
+                                                                        fill: GENRE_COLORS[index % GENRE_COLORS.length],
+                                                                        stroke: theme.bg,
+                                                                        strokeWidth: 2
+                                                                    }, index, false, {
+                                                                        fileName: "[project]/app/retrospectiva/page.tsx",
+                                                                        lineNumber: 149,
+                                                                        columnNumber: 56
+                                                                    }, this))
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/retrospectiva/page.tsx",
+                                                                lineNumber: 148,
+                                                                columnNumber: 33
+                                                            }, this)
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/retrospectiva/page.tsx",
                                                             lineNumber: 148,
-                                                            columnNumber: 25
+                                                            columnNumber: 23
                                                         }, this)
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/retrospectiva/page.tsx",
                                                         lineNumber: 147,
-                                                        columnNumber: 23
+                                                        columnNumber: 21
                                                     }, this)
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/retrospectiva/page.tsx",
                                                     lineNumber: 146,
-                                                    columnNumber: 21
+                                                    columnNumber: 19
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "flex flex-wrap justify-center gap-x-3 gap-y-1.5 px-2 mt-4",
+                                                    children: genreData.slice(0, 8).map((item, index)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            className: "flex items-center gap-1",
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                    className: "w-1.5 h-1.5 rounded-full shrink-0",
+                                                                    style: {
+                                                                        backgroundColor: GENRE_COLORS[index % GENRE_COLORS.length]
+                                                                    }
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/app/retrospectiva/page.tsx",
+                                                                    lineNumber: 156,
+                                                                    columnNumber: 25
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                    style: {
+                                                                        color: theme.text
+                                                                    },
+                                                                    className: "text-[7px] font-black uppercase tracking-tight opacity-60",
+                                                                    children: item.name
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/app/retrospectiva/page.tsx",
+                                                                    lineNumber: 157,
+                                                                    columnNumber: 25
+                                                                }, this)
+                                                            ]
+                                                        }, index, true, {
+                                                            fileName: "[project]/app/retrospectiva/page.tsx",
+                                                            lineNumber: 155,
+                                                            columnNumber: 23
+                                                        }, this))
+                                                }, void 0, false, {
+                                                    fileName: "[project]/app/retrospectiva/page.tsx",
+                                                    lineNumber: 153,
+                                                    columnNumber: 19
                                                 }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "[project]/app/retrospectiva/page.tsx",
+                                            lineNumber: 145,
+                                            columnNumber: 17
+                                        }, this),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            className: "text-center mt-6 pb-2 opacity-20",
+                                            style: {
+                                                color: theme.text
+                                            },
+                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                className: "text-[8px] font-black uppercase tracking-[0.5em]",
+                                                children: "estante-literaria.vercel.app"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/retrospectiva/page.tsx",
-                                                lineNumber: 145,
+                                                lineNumber: 162,
+                                                columnNumber: 97
+                                            }, this)
+                                        }, void 0, false, {
+                                            fileName: "[project]/app/retrospectiva/page.tsx",
+                                            lineNumber: 162,
+                                            columnNumber: 17
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "[project]/app/retrospectiva/page.tsx",
+                                    lineNumber: 122,
+                                    columnNumber: 15
+                                }, this),
+                                bookChunks.map((chunk, index)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        ref: (el)=>{
+                                            paginasLivrosRef.current[index] = el;
+                                        },
+                                        style: {
+                                            width: '400px',
+                                            height: '850px',
+                                            backgroundColor: theme.bg
+                                        },
+                                        className: "px-4 py-12 flex flex-col rounded-[50px] shadow-2xl relative border border-black/5 overflow-hidden shrink-0",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "text-center mb-10 pt-4 px-4",
+                                                children: [
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                        style: {
+                                                            color: theme.primary
+                                                        },
+                                                        className: "text-[10px] font-black uppercase tracking-[0.4em] mb-2 opacity-80",
+                                                        children: "Minha Biblioteca"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/app/retrospectiva/page.tsx",
+                                                        lineNumber: 168,
+                                                        columnNumber: 22
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
+                                                        style: {
+                                                            color: theme.text
+                                                        },
+                                                        className: "text-4xl font-black uppercase italic tracking-tighter leading-none",
+                                                        children: [
+                                                            currentYear,
+                                                            " ",
+                                                            bookChunks.length > 1 ? `(${index + 1}/${bookChunks.length})` : ''
+                                                        ]
+                                                    }, void 0, true, {
+                                                        fileName: "[project]/app/retrospectiva/page.tsx",
+                                                        lineNumber: 169,
+                                                        columnNumber: 22
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/app/retrospectiva/page.tsx",
+                                                lineNumber: 167,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                className: "flex flex-wrap justify-center gap-x-3 gap-y-1.5 px-2 mt-4",
-                                                children: genreData.slice(0, 8).map((item, index)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                        className: "flex items-center gap-1",
-                                                        children: [
-                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                                className: "w-1.5 h-1.5 rounded-full shrink-0",
-                                                                style: {
-                                                                    backgroundColor: GENRE_COLORS[index % GENRE_COLORS.length]
-                                                                }
-                                                            }, void 0, false, {
-                                                                fileName: "[project]/app/retrospectiva/page.tsx",
-                                                                lineNumber: 169,
-                                                                columnNumber: 25
-                                                            }, this),
-                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                                style: {
-                                                                    color: theme.text
-                                                                },
-                                                                className: "text-[7px] font-black uppercase tracking-tight opacity-60",
-                                                                children: item.name
-                                                            }, void 0, false, {
-                                                                fileName: "[project]/app/retrospectiva/page.tsx",
-                                                                lineNumber: 170,
-                                                                columnNumber: 25
-                                                            }, this)
-                                                        ]
-                                                    }, index, true, {
+                                                className: `grid ${getGridCols(chunk.length)} gap-2 flex-1 content-center items-center px-2`,
+                                                children: chunk.map((book, bIdx)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                        className: "aspect-[3/4.5] w-full rounded-sm shadow-sm overflow-hidden bg-white border border-black/5",
+                                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
+                                                            src: book.cover_url,
+                                                            className: "w-full h-full object-cover",
+                                                            crossOrigin: "anonymous",
+                                                            alt: ""
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/retrospectiva/page.tsx",
+                                                            lineNumber: 174,
+                                                            columnNumber: 25
+                                                        }, this)
+                                                    }, bIdx, false, {
                                                         fileName: "[project]/app/retrospectiva/page.tsx",
-                                                        lineNumber: 168,
+                                                        lineNumber: 173,
                                                         columnNumber: 23
                                                     }, this))
                                             }, void 0, false, {
                                                 fileName: "[project]/app/retrospectiva/page.tsx",
-                                                lineNumber: 166,
+                                                lineNumber: 171,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "text-center mt-10 pb-4 opacity-30 px-4",
+                                                style: {
+                                                    color: theme.text
+                                                },
+                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                    className: "text-[9px] font-black uppercase tracking-[0.6em]",
+                                                    children: "estante-literaria.vercel.app"
+                                                }, void 0, false, {
+                                                    fileName: "[project]/app/retrospectiva/page.tsx",
+                                                    lineNumber: 178,
+                                                    columnNumber: 105
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/retrospectiva/page.tsx",
+                                                lineNumber: 178,
                                                 columnNumber: 19
                                             }, this)
                                         ]
-                                    }, void 0, true, {
+                                    }, index, true, {
                                         fileName: "[project]/app/retrospectiva/page.tsx",
-                                        lineNumber: 144,
+                                        lineNumber: 166,
                                         columnNumber: 17
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "text-center mt-6 pb-2 opacity-20",
-                                        style: {
-                                            color: theme.text
-                                        },
-                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                            className: "text-[8px] font-black uppercase tracking-[0.5em]",
-                                            children: "estante-literaria.vercel.app"
-                                        }, void 0, false, {
-                                            fileName: "[project]/app/retrospectiva/page.tsx",
-                                            lineNumber: 179,
-                                            columnNumber: 20
-                                        }, this)
-                                    }, void 0, false, {
-                                        fileName: "[project]/app/retrospectiva/page.tsx",
-                                        lineNumber: 178,
-                                        columnNumber: 17
-                                    }, this)
-                                ]
-                            }, void 0, true, {
-                                fileName: "[project]/app/retrospectiva/page.tsx",
-                                lineNumber: 99,
-                                columnNumber: 15
-                            }, this)
-                        }, void 0, false, {
+                                    }, this))
+                            ]
+                        }, void 0, true, {
                             fileName: "[project]/app/retrospectiva/page.tsx",
-                            lineNumber: 98,
+                            lineNumber: 121,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -875,7 +977,7 @@ function RetrospectivaPage() {
                                                     className: "text-slate-300"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                                    lineNumber: 187,
+                                                    lineNumber: 185,
                                                     columnNumber: 19
                                                 }, this),
                                                 " Sua Biblioteca ",
@@ -883,7 +985,7 @@ function RetrospectivaPage() {
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                            lineNumber: 186,
+                                            lineNumber: 184,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -894,13 +996,13 @@ function RetrospectivaPage() {
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                            lineNumber: 189,
+                                            lineNumber: 187,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                    lineNumber: 185,
+                                    lineNumber: 183,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -916,12 +1018,12 @@ function RetrospectivaPage() {
                                                         alt: book.book_name
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/retrospectiva/page.tsx",
-                                                        lineNumber: 197,
+                                                        lineNumber: 195,
                                                         columnNumber: 23
                                                     }, this)
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                                    lineNumber: 196,
+                                                    lineNumber: 194,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -932,7 +1034,7 @@ function RetrospectivaPage() {
                                                             children: book.book_name
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                                            lineNumber: 200,
+                                                            lineNumber: 198,
                                                             columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -940,30 +1042,30 @@ function RetrospectivaPage() {
                                                             children: book.genre
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                                            lineNumber: 201,
+                                                            lineNumber: 199,
                                                             columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                                    lineNumber: 199,
+                                                    lineNumber: 197,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, i, true, {
                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                            lineNumber: 195,
+                                            lineNumber: 193,
                                             columnNumber: 19
                                         }, this))
                                 }, void 0, false, {
                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                    lineNumber: 193,
+                                    lineNumber: 191,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/retrospectiva/page.tsx",
-                            lineNumber: 184,
+                            lineNumber: 182,
                             columnNumber: 13
                         }, this)
                     ]
@@ -972,18 +1074,18 @@ function RetrospectivaPage() {
                     children: "Ainda não há livros lidos"
                 }, void 0, false, {
                     fileName: "[project]/app/retrospectiva/page.tsx",
-                    lineNumber: 209,
+                    lineNumber: 207,
                     columnNumber: 11
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/app/retrospectiva/page.tsx",
-            lineNumber: 80,
+            lineNumber: 103,
             columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/app/retrospectiva/page.tsx",
-        lineNumber: 79,
+        lineNumber: 102,
         columnNumber: 5
     }, this);
 }
