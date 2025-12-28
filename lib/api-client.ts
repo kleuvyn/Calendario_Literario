@@ -3,6 +3,7 @@ export interface User {
   email: string;
   name: string;
   image?: string;
+  literary_goal?: number;
 }
 
 export interface ReadingDay {
@@ -34,76 +35,55 @@ export async function loginUser(email: string, name?: string, image?: string): P
   const response = await fetch("/api/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, name, image }),
+    body: JSON.stringify({ email: email.toLowerCase(), name, image }),
   });
-
   if (!response.ok) throw new Error("Erro ao fazer login");
   const data = await response.json();
   return data.user;
 }
 
-export async function getReadingData(email: string, year: number, month?: number, signal?: AbortSignal): Promise<ReadingDay[]> {
-  let url = `/api/reading-data?email=${encodeURIComponent(email)}&year=${year}`;
-  
-  if (month !== undefined) {
-    url += `&month=${month}`;
-  }
-  
+export async function getReadingData(email: string, year: number, month?: number, signal?: AbortSignal): Promise<any> {
+  let url = `/api/reading-data?email=${encodeURIComponent(email.toLowerCase())}&year=${year}`;
+  if (month !== undefined) url += `&month=${month}`;
   url += `&t=${Date.now()}`;
-
-  const response = await fetch(url, {
-    cache: 'no-store'
-  });
-
+  const response = await fetch(url, { cache: 'no-store', signal });
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || "Erro ao buscar dados de leitura");
+    throw new Error(errorData.error || "Erro ao buscar dados");
   }
+  return await response.json();
+}
 
-  const data = await response.json();
-  return data.data || [];
+export async function updateUserGoal(email: string, goal: number) {
+  const response = await fetch("/api/reading-data", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "SET_GOAL", email: email.toLowerCase(), goal }),
+  });
+  if (!response.ok) throw new Error("Erro ao salvar meta");
+  return response.json();
 }
 
 export async function saveReadingDay(
-  email: string,
-  year: number,
-  month: number,
-  day: number,
-  startDate: string,
-  endDate: string,
-  bookName: string,
+  email: string, year: number, month: number, day: number,
+  startDate: string, endDate: string, bookName: string,
   action: "START_READING" | "FINISH_READING"
 ) {
   const response = await fetch("/api/reading-data", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, year, month, day, startDate, endDate, bookName, action }),
+    body: JSON.stringify({ email: email.toLowerCase(), year, month, day, startDate, endDate, bookName, action }),
   });
-
   if (!response.ok) throw new Error("Erro ao salvar dados");
   return response.json();
 }
 
-export async function saveReview(
-  email: string, 
-  bookName: string, 
-  rating: number, 
-  coverUrl: string,
-  totalPages?: number
-) {
+export async function saveReview(email: string, bookName: string, rating: number, coverUrl: string, totalPages?: number) {
   const response = await fetch("/api/reading-data", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ 
-      email, 
-      bookName, 
-      rating, 
-      coverUrl, 
-      totalPages,
-      action: "UPDATE_REVIEW" 
-    }),
+    body: JSON.stringify({ email: email.toLowerCase(), bookName, rating, coverUrl, totalPages, action: "UPDATE_REVIEW" }),
   });
-
   if (!response.ok) throw new Error("Erro ao salvar avaliação");
   return response.json();
 }
@@ -112,18 +92,14 @@ export async function updateProfileImage(email: string, imageUrl: string) {
   const response = await fetch("/api/user/update-profile", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, image: imageUrl }),
+    body: JSON.stringify({ email: email.toLowerCase(), image: imageUrl }),
   });
-
   if (!response.ok) throw new Error("Erro ao atualizar foto de perfil");
   return response.json();
 }
 
 export async function deleteBookRecord(id: string) {
-  const response = await fetch(`/api/books/${id}`, {
-    method: "DELETE",
-  });
-
+  const response = await fetch(`/api/books/${id}`, { method: "DELETE" });
   if (!response.ok) throw new Error("Erro ao deletar");
   return response.json();
 }
@@ -134,7 +110,20 @@ export async function updateBookName(id: string, title: string) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ title }),
   });
-
   if (!response.ok) throw new Error("Erro ao atualizar nome");
+  return response.json();
+}
+
+export async function deleteFullAccount() {
+  const response = await fetch("/api/user/delete-account", {
+    method: "DELETE",
+    cache: 'no-store' // Evita que o navegador use cache para exclusão
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || "Erro ao apagar conta");
+  }
+
   return response.json();
 }

@@ -10,7 +10,6 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
   const [readings, setReadings] = useState<any[]>([])
   const [tempBookNames, setTempBookNames] = useState<Record<number, string>>({})
   const [isUpdating, setIsUpdating] = useState(false)
-  const [isDeleting, setIsDeleting] = useState<string | null>(null)
 
   const now = new Date()
   const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
@@ -30,67 +29,52 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
     loadData()
   }, [userEmail, monthIndex, year])
 
-  async function handleEditName(bookId: string, oldName: string) {
+  async function handleEditName(oldName: string) {
     const newName = prompt("Editar nome do livro:", oldName)
     if (!newName || newName === oldName) return
-
     setIsUpdating(true)
     try {
-      const res = await fetch(`/api/books/${bookId}`, {
-        method: "PATCH",
+      await fetch("/api/reading-data", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: newName }),
+        body: JSON.stringify({ action: "EDIT_READING", email: userEmail, bookName: newName, oldBookName: oldName })
       })
-      if (res.ok) await loadData()
-    } catch (err) {
-      alert("Erro ao atualizar nome.")
-    } finally {
-      setIsUpdating(false)
-    }
+      await loadData()
+    } catch (err) { alert("Erro ao atualizar.") } finally { setIsUpdating(false) }
   }
 
-  async function handleDelete(bookId: string, bookName: string) {
+  async function handleDelete(bookName: string) {
     if (!confirm(`Excluir totalmente "${bookName}"?`)) return
-    setIsDeleting(bookId)
+    setIsUpdating(true)
     try {
-      const res = await fetch(`/api/books/${bookId}`, { method: "DELETE" })
-      if (res.ok) await loadData()
-    } catch (err) {
-      alert("Erro ao excluir.")
-    } finally {
-      setIsDeleting(null)
-    }
+      await fetch("/api/reading-data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "DELETE_READING", email: userEmail, bookName: bookName })
+      })
+      await loadData()
+    } finally { setIsUpdating(false) }
   }
 
   async function handleAction(day: number, action: "START_READING" | "FINISH_READING", bookName?: string) {
     if (isUpdating || !userEmail) return
     const name = bookName || tempBookNames[day]
     if (!name) return
-
     setIsUpdating(true)
     const dateFormatted = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T12:00:00Z`
-
     try {
       await fetch("/api/reading-data", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action,
-          email: userEmail,
-          bookName: name,
-          startDate: action === "START_READING" ? dateFormatted : undefined,
-          endDate: action === "FINISH_READING" ? dateFormatted : undefined,
-          year: year,
-          month: monthIndex + 1
+          action, email: userEmail, bookName: name,
+          startDate: dateFormatted, endDate: dateFormatted,
+          year: year, month: monthIndex + 1
         })
       })
       setTempBookNames(p => ({ ...p, [day]: "" }))
       await loadData() 
-    } catch (err) {
-      alert("Erro ao salvar.")
-    } finally {
-      setIsUpdating(false)
-    }
+    } catch (err) { alert("Erro ao salvar.") } finally { setIsUpdating(false) }
   }
 
   return (
@@ -109,7 +93,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
             if (!r.start_date) return false
             const startStr = r.start_date.split('T')[0]
             const endStr = r.end_date ? r.end_date.split('T')[0] : null
-            
+        
             return currentDayStr >= startStr && (!endStr || currentDayStr <= endStr)
           })
 
@@ -117,30 +101,31 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
             <div key={`${monthIndex}-${day}`} className={`min-h-40 rounded-lg border p-2 flex flex-col bg-card shadow-sm ${isToday ? 'ring-2 ring-primary bg-primary/5' : isFuture ? 'opacity-40 grayscale pointer-events-none' : ''}`}>
               <div className="flex justify-between items-start mb-2">
                 <span className="font-bold text-sm text-muted-foreground">{day}</span>
+                {isUpdating && <Loader2 size={10} className="animate-spin opacity-20" />}
               </div>
               
               <div className="flex-1 space-y-1 overflow-y-auto">
                 {dayReadings.map((r, idx) => (
                   <div key={idx} className={`p-1.5 rounded text-[10px] border shadow-sm relative ${r.status === 'lendo' ? 'bg-primary/10 border-primary/30' : 'bg-muted/50 border-border'}`}>
                     <div className="flex justify-between items-start gap-1">
-                      <p className="truncate font-black text-foreground flex-1 cursor-pointer hover:underline" onClick={() => handleEditName(r.id, r.book_name)}>
+                      <p className="truncate font-black text-foreground flex-1">
                         {r.book_name.toUpperCase()}
                       </p>
                       <div className="flex gap-1">
-                        <button onClick={() => handleEditName(r.id, r.book_name)} className="text-muted-foreground hover:text-primary">
-                          <Edit2 size={8} />
-                        </button>
-                        <button onClick={() => handleDelete(r.id, r.book_name)} className="text-muted-foreground hover:text-destructive">
-                          <Trash2 size={8} />
-                        </button>
+                        <button onClick={() => handleEditName(r.book_name)}><Edit2 size={8} /></button>
+                        <button onClick={() => handleDelete(r.book_name)}><Trash2 size={8} /></button>
                       </div>
                     </div>
-
                     {r.status === "lendo" && (
-                      <Button size="sm" className="h-5 w-full text-[8px] mt-1 font-bold" variant="destructive" onClick={() => handleAction(day, "FINISH_READING", r.book_name)}>
-                        ENCERRAR AQUI
-                      </Button>
-                    )}
+                   <Button 
+                      size="sm" 
+                      className="h-5 w-full text-[8px] mt-1 font-bold bg-destructive/10 hover:bg-destructive/20 border-destructive/20 text-slate-600" 
+                      variant="outline" 
+                      onClick={() => handleAction(day, "FINISH_READING", r.book_name)}
+                    >
+                      ENCERRAR AQUI
+                    </Button>
+                  )}
                   </div>
                 ))}
               </div>
@@ -152,6 +137,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
                     placeholder="Novo livro..." 
                     value={tempBookNames[day] || ""} 
                     onChange={e => setTempBookNames(p => ({ ...p, [day]: e.target.value }))} 
+                    onKeyDown={(e) => e.key === 'Enter' && handleAction(day, "START_READING")}
                   />
                   <Button 
                     className="h-7 w-full text-[10px] font-bold" 

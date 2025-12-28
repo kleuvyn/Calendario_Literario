@@ -122,23 +122,42 @@ async function PATCH(request, { params }) {
                 status: 404
             });
         }
-        const oldName = currentData[0].book_name;
-        const userId = currentData[0].user_id;
-        const email = currentData[0].email;
+        const { book_name: oldName, user_id: userId, email } = currentData[0];
         await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`UPDATE public.reading_data SET book_name = $1 WHERE id = $2`, [
             newName,
             id
         ]);
-        await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`UPDATE public.book_reviews SET title = $1 WHERE title = $2 AND user_id = $3`, [
-            newName,
-            oldName,
-            userId
-        ]);
-        await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`UPDATE public.books SET title = $1 WHERE title = $2 AND user_email = $3`, [
-            newName,
-            oldName,
-            email
-        ]);
+        if (userId) {
+            try {
+                await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`UPDATE public.book_reviews SET title = $1 WHERE title = $2 AND user_id = $3`, [
+                    newName,
+                    oldName,
+                    userId
+                ]);
+            } catch (e) {
+                console.error("Erro ao atualizar reviews:", e);
+            }
+        }
+        if (email) {
+            try {
+                await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`UPDATE public.books SET title = $1 WHERE title = $2 AND user_email = $3`, [
+                    newName,
+                    oldName,
+                    email
+                ]);
+            } catch (e) {
+                console.log("Falha ao atualizar tabela books (user_email não existe), tentando 'email'...");
+                try {
+                    await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`UPDATE public.books SET title = $1 WHERE title = $2 AND email = $3`, [
+                        newName,
+                        oldName,
+                        email
+                    ]);
+                } catch (e2) {
+                    console.error("A tabela 'books' não possui coluna de email conhecida.");
+                }
+            }
+        }
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
             success: true
         });
@@ -156,19 +175,23 @@ async function DELETE(request, { params }) {
         const data = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])("SELECT book_name, user_id, email FROM public.reading_data WHERE id = $1", [
             id
         ]);
-        if (data.length > 0) {
+        if (data && data.length > 0) {
             const { book_name, user_id, email } = data[0];
             await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])("DELETE FROM public.reading_data WHERE id = $1", [
                 id
             ]);
-            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])("DELETE FROM public.book_reviews WHERE title = $1 AND user_id = $2", [
-                book_name,
-                user_id
-            ]);
-            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])("DELETE FROM public.books WHERE title = $1 AND user_email = $2", [
-                book_name,
-                email
-            ]);
+            try {
+                await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])("DELETE FROM public.book_reviews WHERE title = $1 AND user_id = $2", [
+                    book_name,
+                    user_id
+                ]);
+            } catch (e) {}
+            try {
+                await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])("DELETE FROM public.books WHERE title = $1 AND (email = $2 OR user_email = $2)", [
+                    book_name,
+                    email
+                ]);
+            } catch (e) {}
         }
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
             message: "Excluído com sucesso"

@@ -119,6 +119,8 @@ if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelper
 __turbopack_context__.s([
     "deleteBookRecord",
     ()=>deleteBookRecord,
+    "deleteFullAccount",
+    ()=>deleteFullAccount,
     "getReadingData",
     ()=>getReadingData,
     "loginUser",
@@ -130,7 +132,9 @@ __turbopack_context__.s([
     "updateBookName",
     ()=>updateBookName,
     "updateProfileImage",
-    ()=>updateProfileImage
+    ()=>updateProfileImage,
+    "updateUserGoal",
+    ()=>updateUserGoal
 ]);
 async function loginUser(email, name, image) {
     const response = await fetch("/api/auth/login", {
@@ -139,7 +143,7 @@ async function loginUser(email, name, image) {
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
-            email,
+            email: email.toLowerCase(),
             name,
             image
         })
@@ -149,20 +153,33 @@ async function loginUser(email, name, image) {
     return data.user;
 }
 async function getReadingData(email, year, month, signal) {
-    let url = `/api/reading-data?email=${encodeURIComponent(email)}&year=${year}`;
-    if (month !== undefined) {
-        url += `&month=${month}`;
-    }
+    let url = `/api/reading-data?email=${encodeURIComponent(email.toLowerCase())}&year=${year}`;
+    if (month !== undefined) url += `&month=${month}`;
     url += `&t=${Date.now()}`;
     const response = await fetch(url, {
-        cache: 'no-store'
+        cache: 'no-store',
+        signal
     });
     if (!response.ok) {
         const errorData = await response.json().catch(()=>({}));
-        throw new Error(errorData.error || "Erro ao buscar dados de leitura");
+        throw new Error(errorData.error || "Erro ao buscar dados");
     }
-    const data = await response.json();
-    return data.data || [];
+    return await response.json();
+}
+async function updateUserGoal(email, goal) {
+    const response = await fetch("/api/reading-data", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            action: "SET_GOAL",
+            email: email.toLowerCase(),
+            goal
+        })
+    });
+    if (!response.ok) throw new Error("Erro ao salvar meta");
+    return response.json();
 }
 async function saveReadingDay(email, year, month, day, startDate, endDate, bookName, action) {
     const response = await fetch("/api/reading-data", {
@@ -171,7 +188,7 @@ async function saveReadingDay(email, year, month, day, startDate, endDate, bookN
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
-            email,
+            email: email.toLowerCase(),
             year,
             month,
             day,
@@ -191,7 +208,7 @@ async function saveReview(email, bookName, rating, coverUrl, totalPages) {
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
-            email,
+            email: email.toLowerCase(),
             bookName,
             rating,
             coverUrl,
@@ -209,7 +226,7 @@ async function updateProfileImage(email, imageUrl) {
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
-            email,
+            email: email.toLowerCase(),
             image: imageUrl
         })
     });
@@ -236,6 +253,17 @@ async function updateBookName(id, title) {
     if (!response.ok) throw new Error("Erro ao atualizar nome");
     return response.json();
 }
+async function deleteFullAccount() {
+    const response = await fetch("/api/user/delete-account", {
+        method: "DELETE",
+        cache: 'no-store' // Evita que o navegador use cache para exclusão
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(()=>({}));
+        throw new Error(errorData.error || "Erro ao apagar conta");
+    }
+    return response.json();
+}
 if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
     __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);
 }
@@ -251,6 +279,7 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/index.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/ui/button.tsx [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/ui/input.tsx [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$loader$2d$circle$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Loader2$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/loader-circle.js [app-client] (ecmascript) <export default as Loader2>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$trash$2d$2$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Trash2$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/trash-2.js [app-client] (ecmascript) <export default as Trash2>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$pen$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Edit2$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/pen.js [app-client] (ecmascript) <export default as Edit2>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$api$2d$client$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/api-client.ts [app-client] (ecmascript)");
@@ -267,7 +296,6 @@ function MonthCalendar({ month, days, year, userEmail, monthIndex }) {
     const [readings, setReadings] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])([]);
     const [tempBookNames, setTempBookNames] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])({});
     const [isUpdating, setIsUpdating] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
-    const [isDeleting, setIsDeleting] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
     const now = new Date();
     const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     async function loadData() {
@@ -289,39 +317,48 @@ function MonthCalendar({ month, days, year, userEmail, monthIndex }) {
         monthIndex,
         year
     ]);
-    async function handleEditName(bookId, oldName) {
+    async function handleEditName(oldName) {
         const newName = prompt("Editar nome do livro:", oldName);
         if (!newName || newName === oldName) return;
         setIsUpdating(true);
         try {
-            const res = await fetch(`/api/books/${bookId}`, {
-                method: "PATCH",
+            await fetch("/api/reading-data", {
+                method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    title: newName
+                    action: "EDIT_READING",
+                    email: userEmail,
+                    bookName: newName,
+                    oldBookName: oldName
                 })
             });
-            if (res.ok) await loadData();
+            await loadData();
         } catch (err) {
-            alert("Erro ao atualizar nome.");
+            alert("Erro ao atualizar.");
         } finally{
             setIsUpdating(false);
         }
     }
-    async function handleDelete(bookId, bookName) {
+    async function handleDelete(bookName) {
         if (!confirm(`Excluir totalmente "${bookName}"?`)) return;
-        setIsDeleting(bookId);
+        setIsUpdating(true);
         try {
-            const res = await fetch(`/api/books/${bookId}`, {
-                method: "DELETE"
+            await fetch("/api/reading-data", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    action: "DELETE_READING",
+                    email: userEmail,
+                    bookName: bookName
+                })
             });
-            if (res.ok) await loadData();
-        } catch (err) {
-            alert("Erro ao excluir.");
+            await loadData();
         } finally{
-            setIsDeleting(null);
+            setIsUpdating(false);
         }
     }
     async function handleAction(day, action, bookName) {
@@ -340,8 +377,8 @@ function MonthCalendar({ month, days, year, userEmail, monthIndex }) {
                     action,
                     email: userEmail,
                     bookName: name,
-                    startDate: action === "START_READING" ? dateFormatted : undefined,
-                    endDate: action === "FINISH_READING" ? dateFormatted : undefined,
+                    startDate: dateFormatted,
+                    endDate: dateFormatted,
                     year: year,
                     month: monthIndex + 1
                 })
@@ -367,12 +404,12 @@ function MonthCalendar({ month, days, year, userEmail, monthIndex }) {
                     children: month
                 }, void 0, false, {
                     fileName: "[project]/components/month-calendar.tsx",
-                    lineNumber: 99,
+                    lineNumber: 83,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/components/month-calendar.tsx",
-                lineNumber: 98,
+                lineNumber: 82,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -394,17 +431,27 @@ function MonthCalendar({ month, days, year, userEmail, monthIndex }) {
                         children: [
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "flex justify-between items-start mb-2",
-                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                    className: "font-bold text-sm text-muted-foreground",
-                                    children: day
-                                }, void 0, false, {
-                                    fileName: "[project]/components/month-calendar.tsx",
-                                    lineNumber: 119,
-                                    columnNumber: 17
-                                }, this)
-                            }, void 0, false, {
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                        className: "font-bold text-sm text-muted-foreground",
+                                        children: day
+                                    }, void 0, false, {
+                                        fileName: "[project]/components/month-calendar.tsx",
+                                        lineNumber: 103,
+                                        columnNumber: 17
+                                    }, this),
+                                    isUpdating && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$loader$2d$circle$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Loader2$3e$__["Loader2"], {
+                                        size: 10,
+                                        className: "animate-spin opacity-20"
+                                    }, void 0, false, {
+                                        fileName: "[project]/components/month-calendar.tsx",
+                                        lineNumber: 104,
+                                        columnNumber: 32
+                                    }, this)
+                                ]
+                            }, void 0, true, {
                                 fileName: "[project]/components/month-calendar.tsx",
-                                lineNumber: 118,
+                                lineNumber: 102,
                                 columnNumber: 15
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -416,79 +463,76 @@ function MonthCalendar({ month, days, year, userEmail, monthIndex }) {
                                                 className: "flex justify-between items-start gap-1",
                                                 children: [
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                        className: "truncate font-black text-foreground flex-1 cursor-pointer hover:underline",
-                                                        onClick: ()=>handleEditName(r.id, r.book_name),
+                                                        className: "truncate font-black text-foreground flex-1",
                                                         children: r.book_name.toUpperCase()
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/month-calendar.tsx",
-                                                        lineNumber: 126,
+                                                        lineNumber: 111,
                                                         columnNumber: 23
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                         className: "flex gap-1",
                                                         children: [
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                                                onClick: ()=>handleEditName(r.id, r.book_name),
-                                                                className: "text-muted-foreground hover:text-primary",
+                                                                onClick: ()=>handleEditName(r.book_name),
                                                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$pen$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Edit2$3e$__["Edit2"], {
                                                                     size: 8
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/month-calendar.tsx",
-                                                                    lineNumber: 131,
-                                                                    columnNumber: 27
+                                                                    lineNumber: 115,
+                                                                    columnNumber: 77
                                                                 }, this)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/month-calendar.tsx",
-                                                                lineNumber: 130,
+                                                                lineNumber: 115,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                                                onClick: ()=>handleDelete(r.id, r.book_name),
-                                                                className: "text-muted-foreground hover:text-destructive",
+                                                                onClick: ()=>handleDelete(r.book_name),
                                                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$trash$2d$2$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Trash2$3e$__["Trash2"], {
                                                                     size: 8
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/components/month-calendar.tsx",
-                                                                    lineNumber: 134,
-                                                                    columnNumber: 27
+                                                                    lineNumber: 116,
+                                                                    columnNumber: 75
                                                                 }, this)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/month-calendar.tsx",
-                                                                lineNumber: 133,
+                                                                lineNumber: 116,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/month-calendar.tsx",
-                                                        lineNumber: 129,
+                                                        lineNumber: 114,
                                                         columnNumber: 23
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/month-calendar.tsx",
-                                                lineNumber: 125,
+                                                lineNumber: 110,
                                                 columnNumber: 21
                                             }, this),
                                             r.status === "lendo" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
                                                 size: "sm",
-                                                className: "h-5 w-full text-[8px] mt-1 font-bold",
-                                                variant: "destructive",
+                                                className: "h-5 w-full text-[8px] mt-1 font-bold bg-destructive/10 hover:bg-destructive/20 border-destructive/20 text-slate-600",
+                                                variant: "outline",
                                                 onClick: ()=>handleAction(day, "FINISH_READING", r.book_name),
                                                 children: "ENCERRAR AQUI"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/month-calendar.tsx",
-                                                lineNumber: 140,
-                                                columnNumber: 23
+                                                lineNumber: 120,
+                                                columnNumber: 20
                                             }, this)
                                         ]
                                     }, idx, true, {
                                         fileName: "[project]/components/month-calendar.tsx",
-                                        lineNumber: 124,
+                                        lineNumber: 109,
                                         columnNumber: 19
                                     }, this))
                             }, void 0, false, {
                                 fileName: "[project]/components/month-calendar.tsx",
-                                lineNumber: 122,
+                                lineNumber: 107,
                                 columnNumber: 15
                             }, this),
                             !isFuture && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -501,10 +545,11 @@ function MonthCalendar({ month, days, year, userEmail, monthIndex }) {
                                         onChange: (e)=>setTempBookNames((p)=>({
                                                     ...p,
                                                     [day]: e.target.value
-                                                }))
+                                                })),
+                                        onKeyDown: (e)=>e.key === 'Enter' && handleAction(day, "START_READING")
                                     }, void 0, false, {
                                         fileName: "[project]/components/month-calendar.tsx",
-                                        lineNumber: 150,
+                                        lineNumber: 135,
                                         columnNumber: 19
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
@@ -514,35 +559,35 @@ function MonthCalendar({ month, days, year, userEmail, monthIndex }) {
                                         children: "INICIAR"
                                     }, void 0, false, {
                                         fileName: "[project]/components/month-calendar.tsx",
-                                        lineNumber: 156,
+                                        lineNumber: 142,
                                         columnNumber: 19
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/month-calendar.tsx",
-                                lineNumber: 149,
+                                lineNumber: 134,
                                 columnNumber: 17
                             }, this)
                         ]
                     }, `${monthIndex}-${day}`, true, {
                         fileName: "[project]/components/month-calendar.tsx",
-                        lineNumber: 117,
+                        lineNumber: 101,
                         columnNumber: 13
                     }, this);
                 })
             }, void 0, false, {
                 fileName: "[project]/components/month-calendar.tsx",
-                lineNumber: 102,
+                lineNumber: 86,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/components/month-calendar.tsx",
-        lineNumber: 97,
+        lineNumber: 81,
         columnNumber: 5
     }, this);
 }
-_s(MonthCalendar, "hrLqp05KJaWm3FKswk0X6O3Pf6U=");
+_s(MonthCalendar, "qTg3J5U9cOCHSeDm2tiDJikASuk=");
 _c = MonthCalendar;
 var _c;
 __turbopack_context__.k.register(_c, "MonthCalendar");
@@ -717,13 +762,12 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$re
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$loader$2d$circle$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Loader2$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/loader-circle.js [app-client] (ecmascript) <export default as Loader2>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$trash$2d$2$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Trash2$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/trash-2.js [app-client] (ecmascript) <export default as Trash2>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$crown$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Crown$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/crown.js [app-client] (ecmascript) <export default as Crown>");
-var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$trophy$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Trophy$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/trophy.js [app-client] (ecmascript) <export default as Trophy>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$heart$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Heart$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/heart.js [app-client] (ecmascript) <export default as Heart>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$zap$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Zap$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/zap.js [app-client] (ecmascript) <export default as Zap>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$quote$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Quote$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/quote.js [app-client] (ecmascript) <export default as Quote>");
-var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$book$2d$open$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__BookOpen$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/book-open.js [app-client] (ecmascript) <export default as BookOpen>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$layers$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Layers$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/layers.js [app-client] (ecmascript) <export default as Layers>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chart$2d$column$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__BarChart3$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/chart-column.js [app-client] (ecmascript) <export default as BarChart3>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chevron$2d$down$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ChevronDown$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/chevron-down.js [app-client] (ecmascript) <export default as ChevronDown>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$api$2d$client$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/api-client.ts [app-client] (ecmascript)");
 ;
 var _s = __turbopack_context__.k.signature();
@@ -735,20 +779,45 @@ var _s = __turbopack_context__.k.signature();
 ;
 ;
 ;
-const GENRES = [
-    "Filosofia",
-    "Matemática",
-    "Técnico",
-    "Romance",
-    "Suspense",
-    "Fantasia",
-    "Terror",
-    "Biografia",
-    "Ficção",
-    "Não-Ficção",
-    "Autoajuda",
-    "Outro"
-];
+const GENRE_CATEGORIES = {
+    "Ficção e Narrativa": [
+        "Romance",
+        "Dark Romance",
+        "Romance de Época",
+        "Chick-Lit",
+        "Fantasia",
+        "Ficção Científica",
+        "Distopia",
+        "Realismo Mágico",
+        "Terror / Horror",
+        "Suspense / Thriller",
+        "Policial / Noir",
+        "Aventura",
+        "Young Adult (YA)",
+        "Conto / Novela",
+        "Fábula / Apólogo",
+        "Ficção Infantojuvenil"
+    ],
+    "Não-Ficção": [
+        "Biografia / Memórias",
+        "Matemática",
+        "Autoajuda",
+        "Ensaio / Crônica",
+        "Filosofia / Sociologia",
+        "Didático / Técnico",
+        "Religioso / Espiritual",
+        "Reportagem / Jornalístico",
+        "Gastronomia"
+    ],
+    "Clássicos e Formatos": [
+        "Poesia / Lírico",
+        "Dramático (Teatro)",
+        "Conto / Fantástico",
+        "Graphic Novel",
+        "Cordel / Fanfic",
+        "Outro"
+    ]
+};
 const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?q=80&w=300&auto=format&fit=crop";
 function MonthReview({ month, userEmail, monthIndex, year }) {
     _s();
@@ -770,7 +839,8 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                 const initialEdits = {};
                 booksArray.forEach({
                     "MonthReview.useCallback[loadData]": (b)=>{
-                        initialEdits[b.book_name] = {
+                        initialEdits[b.id] = {
+                            name: b.book_name || "",
                             cover: b.cover_url || "",
                             rating: Number(b.rating) || 0,
                             pages: Number(b.total_pages) || 0,
@@ -814,22 +884,22 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
             }["MonthReview.useMemo[stats].totalPagesYear"], 0);
             const monthPages = finishedMonth.reduce({
                 "MonthReview.useMemo[stats].monthPages": (acc, b)=>{
-                    const p = Number(bookEdits[b.book_name]?.pages) || Number(b.total_pages) || 0;
+                    const p = Number(bookEdits[b.id]?.pages) || Number(b.total_pages) || 0;
                     return acc + p;
                 }
             }["MonthReview.useMemo[stats].monthPages"], 0);
             const dayOfYear = Math.max(1, Math.floor((new Date().getTime() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000));
             const pagesPerDay = (totalPagesYear / dayOfYear).toFixed(1);
             const yearlyFavs = allBooks.filter({
-                "MonthReview.useMemo[stats].yearlyFavs": (b)=>Number(bookEdits[b.book_name]?.rating || b.rating) === 5
+                "MonthReview.useMemo[stats].yearlyFavs": (b)=>Number(bookEdits[b.id]?.rating || b.rating) === 5
             }["MonthReview.useMemo[stats].yearlyFavs"]);
             const favoritesListData = currentMonthBooks.filter({
-                "MonthReview.useMemo[stats].favoritesListData": (b)=>Number(bookEdits[b.book_name]?.rating || b.rating) === 5
+                "MonthReview.useMemo[stats].favoritesListData": (b)=>Number(bookEdits[b.id]?.rating || b.rating) === 5
             }["MonthReview.useMemo[stats].favoritesListData"]);
             const biggestBookObj = [
                 ...currentMonthBooks
             ].sort({
-                "MonthReview.useMemo[stats]": (a, b)=>(Number(bookEdits[b.book_name]?.pages || b.total_pages) || 0) - (Number(bookEdits[a.book_name]?.pages || a.total_pages) || 0)
+                "MonthReview.useMemo[stats]": (a, b)=>(Number(bookEdits[b.id]?.pages || b.total_pages) || 0) - (Number(bookEdits[a.id]?.pages || a.total_pages) || 0)
             }["MonthReview.useMemo[stats]"])[0];
             return {
                 monthTotal: finishedMonth.length,
@@ -857,8 +927,8 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
         allBooks,
         monthIndex
     ]);
-    const buscarCapaAutomatica = async (bookName)=>{
-        setIsSearching(bookName);
+    const buscarCapaAutomatica = async (bookId, bookName)=>{
+        setIsSearching(bookId);
         const minhaChave = "AIzaSyB5F5pCIBIgZWCIpKwmBvKhh9RTSTwU9tw";
         const url = `https://www.googleapis.com/books/v1/volumes?q=intitle:${encodeURIComponent(bookName)}&key=${minhaChave}&maxResults=1`;
         try {
@@ -869,8 +939,8 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                 capaUrl = capaUrl.replace("http://", "https://");
                 setBookEdits((prev)=>({
                         ...prev,
-                        [bookName]: {
-                            ...prev[bookName],
+                        [bookId]: {
+                            ...prev[bookId],
                             cover: capaUrl
                         }
                     }));
@@ -879,15 +949,14 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
             }
         } catch (error) {
             console.error("Erro na API:", error);
-            alert("Erro ao procurar capa.");
         } finally{
             setIsSearching(null);
         }
     };
-    const handleSave = async (bookName)=>{
-        setIsSaving(bookName);
+    const handleSave = async (bookId, originalName)=>{
+        setIsSaving(bookId);
         try {
-            const data = bookEdits[bookName];
+            const data = bookEdits[bookId];
             await fetch("/api/reading-data", {
                 method: "POST",
                 headers: {
@@ -896,7 +965,8 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                 body: JSON.stringify({
                     action: "UPDATE_REVIEW",
                     email: userEmail,
-                    bookName,
+                    oldBookName: originalName,
+                    bookName: data.name,
                     rating: Number(data.rating),
                     coverUrl: data.cover,
                     totalPages: Number(data.pages),
@@ -907,6 +977,7 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                 })
             });
             await loadData();
+            alert("Alterações salvas!");
         } catch (err) {
             alert("Erro ao salvar");
         } finally{
@@ -933,825 +1004,648 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
             className: "animate-spin text-primary"
         }, void 0, false, {
             fileName: "[project]/components/month-review.tsx",
-            lineNumber: 154,
+            lineNumber: 171,
             columnNumber: 65
         }, this)
     }, void 0, false, {
         fileName: "[project]/components/month-review.tsx",
-        lineNumber: 154,
+        lineNumber: 171,
         columnNumber: 23
     }, this);
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-        className: "space-y-8 pb-20 max-w-6xl mx-auto px-4",
+        className: "space-y-8 pb-20 max-w-6xl mx-auto px-4 font-sans",
         children: [
             isDecember && stats.yearlyFavorites.length > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Card"], {
-                className: "p-8 border-none bg-gradient-to-br from-amber-500/10 via-transparent to-primary/5 shadow-sm",
+                className: "p-8 border-none bg-gradient-to-br from-amber-500/10 via-white to-primary/5 shadow-xl rounded-[40px]",
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "flex items-center gap-3 mb-6",
+                        className: "flex items-center gap-4 mb-8",
                         children: [
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$heart$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Heart$3e$__["Heart"], {
-                                className: "text-red-500 fill-red-500",
-                                size: 24
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "bg-amber-500 p-3 rounded-2xl shadow-lg shadow-amber-200",
+                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$heart$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Heart$3e$__["Heart"], {
+                                    className: "text-white fill-white",
+                                    size: 24
+                                }, void 0, false, {
+                                    fileName: "[project]/components/month-review.tsx",
+                                    lineNumber: 180,
+                                    columnNumber: 16
+                                }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/month-review.tsx",
-                                lineNumber: 161,
+                                lineNumber: 179,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "text-left",
                                 children: [
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
-                                        className: "text-2xl font-black uppercase tracking-tighter text-slate-800",
+                                        className: "text-3xl font-black uppercase tracking-tighter text-slate-800",
                                         children: [
                                             "Os Melhores de ",
                                             year
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 163,
+                                        lineNumber: 183,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                        className: "text-[10px] font-bold text-amber-600 uppercase tracking-widest",
-                                        children: "Sua Galeria de Ouro"
+                                        className: "text-[10px] font-black text-amber-600 uppercase tracking-[0.2em]",
+                                        children: "Sua Curadoria de Ouro"
                                     }, void 0, false, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 164,
+                                        lineNumber: 184,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/month-review.tsx",
-                                lineNumber: 162,
+                                lineNumber: 182,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/month-review.tsx",
-                        lineNumber: 160,
+                        lineNumber: 178,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "flex flex-wrap gap-6 justify-center sm:justify-start",
+                        className: "flex flex-wrap gap-8 justify-center sm:justify-start",
                         children: stats.yearlyFavorites.map((fav, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "group relative w-24 sm:w-32 text-center transition-transform hover:scale-105",
+                                className: "group relative w-28 sm:w-36 text-center transition-all hover:scale-105",
                                 children: [
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "aspect-[2/3] rounded-lg shadow-xl overflow-hidden border-2 border-amber-400 mb-2 bg-slate-200",
+                                        className: "aspect-[3/4] rounded-r-xl shadow-[10px_10px_20px_-5px_rgba(0,0,0,0.3)] overflow-hidden border-l-4 border-black/20 mb-3 bg-slate-100 group-hover:border-amber-400 transition-colors",
                                         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
-                                            src: bookEdits[fav.book_name]?.cover || fav.cover_url || PLACEHOLDER_IMAGE,
+                                            src: bookEdits[fav.id]?.cover || fav.cover_url || PLACEHOLDER_IMAGE,
                                             className: "w-full h-full object-cover",
                                             alt: ""
                                         }, void 0, false, {
                                             fileName: "[project]/components/month-review.tsx",
-                                            lineNumber: 171,
+                                            lineNumber: 191,
                                             columnNumber: 19
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 170,
+                                        lineNumber: 190,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                        className: "text-[9px] font-black uppercase leading-tight truncate px-1 text-slate-700",
-                                        children: fav.book_name
+                                        className: "text-[10px] font-black uppercase leading-tight truncate px-1 text-slate-700",
+                                        children: bookEdits[fav.id]?.name || fav.book_name
                                     }, void 0, false, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 177,
+                                        lineNumber: 197,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, i, true, {
                                 fileName: "[project]/components/month-review.tsx",
-                                lineNumber: 169,
+                                lineNumber: 189,
                                 columnNumber: 15
                             }, this))
                     }, void 0, false, {
                         fileName: "[project]/components/month-review.tsx",
-                        lineNumber: 167,
+                        lineNumber: 187,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/month-review.tsx",
-                lineNumber: 159,
+                lineNumber: 177,
                 columnNumber: 9
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Card"], {
-                className: "p-6 bg-white border-slate-100 shadow-sm",
+                className: "p-8 bg-white border-slate-100 shadow-sm rounded-[30px]",
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "flex items-center justify-between mb-8",
+                        className: "flex items-center justify-between mb-10",
                         children: [
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "flex items-center gap-2",
+                                className: "flex items-center gap-3",
                                 children: [
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$layers$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Layers$3e$__["Layers"], {
-                                        size: 16,
-                                        className: "text-primary"
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "p-2 bg-primary/10 rounded-lg text-primary",
+                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$layers$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Layers$3e$__["Layers"], {
+                                            size: 18
+                                        }, void 0, false, {
+                                            fileName: "[project]/components/month-review.tsx",
+                                            lineNumber: 208,
+                                            columnNumber: 16
+                                        }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 187,
+                                        lineNumber: 207,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                        className: "text-[10px] font-black uppercase text-slate-400",
+                                        className: "text-[11px] font-black uppercase text-slate-400 tracking-widest",
                                         children: [
-                                            "Desempenho: ",
+                                            "Performance: ",
                                             month
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 188,
+                                        lineNumber: 210,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/month-review.tsx",
-                                lineNumber: 186,
+                                lineNumber: 206,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "flex items-center gap-4 text-right",
+                                className: "flex items-center gap-5 text-right",
                                 children: [
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "hidden sm:block",
                                         children: [
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                className: "text-[9px] font-black text-slate-400 uppercase tracking-widest",
-                                                children: "Total do Ano"
+                                                className: "text-[9px] font-black text-slate-300 uppercase tracking-widest",
+                                                children: "Progresso Anual"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/month-review.tsx",
-                                                lineNumber: 192,
+                                                lineNumber: 214,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                className: "text-sm font-black text-slate-700",
+                                                className: "text-sm font-black text-slate-600 italic",
                                                 children: [
                                                     stats.yearTotal,
-                                                    " Livros / ",
+                                                    " LIVROS / ",
                                                     stats.yearPages,
-                                                    " Págs"
+                                                    " PÁGS"
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/month-review.tsx",
-                                                lineNumber: 193,
+                                                lineNumber: 215,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 191,
+                                        lineNumber: 213,
                                         columnNumber: 14
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chart$2d$column$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__BarChart3$3e$__["BarChart3"], {
-                                        size: 20,
+                                        size: 24,
                                         className: "text-slate-200"
                                     }, void 0, false, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 195,
+                                        lineNumber: 217,
                                         columnNumber: 14
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/month-review.tsx",
-                                lineNumber: 190,
+                                lineNumber: 212,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/month-review.tsx",
-                        lineNumber: 185,
+                        lineNumber: 205,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "grid grid-cols-2",
+                        className: "grid grid-cols-2 gap-4",
                         children: [
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "text-center border-r border-slate-100",
+                                className: "text-center border-r border-slate-100 py-4",
                                 children: [
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                        className: "text-6xl font-black text-slate-800 tracking-tighter",
+                                        className: "text-7xl font-black text-slate-800 tracking-tighter leading-none",
                                         children: stats.monthTotal
                                     }, void 0, false, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 201,
+                                        lineNumber: 222,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                        className: "text-[10px] font-bold text-slate-400 uppercase mt-1 tracking-widest",
-                                        children: "Livros Lidos no Mês"
+                                        className: "text-[10px] font-black text-slate-400 uppercase mt-3 tracking-[0.2em]",
+                                        children: "Lidos no Mês"
                                     }, void 0, false, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 202,
+                                        lineNumber: 223,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/month-review.tsx",
-                                lineNumber: 200,
+                                lineNumber: 221,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "text-center",
+                                className: "text-center py-4",
                                 children: [
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                        className: "text-6xl font-black text-slate-800 tracking-tighter",
+                                        className: "text-7xl font-black text-slate-800 tracking-tighter leading-none",
                                         children: stats.monthPages
                                     }, void 0, false, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 205,
+                                        lineNumber: 226,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                        className: "text-[10px] font-bold text-slate-400 uppercase mt-1 tracking-widest",
-                                        children: "Páginas Lidas no Mês"
+                                        className: "text-[10px] font-black text-slate-400 uppercase mt-3 tracking-[0.2em]",
+                                        children: "Páginas no Mês"
                                     }, void 0, false, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 206,
+                                        lineNumber: 227,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/month-review.tsx",
-                                lineNumber: 204,
+                                lineNumber: 225,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/month-review.tsx",
-                        lineNumber: 199,
+                        lineNumber: 220,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/month-review.tsx",
-                lineNumber: 184,
+                lineNumber: 204,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "grid grid-cols-1 lg:grid-cols-3 gap-6",
-                children: [
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "space-y-4",
+                className: "grid grid-cols-1 gap-12",
+                children: currentMonthBooks.map((book, idx)=>{
+                    const isFav = Number(bookEdits[book.id]?.rating || book.rating) === 5;
+                    const currentCover = bookEdits[book.id]?.cover || book.cover_url || PLACEHOLDER_IMAGE;
+                    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Card"], {
+                        className: `flex flex-col md:flex-row min-h-[350px] overflow-visible shadow-2xl rounded-[40px] transition-all border-none p-6 gap-8 ${isFav ? 'bg-amber-50/30' : 'bg-white'}`,
                         children: [
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "flex items-center gap-2 px-1",
-                                children: [
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$trophy$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Trophy$3e$__["Trophy"], {
-                                        size: 18,
-                                        className: "text-blue-500"
-                                    }, void 0, false, {
-                                        fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 214,
-                                        columnNumber: 13
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
-                                        className: "text-[10px] font-black uppercase tracking-widest text-slate-400",
-                                        children: "Destaque do Mês"
-                                    }, void 0, false, {
-                                        fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 215,
-                                        columnNumber: 13
-                                    }, this)
-                                ]
-                            }, void 0, true, {
-                                fileName: "[project]/components/month-review.tsx",
-                                lineNumber: 213,
-                                columnNumber: 11
-                            }, this),
-                            stats.biggest ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Card"], {
-                                className: "p-6 bg-blue-600 text-white border-none shadow-lg relative overflow-hidden flex flex-col justify-center min-h-[180px]",
-                                children: [
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$trophy$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Trophy$3e$__["Trophy"], {
-                                        className: "absolute -right-4 -bottom-4 text-blue-500 opacity-30",
-                                        size: 100
-                                    }, void 0, false, {
-                                        fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 219,
-                                        columnNumber: 15
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                        className: "text-[9px] font-black uppercase text-blue-200 mb-2 tracking-widest relative z-10 text-left",
-                                        children: "O Mais Longo"
-                                    }, void 0, false, {
-                                        fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 220,
-                                        columnNumber: 15
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
-                                        className: "text-lg font-black uppercase leading-tight mb-4 line-clamp-2 pr-4 z-10 text-left",
-                                        children: stats.biggest.book_name
-                                    }, void 0, false, {
-                                        fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 221,
-                                        columnNumber: 15
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "z-10 text-left",
-                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                            className: "bg-blue-500/50 backdrop-blur-sm border border-blue-400/30 px-3 py-1 rounded-full text-[11px] font-black uppercase",
+                                className: "relative shrink-0 flex justify-center items-start",
+                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    className: "w-[190px] sm:w-[220px] aspect-[3/4.2] relative group",
+                                    children: [
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            className: "w-full h-full rounded-r-xl overflow-hidden shadow-[20px_20px_40px_-15px_rgba(0,0,0,0.4)] border-l-[6px] border-black/30 bg-slate-200 transition-transform duration-500 group-hover:scale-[1.02]",
                                             children: [
-                                                bookEdits[stats.biggest.book_name]?.pages || stats.biggest.total_pages,
-                                                " Páginas"
-                                            ]
-                                        }, void 0, true, {
-                                            fileName: "[project]/components/month-review.tsx",
-                                            lineNumber: 223,
-                                            columnNumber: 17
-                                        }, this)
-                                    }, void 0, false, {
-                                        fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 222,
-                                        columnNumber: 15
-                                    }, this)
-                                ]
-                            }, void 0, true, {
-                                fileName: "[project]/components/month-review.tsx",
-                                lineNumber: 218,
-                                columnNumber: 13
-                            }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Card"], {
-                                className: "h-[180px] bg-slate-50 border-dashed border-2 flex items-center justify-center text-slate-300 text-[10px] font-bold uppercase",
-                                children: "Sem registros"
-                            }, void 0, false, {
-                                fileName: "[project]/components/month-review.tsx",
-                                lineNumber: 229,
-                                columnNumber: 13
-                            }, this)
-                        ]
-                    }, void 0, true, {
-                        fileName: "[project]/components/month-review.tsx",
-                        lineNumber: 212,
-                        columnNumber: 9
-                    }, this),
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "lg:col-span-2 space-y-4",
-                        children: [
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "flex items-center gap-2 px-1",
-                                children: [
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$crown$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Crown$3e$__["Crown"], {
-                                        size: 18,
-                                        className: "text-amber-500"
-                                    }, void 0, false, {
-                                        fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 235,
-                                        columnNumber: 13
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
-                                        className: "text-[10px] font-black uppercase tracking-widest text-slate-400",
-                                        children: [
-                                            "Favoritos de ",
-                                            month
-                                        ]
-                                    }, void 0, true, {
-                                        fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 236,
-                                        columnNumber: 13
-                                    }, this)
-                                ]
-                            }, void 0, true, {
-                                fileName: "[project]/components/month-review.tsx",
-                                lineNumber: 234,
-                                columnNumber: 11
-                            }, this),
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "grid grid-cols-1 sm:grid-cols-2 gap-3",
-                                children: stats.favoritesList.length > 0 ? stats.favoritesList.slice(0, 4).map((fav, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "flex items-center gap-3 p-3 bg-white border border-amber-100/50 rounded-xl shadow-sm text-left",
-                                        children: [
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                className: "w-12 h-16 bg-slate-100 rounded shadow-sm overflow-hidden shrink-0",
-                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
-                                                    src: bookEdits[fav.book_name]?.cover || fav.cover_url || PLACEHOLDER_IMAGE,
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
+                                                    src: currentCover,
                                                     className: "w-full h-full object-cover",
-                                                    alt: ""
+                                                    alt: "capa"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/month-review.tsx",
                                                     lineNumber: 243,
                                                     columnNumber: 21
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "absolute inset-y-0 left-0 w-2 bg-gradient-to-r from-white/10 to-transparent"
+                                                }, void 0, false, {
+                                                    fileName: "[project]/components/month-review.tsx",
+                                                    lineNumber: 248,
+                                                    columnNumber: 21
                                                 }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "[project]/components/month-review.tsx",
+                                            lineNumber: 242,
+                                            columnNumber: 19
+                                        }, this),
+                                        isFav && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            className: "absolute -top-3 -left-3 bg-amber-500 text-white p-3 rounded-2xl shadow-xl z-10 animate-bounce-slow",
+                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$crown$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Crown$3e$__["Crown"], {
+                                                size: 20,
+                                                fill: "white"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/month-review.tsx",
-                                                lineNumber: 242,
-                                                columnNumber: 19
-                                            }, this),
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                className: "overflow-hidden",
-                                                children: [
-                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                        className: "text-[10px] font-black uppercase text-slate-700 truncate mb-1",
-                                                        children: fav.book_name
-                                                    }, void 0, false, {
-                                                        fileName: "[project]/components/month-review.tsx",
-                                                        lineNumber: 250,
-                                                        columnNumber: 21
-                                                    }, this),
-                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                        className: "flex gap-0.5",
-                                                        children: [
-                                                            1,
-                                                            2,
-                                                            3,
-                                                            4,
-                                                            5
-                                                        ].map((s)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$star$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Star$3e$__["Star"], {
-                                                                size: 10,
-                                                                className: "fill-amber-400 text-amber-400"
-                                                            }, s, false, {
-                                                                fileName: "[project]/components/month-review.tsx",
-                                                                lineNumber: 252,
-                                                                columnNumber: 45
-                                                            }, this))
-                                                    }, void 0, false, {
-                                                        fileName: "[project]/components/month-review.tsx",
-                                                        lineNumber: 251,
-                                                        columnNumber: 21
-                                                    }, this)
-                                                ]
-                                            }, void 0, true, {
-                                                fileName: "[project]/components/month-review.tsx",
-                                                lineNumber: 249,
-                                                columnNumber: 19
+                                                lineNumber: 252,
+                                                columnNumber: 23
                                             }, this)
-                                        ]
-                                    }, i, true, {
-                                        fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 241,
-                                        columnNumber: 17
-                                    }, this)) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    className: "col-span-2 h-[180px] flex items-center justify-center border-2 border-dashed rounded-xl text-slate-300 text-[10px] font-bold uppercase",
-                                    children: "Nenhum favorito no mês"
-                                }, void 0, false, {
+                                        }, void 0, false, {
+                                            fileName: "[project]/components/month-review.tsx",
+                                            lineNumber: 251,
+                                            columnNumber: 21
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
                                     fileName: "[project]/components/month-review.tsx",
-                                    lineNumber: 258,
-                                    columnNumber: 15
+                                    lineNumber: 241,
+                                    columnNumber: 17
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/components/month-review.tsx",
-                                lineNumber: 238,
-                                columnNumber: 11
-                            }, this)
-                        ]
-                    }, void 0, true, {
-                        fileName: "[project]/components/month-review.tsx",
-                        lineNumber: 233,
-                        columnNumber: 9
-                    }, this)
-                ]
-            }, void 0, true, {
-                fileName: "[project]/components/month-review.tsx",
-                lineNumber: 211,
-                columnNumber: 7
-            }, this),
-            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("hr", {
-                className: "border-slate-100"
-            }, void 0, false, {
-                fileName: "[project]/components/month-review.tsx",
-                lineNumber: 264,
-                columnNumber: 7
-            }, this),
-            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "flex items-center gap-2 mb-4",
-                children: [
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$book$2d$open$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__BookOpen$3e$__["BookOpen"], {
-                        size: 18,
-                        className: "text-slate-400"
-                    }, void 0, false, {
-                        fileName: "[project]/components/month-review.tsx",
-                        lineNumber: 267,
-                        columnNumber: 9
-                    }, this),
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
-                        className: "text-[10px] font-black uppercase tracking-widest text-slate-400",
-                        children: [
-                            "Gerenciar Livros de ",
-                            month
-                        ]
-                    }, void 0, true, {
-                        fileName: "[project]/components/month-review.tsx",
-                        lineNumber: 268,
-                        columnNumber: 9
-                    }, this)
-                ]
-            }, void 0, true, {
-                fileName: "[project]/components/month-review.tsx",
-                lineNumber: 266,
-                columnNumber: 7
-            }, this),
-            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "grid grid-cols-1 gap-6",
-                children: currentMonthBooks.map((book, idx)=>{
-                    const isFav = Number(bookEdits[book.book_name]?.rating || book.rating) === 5;
-                    const currentCover = bookEdits[book.book_name]?.cover || book.cover_url || PLACEHOLDER_IMAGE;
-                    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Card"], {
-                        className: `flex flex-col sm:flex-row min-h-[220px] overflow-hidden shadow-md transition-all ${isFav ? 'border-amber-200 bg-amber-50/5' : 'border-slate-100'}`,
-                        children: [
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "w-full sm:w-44 bg-slate-100 shrink-0 relative",
-                                children: [
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
-                                        src: currentCover,
-                                        className: "w-full h-full object-cover",
-                                        alt: "capa"
-                                    }, void 0, false, {
-                                        fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 279,
-                                        columnNumber: 17
-                                    }, this),
-                                    isFav && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "absolute top-3 left-3 bg-amber-500 text-white p-1.5 rounded-sm shadow-lg",
-                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$crown$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Crown$3e$__["Crown"], {
-                                            size: 14,
-                                            fill: "white"
-                                        }, void 0, false, {
-                                            fileName: "[project]/components/month-review.tsx",
-                                            lineNumber: 284,
-                                            columnNumber: 117
-                                        }, this)
-                                    }, void 0, false, {
-                                        fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 284,
-                                        columnNumber: 27
-                                    }, this)
-                                ]
-                            }, void 0, true, {
-                                fileName: "[project]/components/month-review.tsx",
-                                lineNumber: 278,
+                                lineNumber: 240,
                                 columnNumber: 15
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "flex-1 p-6 flex flex-col gap-4",
+                                className: "flex-1 flex flex-col gap-6",
                                 children: [
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                         className: "flex justify-between items-start text-left",
                                         children: [
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h4", {
-                                                className: "font-black text-sm uppercase text-slate-800 truncate pr-4",
-                                                children: book.book_name
-                                            }, void 0, false, {
-                                                fileName: "[project]/components/month-review.tsx",
-                                                lineNumber: 289,
-                                                columnNumber: 19
-                                            }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                className: "flex gap-2",
+                                                className: "space-y-1 w-full pr-4",
                                                 children: [
-                                                    isSaving === book.book_name && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$loader$2d$circle$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Loader2$3e$__["Loader2"], {
-                                                        size: 16,
-                                                        className: "animate-spin text-primary"
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                        className: "text-[8px] font-black text-slate-300 uppercase tracking-widest",
+                                                        children: "Título do Livro"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/month-review.tsx",
-                                                        lineNumber: 291,
-                                                        columnNumber: 53
+                                                        lineNumber: 261,
+                                                        columnNumber: 21
                                                     }, this),
-                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                                        onClick: ()=>handleDelete(book.id, book.book_name),
-                                                        className: "text-slate-300 hover:text-red-500 transition-colors",
-                                                        children: isDeleting === book.id ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$loader$2d$circle$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Loader2$3e$__["Loader2"], {
-                                                            size: 18,
-                                                            className: "animate-spin"
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/components/month-review.tsx",
-                                                            lineNumber: 293,
-                                                            columnNumber: 51
-                                                        }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$trash$2d$2$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Trash2$3e$__["Trash2"], {
-                                                            size: 18
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/components/month-review.tsx",
-                                                            lineNumber: 293,
-                                                            columnNumber: 100
-                                                        }, this)
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Input"], {
+                                                        className: "h-auto font-black text-2xl uppercase text-slate-800 italic border-none bg-transparent p-0 focus-visible:ring-0 rounded-none mb-1",
+                                                        value: bookEdits[book.id]?.name || "",
+                                                        onChange: (e)=>setBookEdits((p)=>({
+                                                                    ...p,
+                                                                    [book.id]: {
+                                                                        ...p[book.id],
+                                                                        name: e.target.value
+                                                                    }
+                                                                }))
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/month-review.tsx",
-                                                        lineNumber: 292,
+                                                        lineNumber: 262,
+                                                        columnNumber: 21
+                                                    }, this),
+                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                        className: "text-[10px] font-black text-primary/60 uppercase tracking-widest",
+                                                        children: bookEdits[book.id]?.genre || "Sem gênero definido"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/components/month-review.tsx",
+                                                        lineNumber: 267,
                                                         columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/month-review.tsx",
-                                                lineNumber: 290,
+                                                lineNumber: 260,
+                                                columnNumber: 19
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "flex gap-3",
+                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                    onClick: ()=>handleDelete(book.id, book.book_name),
+                                                    className: "text-slate-200 hover:text-red-500 transition-colors p-2 bg-slate-50 rounded-xl",
+                                                    children: isDeleting === book.id ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$loader$2d$circle$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Loader2$3e$__["Loader2"], {
+                                                        size: 20,
+                                                        className: "animate-spin"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/components/month-review.tsx",
+                                                        lineNumber: 271,
+                                                        columnNumber: 51
+                                                    }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$trash$2d$2$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Trash2$3e$__["Trash2"], {
+                                                        size: 20
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/components/month-review.tsx",
+                                                        lineNumber: 271,
+                                                        columnNumber: 100
+                                                    }, this)
+                                                }, void 0, false, {
+                                                    fileName: "[project]/components/month-review.tsx",
+                                                    lineNumber: 270,
+                                                    columnNumber: 21
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "[project]/components/month-review.tsx",
+                                                lineNumber: 269,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 288,
+                                        lineNumber: 259,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                         className: "grid grid-cols-1 lg:grid-cols-2 gap-8 text-left",
                                         children: [
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                className: "space-y-4",
+                                                className: "space-y-5",
                                                 children: [
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                         className: "flex gap-4",
                                                         children: [
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                                className: "flex-1 text-left",
+                                                                className: "flex-1",
                                                                 children: [
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                                        className: "text-[8px] font-black text-slate-400 uppercase mb-1 flex justify-between items-center",
+                                                                        className: "text-[9px] font-black text-slate-400 uppercase mb-2 flex justify-between items-center",
                                                                         children: [
-                                                                            "Capa URL",
+                                                                            "URL da Capa",
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                                                                 type: "button",
-                                                                                onClick: ()=>buscarCapaAutomatica(book.book_name),
-                                                                                disabled: isSearching === book.book_name,
-                                                                                className: "text-primary hover:text-blue-700 flex items-center gap-1 font-bold disabled:opacity-50",
+                                                                                onClick: ()=>buscarCapaAutomatica(book.id, bookEdits[book.id]?.name),
+                                                                                disabled: isSearching === book.id,
+                                                                                className: "text-primary font-black text-[8px] flex items-center gap-1 bg-primary/5 px-2 py-1 rounded-md",
                                                                                 children: [
-                                                                                    isSearching === book.book_name ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$loader$2d$circle$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Loader2$3e$__["Loader2"], {
-                                                                                        size: 10,
-                                                                                        className: "animate-spin"
-                                                                                    }, void 0, false, {
-                                                                                        fileName: "[project]/components/month-review.tsx",
-                                                                                        lineNumber: 310,
-                                                                                        columnNumber: 63
-                                                                                    }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$zap$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Zap$3e$__["Zap"], {
+                                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$zap$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Zap$3e$__["Zap"], {
                                                                                         size: 10,
                                                                                         className: "fill-current"
                                                                                     }, void 0, false, {
                                                                                         fileName: "[project]/components/month-review.tsx",
-                                                                                        lineNumber: 310,
-                                                                                        columnNumber: 112
+                                                                                        lineNumber: 288,
+                                                                                        columnNumber: 29
                                                                                     }, this),
-                                                                                    "BUSCAR CAPA"
+                                                                                    " AUTO"
                                                                                 ]
                                                                             }, void 0, true, {
                                                                                 fileName: "[project]/components/month-review.tsx",
-                                                                                lineNumber: 304,
+                                                                                lineNumber: 282,
                                                                                 columnNumber: 27
                                                                             }, this)
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/components/month-review.tsx",
-                                                                        lineNumber: 302,
+                                                                        lineNumber: 280,
                                                                         columnNumber: 25
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Input"], {
-                                                                        className: "h-9 text-xs bg-slate-50 border-none",
-                                                                        value: bookEdits[book.book_name]?.cover || "",
+                                                                        className: "h-10 text-[11px] bg-slate-50 border-none rounded-xl",
+                                                                        value: bookEdits[book.id]?.cover || "",
                                                                         onChange: (e)=>setBookEdits((p)=>({
                                                                                     ...p,
-                                                                                    [book.book_name]: {
-                                                                                        ...p[book.book_name],
+                                                                                    [book.id]: {
+                                                                                        ...p[book.id],
                                                                                         cover: e.target.value
                                                                                     }
                                                                                 }))
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/month-review.tsx",
-                                                                        lineNumber: 314,
+                                                                        lineNumber: 291,
                                                                         columnNumber: 25
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/month-review.tsx",
-                                                                lineNumber: 301,
+                                                                lineNumber: 279,
                                                                 columnNumber: 23
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                                className: "w-24 text-left",
+                                                                className: "w-24",
                                                                 children: [
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                                        className: "text-[8px] font-black text-slate-400 uppercase mb-1",
-                                                                        children: "Páginas"
+                                                                        className: "text-[9px] font-black text-slate-400 uppercase mb-2",
+                                                                        children: "Págs"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/month-review.tsx",
-                                                                        lineNumber: 321,
+                                                                        lineNumber: 298,
                                                                         columnNumber: 25
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Input"], {
                                                                         type: "number",
-                                                                        className: "h-9 text-xs bg-slate-50 border-none font-bold",
-                                                                        value: bookEdits[book.book_name]?.pages || "",
+                                                                        className: "h-10 text-sm bg-slate-50 border-none rounded-xl font-black",
+                                                                        value: bookEdits[book.id]?.pages || "",
                                                                         onChange: (e)=>setBookEdits((p)=>({
                                                                                     ...p,
-                                                                                    [book.book_name]: {
-                                                                                        ...p[book.book_name],
+                                                                                    [book.id]: {
+                                                                                        ...p[book.id],
                                                                                         pages: Number(e.target.value)
                                                                                     }
                                                                                 }))
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/month-review.tsx",
-                                                                        lineNumber: 322,
+                                                                        lineNumber: 299,
                                                                         columnNumber: 25
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/month-review.tsx",
-                                                                lineNumber: 320,
+                                                                lineNumber: 297,
                                                                 columnNumber: 23
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/month-review.tsx",
-                                                        lineNumber: 300,
+                                                        lineNumber: 278,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                        className: "text-left",
                                                         children: [
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                                className: "text-[8px] font-black text-slate-400 uppercase mb-1",
-                                                                children: "Gênero"
+                                                                className: "text-[9px] font-black text-slate-400 uppercase mb-2",
+                                                                children: "Gênero Literário"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/month-review.tsx",
-                                                                lineNumber: 326,
+                                                                lineNumber: 304,
                                                                 columnNumber: 23
                                                             }, this),
-                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
-                                                                className: "w-full h-9 text-[11px] font-bold bg-slate-50 border-none rounded-md px-3 appearance-none uppercase text-slate-700",
-                                                                value: bookEdits[book.book_name]?.genre || "",
-                                                                onChange: (e)=>setBookEdits((p)=>({
-                                                                            ...p,
-                                                                            [book.book_name]: {
-                                                                                ...p[book.book_name],
-                                                                                genre: e.target.value
-                                                                            }
-                                                                        })),
+                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                className: "relative",
                                                                 children: [
-                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
-                                                                        value: "",
-                                                                        children: "Selecionar..."
-                                                                    }, void 0, false, {
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
+                                                                        className: "w-full h-10 text-[11px] font-black bg-slate-50 border-none rounded-xl px-4 appearance-none uppercase text-slate-600",
+                                                                        value: bookEdits[book.id]?.genre || "",
+                                                                        onChange: (e)=>setBookEdits((p)=>({
+                                                                                    ...p,
+                                                                                    [book.id]: {
+                                                                                        ...p[book.id],
+                                                                                        genre: e.target.value
+                                                                                    }
+                                                                                })),
+                                                                        children: [
+                                                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                                value: "",
+                                                                                children: "Escolher Gênero..."
+                                                                            }, void 0, false, {
+                                                                                fileName: "[project]/components/month-review.tsx",
+                                                                                lineNumber: 311,
+                                                                                columnNumber: 27
+                                                                            }, this),
+                                                                            Object.entries(GENRE_CATEGORIES).map(([category, genres])=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("optgroup", {
+                                                                                    label: category,
+                                                                                    children: genres.map((g)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                                            value: g,
+                                                                                            children: g
+                                                                                        }, g, false, {
+                                                                                            fileName: "[project]/components/month-review.tsx",
+                                                                                            lineNumber: 315,
+                                                                                            columnNumber: 33
+                                                                                        }, this))
+                                                                                }, category, false, {
+                                                                                    fileName: "[project]/components/month-review.tsx",
+                                                                                    lineNumber: 313,
+                                                                                    columnNumber: 29
+                                                                                }, this))
+                                                                        ]
+                                                                    }, void 0, true, {
                                                                         fileName: "[project]/components/month-review.tsx",
-                                                                        lineNumber: 332,
+                                                                        lineNumber: 306,
                                                                         columnNumber: 25
                                                                     }, this),
-                                                                    GENRES.map((g)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
-                                                                            value: g,
-                                                                            children: g
-                                                                        }, g, false, {
-                                                                            fileName: "[project]/components/month-review.tsx",
-                                                                            lineNumber: 333,
-                                                                            columnNumber: 42
-                                                                        }, this))
+                                                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chevron$2d$down$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ChevronDown$3e$__["ChevronDown"], {
+                                                                        size: 14,
+                                                                        className: "absolute right-3 top-3 text-slate-400"
+                                                                    }, void 0, false, {
+                                                                        fileName: "[project]/components/month-review.tsx",
+                                                                        lineNumber: 320,
+                                                                        columnNumber: 25
+                                                                    }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/month-review.tsx",
-                                                                lineNumber: 327,
+                                                                lineNumber: 305,
                                                                 columnNumber: 23
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/month-review.tsx",
-                                                        lineNumber: 325,
+                                                        lineNumber: 303,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                        className: "text-left",
                                                         children: [
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                                className: "text-[8px] font-black text-slate-400 uppercase mb-1 flex items-center gap-1",
+                                                                className: "text-[9px] font-black text-slate-400 uppercase mb-2 flex items-center gap-2",
                                                                 children: [
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$quote$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Quote$3e$__["Quote"], {
-                                                                        size: 8
+                                                                        size: 10
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/month-review.tsx",
-                                                                        lineNumber: 337,
+                                                                        lineNumber: 325,
                                                                         columnNumber: 114
                                                                     }, this),
-                                                                    " Notas"
+                                                                    " Review"
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/components/month-review.tsx",
-                                                                lineNumber: 337,
+                                                                lineNumber: 325,
                                                                 columnNumber: 23
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$textarea$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Textarea"], {
-                                                                placeholder: "Reflexões...",
-                                                                className: "text-xs bg-slate-50 border-none resize-none h-24",
-                                                                value: bookEdits[book.book_name]?.review || "",
+                                                                className: "text-xs bg-slate-50 border-none resize-none h-24 rounded-2xl p-4",
+                                                                value: bookEdits[book.id]?.review || "",
                                                                 onChange: (e)=>setBookEdits((p)=>({
                                                                             ...p,
-                                                                            [book.book_name]: {
-                                                                                ...p[book.book_name],
+                                                                            [book.id]: {
+                                                                                ...p[book.id],
                                                                                 review: e.target.value
                                                                             }
                                                                         }))
                                                             }, void 0, false, {
                                                                 fileName: "[project]/components/month-review.tsx",
-                                                                lineNumber: 338,
+                                                                lineNumber: 326,
                                                                 columnNumber: 23
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/components/month-review.tsx",
-                                                        lineNumber: 336,
+                                                        lineNumber: 324,
                                                         columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/month-review.tsx",
-                                                lineNumber: 299,
+                                                lineNumber: 277,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                className: "flex flex-col justify-end items-end gap-6",
+                                                className: "flex flex-col justify-between items-center lg:items-end",
                                                 children: [
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                        className: "flex gap-2",
+                                                        className: "flex gap-2 bg-slate-50 p-4 rounded-[20px] self-center lg:self-end",
                                                         children: [
                                                             1,
                                                             2,
@@ -1760,68 +1654,68 @@ function MonthReview({ month, userEmail, monthIndex, year }) {
                                                             5
                                                         ].map((s)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$star$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Star$3e$__["Star"], {
                                                                 size: 28,
-                                                                className: `cursor-pointer transition-all hover:scale-110 ${s <= (bookEdits[book.book_name]?.rating || 0) ? "fill-amber-400 text-amber-400" : "text-slate-100"}`,
+                                                                className: `cursor-pointer transition-all ${s <= (bookEdits[book.id]?.rating || 0) ? "fill-amber-400 text-amber-400" : "text-slate-200"}`,
                                                                 onClick: ()=>setBookEdits((p)=>({
                                                                             ...p,
-                                                                            [book.book_name]: {
-                                                                                ...p[book.book_name],
+                                                                            [book.id]: {
+                                                                                ...p[book.id],
                                                                                 rating: s
                                                                             }
                                                                         }))
                                                             }, s, false, {
                                                                 fileName: "[project]/components/month-review.tsx",
-                                                                lineNumber: 350,
+                                                                lineNumber: 337,
                                                                 columnNumber: 25
                                                             }, this))
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/month-review.tsx",
-                                                        lineNumber: 348,
+                                                        lineNumber: 335,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
-                                                        className: "w-full lg:w-auto px-12 h-12 font-black text-[10px] uppercase tracking-widest shadow-xl",
-                                                        onClick: ()=>handleSave(book.book_name),
-                                                        disabled: isSaving === book.book_name,
-                                                        children: isSaving === book.book_name ? "Salvando..." : "Salvar"
+                                                        className: "w-full lg:w-64 h-14 font-black text-[11px] uppercase tracking-[0.2em] rounded-2xl shadow-xl mt-4",
+                                                        onClick: ()=>handleSave(book.id, book.book_name),
+                                                        disabled: isSaving === book.id,
+                                                        children: isSaving === book.id ? "Salvando..." : "Salvar Review"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/month-review.tsx",
-                                                        lineNumber: 353,
+                                                        lineNumber: 345,
                                                         columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/month-review.tsx",
-                                                lineNumber: 347,
+                                                lineNumber: 334,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/components/month-review.tsx",
-                                        lineNumber: 298,
+                                        lineNumber: 276,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/month-review.tsx",
-                                lineNumber: 287,
+                                lineNumber: 258,
                                 columnNumber: 15
                             }, this)
                         ]
-                    }, idx, true, {
+                    }, book.id, true, {
                         fileName: "[project]/components/month-review.tsx",
-                        lineNumber: 277,
+                        lineNumber: 238,
                         columnNumber: 13
                     }, this);
                 })
             }, void 0, false, {
                 fileName: "[project]/components/month-review.tsx",
-                lineNumber: 271,
+                lineNumber: 232,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/components/month-review.tsx",
-        lineNumber: 157,
+        lineNumber: 174,
         columnNumber: 5
     }, this);
 }
@@ -2220,9 +2114,13 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$re
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chevron$2d$right$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ChevronRight$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/chevron-right.js [app-client] (ecmascript) <export default as ChevronRight>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$log$2d$out$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__LogOut$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/log-out.js [app-client] (ecmascript) <export default as LogOut>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$loader$2d$circle$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Loader2$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/loader-circle.js [app-client] (ecmascript) <export default as Loader2>");
-var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$user$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__User$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/user.js [app-client] (ecmascript) <export default as User>");
-var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$shield$2d$alert$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ShieldAlert$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/shield-alert.js [app-client] (ecmascript) <export default as ShieldAlert>");
-var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$trash$2d$2$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Trash2$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/trash-2.js [app-client] (ecmascript) <export default as Trash2>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chart$2d$column$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__BarChart3$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/chart-column.js [app-client] (ecmascript) <export default as BarChart3>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$quote$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Quote$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/quote.js [app-client] (ecmascript) <export default as Quote>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$target$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Target$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/target.js [app-client] (ecmascript) <export default as Target>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$settings$2d$2$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Settings2$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/settings-2.js [app-client] (ecmascript) <export default as Settings2>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$book$2d$open$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__BookOpen$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/book-open.js [app-client] (ecmascript) <export default as BookOpen>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$api$2d$client$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/api-client.ts [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/client/app-dir/link.js [app-client] (ecmascript)");
 ;
 var _s = __turbopack_context__.k.signature();
 "use client";
@@ -2233,6 +2131,57 @@ var _s = __turbopack_context__.k.signature();
 ;
 ;
 ;
+;
+;
+const THEMES = {
+    rose: {
+        primary: '#f4a6f0',
+        bg: '#fff5f6',
+        text: '#a64d9c'
+    },
+    dark: {
+        primary: '#38bdf8',
+        bg: '#f0f7ff',
+        text: '#1e293b'
+    },
+    soft: {
+        primary: '#a855f7',
+        bg: '#faf5ff',
+        text: '#5b1c87'
+    },
+    coffee: {
+        primary: '#7c3f17',
+        bg: '#fafaf9',
+        text: '#4b3832'
+    }
+};
+const LITERARY_QUOTES = [
+    "Um livro é um sonho que você segura na mão.",
+    "Ler é sonhar pela mão de outrem.",
+    "Livros são espelhos: você só vê neles o que já tem dentro de si.",
+    "A leitura é, para o espírito, o que o exercício é para o corpo.",
+    "Não existem livros demais, apenas estantes pequenas demais.",
+    "Cada livro lido é uma vida que se soma a sua.",
+    "Ler é atravessar mundos sem sair do lugar.",
+    "Os livros nos ensinam a escutar o silêncio.",
+    "Quem lê nunca está sozinho.",
+    "Há livros que nos encontram quando mais precisamos.",
+    "A leitura transforma o tempo em abrigo.",
+    "Ler é um ato íntimo e profundamente livre.",
+    "Alguns livros não se leem: acontecem.",
+    "A literatura é a prova de que a alma fala.",
+    "Entre um capítulo e outro, a gente se descobre.",
+    "Os livros guardam aquilo que a memória insiste em esquecer.",
+    "Ler é aprender a ver o mundo com outros olhos.",
+    "Há histórias que moram em nós para sempre.",
+    "Um bom livro muda o leitor, não o mundo.",
+    "Ler é um gesto de cuidado consigo."
+];
+const formatName = (name)=>{
+    if (!name) return "Leitor";
+    const first = name.split(' ')[0].toLowerCase();
+    return first.charAt(0).toUpperCase() + first.slice(1);
+};
 function Home() {
     _s();
     const { data: session, status } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2d$auth$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useSession"])();
@@ -2241,26 +2190,101 @@ function Home() {
         "Home.useState": ()=>new Date().getMonth()
     }["Home.useState"]);
     const [showBack, setShowBack] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
-    const handleDeleteAccount = async ()=>{
-        const confirmed = window.confirm("LGPD - DIREITO AO ESQUECIMENTO:\n\nEsta ação apagará permanentemente todos os seus livros, reviews e dados de conta. Deseja continuar?");
-        if (confirmed) {
-            try {
-                const res = await fetch("/api/user/delete-account", {
-                    method: "DELETE"
-                });
-                if (res.ok) {
-                    alert("Todos os seus dados foram removidos dos nossos servidores.");
-                    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2d$auth$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["signOut"])({
-                        callbackUrl: "/"
-                    });
-                } else {
-                    alert("Erro ao processar a exclusão.");
+    const [quote, setQuote] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])("");
+    const [activeTheme, setActiveTheme] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])('rose');
+    const [myBooksGoal, setMyBooksGoal] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(12);
+    const [totalReadThisYear, setTotalReadThisYear] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(0);
+    const [isSaving, setIsSaving] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
+    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
+        "Home.useEffect": ()=>{
+            const saved = localStorage.getItem("app-theme");
+            if (saved && THEMES[saved]) setActiveTheme(saved);
+            setQuote(LITERARY_QUOTES[Math.floor(Math.random() * LITERARY_QUOTES.length)]);
+            async function fetchData() {
+                if (session?.user?.email) {
+                    try {
+                        const response = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$api$2d$client$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["getReadingData"])(session.user.email.toLowerCase(), currentYear);
+                        const books = response?.data || (Array.isArray(response) ? response : []);
+                        if (response?.userGoal) {
+                            setMyBooksGoal(response.userGoal);
+                        }
+                        const finished = books.filter({
+                            "Home.useEffect.fetchData": (b)=>b && (b.status === 'lido' || b.end_date)
+                        }["Home.useEffect.fetchData"]).length;
+                        setTotalReadThisYear(finished);
+                    } catch (e) {
+                        console.error(e);
+                    }
                 }
-            } catch (err) {
-                console.error(err);
+            }
+            fetchData();
+        }
+    }["Home.useEffect"], [
+        session,
+        currentYear
+    ]);
+    const handleSetGoal = async ()=>{
+        const newGoal = prompt("Qual sua meta de livros para este ano?", myBooksGoal.toString());
+        if (newGoal && !isNaN(Number(newGoal)) && session?.user?.email) {
+            const goalNum = Number(newGoal);
+            setIsSaving(true);
+            try {
+                await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$api$2d$client$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["updateUserGoal"])(session.user.email.toLowerCase(), goalNum);
+                setMyBooksGoal(goalNum);
+            } catch (error) {
+                console.error(error);
+                alert("Erro ao salvar meta");
+            } finally{
+                setIsSaving(false);
             }
         }
     };
+    const handleDeleteData = async ()=>{
+        console.log("Clique no botão de deletar detectado");
+        const confirmFirst = confirm("Tem certeza que deseja apagar todos os seus registros? Esta ação é irreversível.");
+        if (confirmFirst) {
+            const confirmSecond = confirm("ÚLTIMO AVISO: Sua conta e todos os seus livros serão deletados permanentemente do banco de dados. Confirmar?");
+            if (confirmSecond) {
+                setIsSaving(true);
+                try {
+                    console.log("Iniciando processo de exclusão na API...");
+                    await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$api$2d$client$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["deleteFullAccount"])();
+                    console.log("Exclusão concluída com sucesso no banco.");
+                    alert("Sua conta e todos os seus registros foram removidos com sucesso.");
+                    await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2d$auth$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["signOut"])({
+                        callbackUrl: "/"
+                    });
+                } catch (error) {
+                    console.error("Erro ao apagar dados:", error);
+                    alert(`Erro técnico: ${error.message || "Não foi possível apagar os dados."}`);
+                } finally{
+                    setIsSaving(false);
+                }
+            }
+        }
+    };
+    const changeTheme = (t)=>{
+        setActiveTheme(t);
+        localStorage.setItem("app-theme", t);
+    };
+    const theme = THEMES[activeTheme];
+    const handlePrevMonth = ()=>{
+        if (currentMonth === 0) {
+            setCurrentYear((prev)=>prev - 1);
+            setCurrentMonth(11);
+        } else {
+            setCurrentMonth((prev)=>prev - 1);
+        }
+    };
+    const handleNextMonth = ()=>{
+        if (currentMonth === 11) {
+            setCurrentYear((prev)=>prev + 1);
+            setCurrentMonth(0);
+        } else {
+            setCurrentMonth((prev)=>prev + 1);
+        }
+    };
+    const progressPercent = Math.min(Math.round(totalReadThisYear / myBooksGoal * 100), 100);
     const months = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useMemo"])({
         "Home.useMemo[months]": ()=>{
             const isLeapYear = currentYear % 4 === 0 && currentYear % 100 !== 0 || currentYear % 400 === 0;
@@ -2318,200 +2342,234 @@ function Home() {
     }["Home.useMemo[months]"], [
         currentYear
     ]);
-    const handleLogout = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useCallback"])({
-        "Home.useCallback[handleLogout]": ()=>{
-            (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2d$auth$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["signOut"])({
-                callbackUrl: "/"
-            });
-        }
-    }["Home.useCallback[handleLogout]"], []);
-    const handlePrevMonth = ()=>{
-        if (currentMonth === 0) {
-            setCurrentYear((prev)=>prev - 1);
-            setCurrentMonth(11);
-        } else {
-            setCurrentMonth((prev)=>prev - 1);
-        }
-    };
-    const handleNextMonth = ()=>{
-        if (currentMonth === 11) {
-            setCurrentYear((prev)=>prev + 1);
-            setCurrentMonth(0);
-        } else {
-            setCurrentMonth((prev)=>prev + 1);
-        }
-    };
-    const handleLogin = async (userData)=>{
-        if (userData.password) {
-            const result = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2d$auth$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["signIn"])("credentials", {
-                email: userData.email,
-                password: userData.password,
-                redirect: false
-            });
-            if (result?.error) {
-                alert("E-mail ou senha incorretos!");
-            }
-        } else {
-            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2d$auth$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["signIn"])("google");
-        }
-    };
-    if (status === "loading") {
-        return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-            className: "flex min-h-screen items-center justify-center bg-background",
-            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$loader$2d$circle$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Loader2$3e$__["Loader2"], {
-                className: "h-8 w-8 animate-spin text-primary"
-            }, void 0, false, {
-                fileName: "[project]/app/page.tsx",
-                lineNumber: 97,
-                columnNumber: 9
-            }, this)
+    if (status === "loading") return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+        className: "flex h-screen items-center justify-center",
+        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$loader$2d$circle$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Loader2$3e$__["Loader2"], {
+            className: "animate-spin text-primary"
         }, void 0, false, {
             fileName: "[project]/app/page.tsx",
-            lineNumber: 96,
-            columnNumber: 7
-        }, this);
-    }
-    if (!session) {
-        return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$login$2d$screen$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["LoginScreen"], {
-            onLogin: handleLogin
-        }, void 0, false, {
-            fileName: "[project]/app/page.tsx",
-            lineNumber: 103,
-            columnNumber: 12
-        }, this);
-    }
+            lineNumber: 182,
+            columnNumber: 95
+        }, this)
+    }, void 0, false, {
+        fileName: "[project]/app/page.tsx",
+        lineNumber: 182,
+        columnNumber: 36
+    }, this);
+    if (!session) return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$login$2d$screen$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["LoginScreen"], {
+        onLogin: async ()=>(0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2d$auth$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["signIn"])("google")
+    }, void 0, false, {
+        fileName: "[project]/app/page.tsx",
+        lineNumber: 183,
+        columnNumber: 24
+    }, this);
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-        className: "flex flex-col min-h-screen bg-background",
+        className: "flex flex-col min-h-screen transition-colors duration-500",
+        style: {
+            backgroundColor: theme.bg
+        },
         children: [
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("main", {
-                className: "flex-grow p-4 md:p-8",
+                className: "grow p-4 md:p-8",
                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                     className: "mx-auto max-w-6xl",
                     children: [
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                            className: "mb-8 flex items-center justify-between bg-card p-4 rounded-2xl border shadow-sm",
+                            className: "mb-6 flex items-center gap-3 px-2 italic text-slate-500",
+                            children: [
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$quote$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Quote$3e$__["Quote"], {
+                                    size: 14,
+                                    style: {
+                                        color: theme.primary,
+                                        opacity: 0.4
+                                    }
+                                }, void 0, false, {
+                                    fileName: "[project]/app/page.tsx",
+                                    lineNumber: 190,
+                                    columnNumber: 13
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                    className: "text-xs font-medium tracking-tight",
+                                    style: {
+                                        color: theme.text,
+                                        opacity: 0.7
+                                    },
+                                    children: quote
+                                }, void 0, false, {
+                                    fileName: "[project]/app/page.tsx",
+                                    lineNumber: 191,
+                                    columnNumber: 13
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "[project]/app/page.tsx",
+                            lineNumber: 189,
+                            columnNumber: 11
+                        }, this),
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                            className: "mb-8 flex flex-col lg:flex-row items-center justify-between bg-white p-4 rounded-2xl border shadow-sm gap-4",
                             children: [
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                     className: "flex items-center gap-4",
                                     children: [
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "h-12 w-12 rounded-full border-2 border-primary overflow-hidden shadow-sm bg-muted shrink-0",
-                                            children: session.user?.image ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
+                                            className: "h-12 w-12 rounded-full border-2 overflow-hidden shadow-sm shrink-0",
+                                            style: {
+                                                borderColor: theme.primary
+                                            },
+                                            children: session.user?.image && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
                                                 src: session.user.image,
                                                 alt: "Perfil",
-                                                className: "h-full w-full object-cover",
-                                                referrerPolicy: "no-referrer"
+                                                className: "h-full w-full object-cover"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/page.tsx",
-                                                lineNumber: 115,
-                                                columnNumber: 19
-                                            }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                className: "flex h-full w-full items-center justify-center bg-primary/10",
-                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$user$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__User$3e$__["User"], {
-                                                    className: "text-primary h-6 w-6"
-                                                }, void 0, false, {
-                                                    fileName: "[project]/app/page.tsx",
-                                                    lineNumber: 123,
-                                                    columnNumber: 21
-                                                }, this)
-                                            }, void 0, false, {
-                                                fileName: "[project]/app/page.tsx",
-                                                lineNumber: 122,
-                                                columnNumber: 19
+                                                lineNumber: 197,
+                                                columnNumber: 41
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/app/page.tsx",
-                                            lineNumber: 113,
+                                            lineNumber: 196,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                             className: "flex flex-col",
                                             children: [
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
-                                                    className: "font-serif text-xl font-bold text-foreground md:text-2xl leading-none",
+                                                    className: "font-serif text-xl font-bold leading-none",
+                                                    style: {
+                                                        color: theme.text
+                                                    },
                                                     children: [
                                                         "Calendário Literário ",
                                                         currentYear
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/page.tsx",
-                                                    lineNumber: 129,
+                                                    lineNumber: 200,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                    className: "text-xs text-muted-foreground mt-1 font-medium",
+                                                    className: "text-xs mt-1 font-medium",
+                                                    style: {
+                                                        color: theme.text,
+                                                        opacity: 0.6
+                                                    },
                                                     children: [
                                                         "Boas leituras, ",
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                            className: "text-primary",
-                                                            children: session.user?.name?.split(' ')[0]
+                                                            style: {
+                                                                color: theme.primary
+                                                            },
+                                                            children: formatName(session.user?.name)
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/page.tsx",
-                                                            lineNumber: 133,
+                                                            lineNumber: 202,
                                                             columnNumber: 34
                                                         }, this),
                                                         "!"
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/page.tsx",
-                                                    lineNumber: 132,
+                                                    lineNumber: 201,
                                                     columnNumber: 17
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/page.tsx",
-                                            lineNumber: 128,
+                                            lineNumber: 199,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/page.tsx",
-                                    lineNumber: 112,
+                                    lineNumber: 195,
+                                    columnNumber: 13
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    className: "flex bg-slate-50 p-1.5 rounded-full border border-slate-100 gap-1",
+                                    children: Object.keys(THEMES).map((t)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                            onClick: ()=>changeTheme(t),
+                                            className: `p-2 transition-all rounded-full ${activeTheme === t ? 'bg-white shadow-sm scale-110' : 'opacity-20 hover:opacity-100'}`,
+                                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$book$2d$open$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__BookOpen$3e$__["BookOpen"], {
+                                                size: 18,
+                                                color: THEMES[t].primary,
+                                                fill: activeTheme === t ? THEMES[t].primary : "transparent"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/page.tsx",
+                                                lineNumber: 214,
+                                                columnNumber: 19
+                                            }, this)
+                                        }, t, false, {
+                                            fileName: "[project]/app/page.tsx",
+                                            lineNumber: 209,
+                                            columnNumber: 17
+                                        }, this))
+                                }, void 0, false, {
+                                    fileName: "[project]/app/page.tsx",
+                                    lineNumber: 207,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                     className: "flex items-center gap-2",
                                     children: [
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                            className: "hidden md:flex flex-col items-end mr-2",
+                                            className: "hidden md:flex flex-col items-end mr-2 text-right",
                                             children: [
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                    className: "text-[10px] text-muted-foreground uppercase font-bold tracking-tighter",
+                                                    className: "text-[10px] uppercase font-bold tracking-tighter opacity-40",
+                                                    style: {
+                                                        color: theme.text
+                                                    },
                                                     children: "Conta Ativa"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/page.tsx",
-                                                    lineNumber: 140,
+                                                    lineNumber: 221,
                                                     columnNumber: 18
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                    className: "text-[9px] text-primary truncate max-w-30",
-                                                    children: session.user?.email
+                                                    className: "text-[9px] truncate max-w-30",
+                                                    style: {
+                                                        color: theme.primary
+                                                    },
+                                                    children: session.user?.email?.toLowerCase()
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/page.tsx",
-                                                    lineNumber: 141,
+                                                    lineNumber: 222,
+                                                    columnNumber: 18
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                    onClick: handleDeleteData,
+                                                    disabled: isSaving,
+                                                    className: "text-[8px] uppercase font-bold text-red-400 mt-0.5 hover:underline disabled:opacity-50",
+                                                    children: isSaving ? "Apagando..." : "Apagar meus dados"
+                                                }, void 0, false, {
+                                                    fileName: "[project]/app/page.tsx",
+                                                    lineNumber: 223,
                                                     columnNumber: 18
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/page.tsx",
-                                            lineNumber: 139,
+                                            lineNumber: 220,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
                                             variant: "outline",
                                             size: "icon",
-                                            onClick: handleLogout,
-                                            className: "h-9 w-9 border-destructive/20 text-destructive hover:bg-destructive/5",
+                                            onClick: ()=>(0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2d$auth$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["signOut"])({
+                                                    callbackUrl: "/"
+                                                }),
+                                            className: "h-9 w-9 text-destructive",
                                             children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$log$2d$out$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__LogOut$3e$__["LogOut"], {
-                                                className: "h-4 w-4"
+                                                size: 16
                                             }, void 0, false, {
                                                 fileName: "[project]/app/page.tsx",
-                                                lineNumber: 144,
-                                                columnNumber: 17
+                                                lineNumber: 231,
+                                                columnNumber: 136
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/app/page.tsx",
-                                            lineNumber: 143,
+                                            lineNumber: 231,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
@@ -2520,15 +2578,15 @@ function Home() {
                                             onClick: handlePrevMonth,
                                             className: "h-9 w-9",
                                             children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chevron$2d$left$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ChevronLeft$3e$__["ChevronLeft"], {
-                                                className: "h-4 w-4"
+                                                size: 16
                                             }, void 0, false, {
                                                 fileName: "[project]/app/page.tsx",
-                                                lineNumber: 147,
-                                                columnNumber: 17
+                                                lineNumber: 232,
+                                                columnNumber: 99
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/app/page.tsx",
-                                            lineNumber: 146,
+                                            lineNumber: 232,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
@@ -2537,44 +2595,219 @@ function Home() {
                                             onClick: handleNextMonth,
                                             className: "h-9 w-9",
                                             children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chevron$2d$right$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ChevronRight$3e$__["ChevronRight"], {
-                                                className: "h-4 w-4"
+                                                size: 16
                                             }, void 0, false, {
                                                 fileName: "[project]/app/page.tsx",
-                                                lineNumber: 150,
-                                                columnNumber: 17
+                                                lineNumber: 233,
+                                                columnNumber: 99
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/app/page.tsx",
-                                            lineNumber: 149,
+                                            lineNumber: 233,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/page.tsx",
-                                    lineNumber: 138,
+                                    lineNumber: 219,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/page.tsx",
-                            lineNumber: 111,
+                            lineNumber: 194,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                            className: "mt-6 flex justify-center mb-8",
-                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
-                                onClick: ()=>setShowBack(!showBack),
-                                variant: showBack ? "outline" : "default",
-                                className: "gap-2 px-8 rounded-full shadow-md transition-all active:scale-95",
-                                children: showBack ? "← Voltar ao Calendário" : "Ver Livros Lidos →"
-                            }, void 0, false, {
-                                fileName: "[project]/app/page.tsx",
-                                lineNumber: 156,
-                                columnNumber: 13
-                            }, this)
-                        }, void 0, false, {
+                            className: "mb-8 bg-white rounded-2xl p-5 border shadow-sm group",
+                            children: [
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    className: "flex justify-between items-end mb-3",
+                                    children: [
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            className: "space-y-1",
+                                            children: [
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    className: "flex items-center gap-2",
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$target$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Target$3e$__["Target"], {
+                                                            size: 16,
+                                                            style: {
+                                                                color: theme.primary
+                                                            }
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/page.tsx",
+                                                            lineNumber: 241,
+                                                            columnNumber: 19
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            className: "text-[11px] font-black uppercase tracking-widest",
+                                                            style: {
+                                                                color: theme.text
+                                                            },
+                                                            children: "Sua Meta Literária"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/page.tsx",
+                                                            lineNumber: 242,
+                                                            columnNumber: 19
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                                            onClick: handleSetGoal,
+                                                            disabled: isSaving,
+                                                            className: "opacity-0 group-hover:opacity-100 transition-opacity",
+                                                            children: isSaving ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$loader$2d$circle$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Loader2$3e$__["Loader2"], {
+                                                                size: 12,
+                                                                className: "animate-spin"
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/page.tsx",
+                                                                lineNumber: 244,
+                                                                columnNumber: 33
+                                                            }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$settings$2d$2$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Settings2$3e$__["Settings2"], {
+                                                                size: 12,
+                                                                className: "text-slate-400"
+                                                            }, void 0, false, {
+                                                                fileName: "[project]/app/page.tsx",
+                                                                lineNumber: 244,
+                                                                columnNumber: 82
+                                                            }, this)
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/page.tsx",
+                                                            lineNumber: 243,
+                                                            columnNumber: 19
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/app/page.tsx",
+                                                    lineNumber: 240,
+                                                    columnNumber: 17
+                                                }, this),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                    className: "text-[10px] font-bold uppercase",
+                                                    style: {
+                                                        color: theme.text,
+                                                        opacity: 0.4
+                                                    },
+                                                    children: [
+                                                        "Você leu ",
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                            style: {
+                                                                color: theme.primary
+                                                            },
+                                                            children: totalReadThisYear
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/page.tsx",
+                                                            lineNumber: 248,
+                                                            columnNumber: 28
+                                                        }, this),
+                                                        " de ",
+                                                        myBooksGoal,
+                                                        " livros em ",
+                                                        currentYear
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/app/page.tsx",
+                                                    lineNumber: 247,
+                                                    columnNumber: 17
+                                                }, this)
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "[project]/app/page.tsx",
+                                            lineNumber: 239,
+                                            columnNumber: 15
+                                        }, this),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                            className: "text-2xl font-black",
+                                            style: {
+                                                color: theme.primary
+                                            },
+                                            children: [
+                                                progressPercent,
+                                                "%"
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "[project]/app/page.tsx",
+                                            lineNumber: 251,
+                                            columnNumber: 15
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "[project]/app/page.tsx",
+                                    lineNumber: 238,
+                                    columnNumber: 13
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    className: "w-full bg-slate-100 h-3 rounded-full overflow-hidden border",
+                                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "h-full transition-all duration-1000 ease-in-out",
+                                        style: {
+                                            width: `${progressPercent}%`,
+                                            backgroundColor: theme.primary
+                                        }
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/page.tsx",
+                                        lineNumber: 254,
+                                        columnNumber: 16
+                                    }, this)
+                                }, void 0, false, {
+                                    fileName: "[project]/app/page.tsx",
+                                    lineNumber: 253,
+                                    columnNumber: 13
+                                }, this)
+                            ]
+                        }, void 0, true, {
                             fileName: "[project]/app/page.tsx",
-                            lineNumber: 155,
+                            lineNumber: 237,
+                            columnNumber: 11
+                        }, this),
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                            className: "mt-6 flex flex-col sm:flex-row items-center justify-center mb-8 gap-3",
+                            children: [
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
+                                    onClick: ()=>setShowBack(!showBack),
+                                    className: "gap-2 px-8 rounded-full shadow-md font-bold h-11 w-full sm:w-auto text-white transition-transform hover:scale-105",
+                                    style: {
+                                        backgroundColor: theme.primary
+                                    },
+                                    children: showBack ? "← Voltar ao Calendário" : "Ver Livros Lidos →"
+                                }, void 0, false, {
+                                    fileName: "[project]/app/page.tsx",
+                                    lineNumber: 262,
+                                    columnNumber: 13
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
+                                    href: "/retrospectiva",
+                                    className: "w-full sm:w-auto",
+                                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
+                                        variant: "outline",
+                                        className: "gap-2 px-8 rounded-full shadow-sm h-11 font-bold w-full sm:w-auto border-2",
+                                        style: {
+                                            borderColor: `${theme.primary}20`,
+                                            color: theme.primary
+                                        },
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chart$2d$column$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__BarChart3$3e$__["BarChart3"], {
+                                                size: 18
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/page.tsx",
+                                                lineNumber: 275,
+                                                columnNumber: 17
+                                            }, this),
+                                            " Retrospectiva do Ano"
+                                        ]
+                                    }, void 0, true, {
+                                        fileName: "[project]/app/page.tsx",
+                                        lineNumber: 270,
+                                        columnNumber: 15
+                                    }, this)
+                                }, void 0, false, {
+                                    fileName: "[project]/app/page.tsx",
+                                    lineNumber: 269,
+                                    columnNumber: 13
+                                }, this)
+                            ]
+                        }, void 0, true, {
+                            fileName: "[project]/app/page.tsx",
+                            lineNumber: 261,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2583,123 +2816,81 @@ function Home() {
                                 month: months[currentMonth].name,
                                 days: months[currentMonth].days,
                                 year: currentYear,
-                                userEmail: session.user?.email || "",
+                                userEmail: session.user?.email?.toLowerCase() || "",
                                 monthIndex: currentMonth
                             }, void 0, false, {
                                 fileName: "[project]/app/page.tsx",
-                                lineNumber: 167,
+                                lineNumber: 282,
                                 columnNumber: 17
                             }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$month$2d$review$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["MonthReview"], {
                                 month: months[currentMonth].name,
-                                userEmail: session.user?.email || "",
+                                userEmail: session.user?.email?.toLowerCase() || "",
                                 monthIndex: currentMonth,
                                 year: currentYear
                             }, void 0, false, {
                                 fileName: "[project]/app/page.tsx",
-                                lineNumber: 175,
+                                lineNumber: 284,
                                 columnNumber: 17
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/app/page.tsx",
-                            lineNumber: 165,
+                            lineNumber: 280,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/page.tsx",
-                    lineNumber: 109,
+                    lineNumber: 188,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/page.tsx",
-                lineNumber: 108,
+                lineNumber: 187,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("footer", {
-                className: "w-full border-t border-slate-200 bg-slate-50 p-6 mt-auto",
+                className: "w-full border-t border-slate-100 bg-white p-6 mt-auto",
                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                    className: "max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4",
+                    className: "max-w-6xl mx-auto flex flex-col items-center justify-center gap-2",
                     children: [
-                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                            className: "flex items-center gap-2 text-slate-500",
-                            children: [
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$shield$2d$alert$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ShieldAlert$3e$__["ShieldAlert"], {
-                                    size: 18,
-                                    className: "text-slate-400"
-                                }, void 0, false, {
-                                    fileName: "[project]/app/page.tsx",
-                                    lineNumber: 189,
-                                    columnNumber: 13
-                                }, this),
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    className: "flex flex-col",
-                                    children: [
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                            className: "text-[10px] font-black uppercase tracking-widest leading-none",
-                                            children: "Conformidade LGPD"
-                                        }, void 0, false, {
-                                            fileName: "[project]/app/page.tsx",
-                                            lineNumber: 191,
-                                            columnNumber: 15
-                                        }, this),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                            className: "text-[9px] text-slate-400",
-                                            children: "Direito ao esquecimento: apague todos os seus dados a qualquer momento."
-                                        }, void 0, false, {
-                                            fileName: "[project]/app/page.tsx",
-                                            lineNumber: 194,
-                                            columnNumber: 15
-                                        }, this)
-                                    ]
-                                }, void 0, true, {
-                                    fileName: "[project]/app/page.tsx",
-                                    lineNumber: 190,
-                                    columnNumber: 13
-                                }, this)
-                            ]
-                        }, void 0, true, {
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                            className: "text-[10px] font-black uppercase tracking-[0.3em] text-slate-300",
+                            children: "@-Kleuvyn"
+                        }, void 0, false, {
                             fileName: "[project]/app/page.tsx",
-                            lineNumber: 188,
+                            lineNumber: 292,
                             columnNumber: 11
                         }, this),
-                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
-                            variant: "ghost",
-                            onClick: handleDeleteAccount,
-                            className: "text-red-500 hover:text-red-700 hover:bg-red-50 text-[10px] font-black uppercase tracking-widest h-10 px-6",
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                            className: "text-[9px] text-slate-400 font-medium",
                             children: [
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$trash$2d$2$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Trash2$3e$__["Trash2"], {
-                                    className: "mr-2 h-4 w-4"
-                                }, void 0, false, {
-                                    fileName: "[project]/app/page.tsx",
-                                    lineNumber: 205,
-                                    columnNumber: 13
-                                }, this),
-                                "Excluir minha conta e dados"
+                                "Minha Estante Literária • ",
+                                currentYear
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/page.tsx",
-                            lineNumber: 200,
+                            lineNumber: 293,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/page.tsx",
-                    lineNumber: 187,
+                    lineNumber: 291,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/page.tsx",
-                lineNumber: 186,
+                lineNumber: 290,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/page.tsx",
-        lineNumber: 107,
+        lineNumber: 186,
         columnNumber: 5
     }, this);
 }
-_s(Home, "ASd3JLKqIEQ3iqaahzXjYi0aYkk=", false, function() {
+_s(Home, "Z7h06xQJ+MFTBj2j3Ugg0gdb0KY=", false, function() {
     return [
         __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2d$auth$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useSession"]
     ];

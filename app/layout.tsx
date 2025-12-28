@@ -5,8 +5,8 @@ import AuthProvider from '@/components/AuthProvider'
 import Script from 'next/script'
 
 export const metadata: Metadata = {
-  title: "Calendário Literário 2026 | Diário de Leituras",
-  description: "Planejador literário elegante para registrar suas leituras ao longo do ano de 2026",
+  title: "Diário de Leituras",
+  description: "Planejador literário elegante para registrar suas leituras ao longo do ano",
   manifest: "/manifest.json", 
   icons: {
     icon: "/icon-192.png",
@@ -26,9 +26,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body className="antialiased">
+      <body className="antialiased bg-background text-foreground">
         <AuthProvider>
-          {children}
+          <main className="min-h-screen">
+            {children}
+          </main>
         </AuthProvider>
         <Analytics />
 
@@ -36,10 +38,10 @@ export default function RootLayout({
           {`
             if ('serviceWorker' in navigator) {
               window.addEventListener('load', function() {
-                navigator.worker.register('/sw.js').then(function(registration) {
-                  console.log('ServiceWorker registrado com sucesso: ', registration.scope);
+                navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                  console.log('SW ok: ', registration.scope);
                 }, function(err) {
-                  console.log('Falha ao registrar o ServiceWorker: ', err);
+                  console.log('SW erro: ', err);
                 });
               });
             }

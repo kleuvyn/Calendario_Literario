@@ -113,7 +113,8 @@ async function GET(request) {
     const email = searchParams.get("email");
     const year = Number(searchParams.get("year"));
     if (!email || !year) return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-        data: []
+        data: [],
+        userGoal: 12
     });
     try {
         const query = `
@@ -122,7 +123,6 @@ async function GET(request) {
              br.cover_url,
              br.genre,
              br.review,
-             -- Prioriza as páginas da review, depois da leitura, senão 0
              COALESCE(br.total_pages, rd.total_pages, 0) as total_pages
       FROM public.reading_data rd
       LEFT JOIN public.users u ON u.email = rd.email
@@ -134,6 +134,10 @@ async function GET(request) {
             email,
             year
         ]);
+        const userRow = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`SELECT literary_goal FROM public.users WHERE email = $1`, [
+            email
+        ]);
+        const userGoal = userRow && userRow.length > 0 ? userRow[0].literary_goal || 12 : 12;
         const cleanRows = rows.map((b)=>({
                 ...b,
                 rating: Number(b.rating) || 0,
@@ -142,20 +146,76 @@ async function GET(request) {
                 status: b.status || 'lendo'
             }));
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-            data: cleanRows
+            data: cleanRows,
+            userGoal
         });
     } catch (error) {
         console.error("Erro na API GET:", error);
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-            data: []
+            data: [],
+            userGoal: 12
         });
     }
 }
 async function POST(request) {
     try {
         const body = await request.json();
-        const { email, bookName, action, rating, coverUrl, totalPages, review, genre, year, month, startDate, endDate } = body;
+        const { email, bookName, oldBookName, action, rating, coverUrl, totalPages, review, genre, year, month, startDate, endDate, goal } = body;
+        if (action === "SET_GOAL") {
+            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`
+        INSERT INTO public.users (email, literary_goal)
+        VALUES ($1, $2)
+        ON CONFLICT (email) 
+        DO UPDATE SET literary_goal = EXCLUDED.literary_goal
+      `, [
+                email,
+                Number(goal)
+            ]);
+            return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+                success: true
+            });
+        }
         const pages = Number(totalPages) || 0;
+        if (action === "EDIT_READING") {
+            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`UPDATE public.reading_data SET book_name = $1 
+         WHERE email = $2 AND book_name = $3`, [
+                bookName,
+                email,
+                oldBookName
+            ]);
+            const userRes = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`SELECT id FROM public.users WHERE email = $1`, [
+                email
+            ]);
+            if (userRes.length > 0) {
+                await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`UPDATE public.book_reviews SET title = $1 
+           WHERE user_id = $2 AND title = $3`, [
+                    bookName,
+                    userRes[0].id,
+                    oldBookName
+                ]);
+            }
+            return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+                success: true
+            });
+        }
+        if (action === "DELETE_READING") {
+            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`DELETE FROM public.reading_data WHERE email = $1 AND book_name = $2`, [
+                email,
+                bookName
+            ]);
+            const userRes = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`SELECT id FROM public.users WHERE email = $1`, [
+                email
+            ]);
+            if (userRes.length > 0) {
+                await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`DELETE FROM public.book_reviews WHERE user_id = $1 AND title = $2`, [
+                    userRes[0].id,
+                    bookName
+                ]);
+            }
+            return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+                success: true
+            });
+        }
         if (action === "START_READING") {
             await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`
         INSERT INTO public.reading_data (email, book_name, start_date, status, year, month)
@@ -172,12 +232,13 @@ async function POST(request) {
                 success: true
             });
         }
+        // --- CORREÇÃO AQUI: FINISH_READING ---
         if (action === "FINISH_READING") {
-            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`
-        UPDATE public.reading_data 
-        SET end_date = $1, status = 'lido' 
-        WHERE email = $2 AND book_name = $3 AND status = 'lendo'
-      `, [
+            // Removemos a trava 'AND status = lendo' para garantir que o clique no calendário 
+            // sempre consiga sobrescrever ou definir a data final.
+            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`UPDATE public.reading_data 
+         SET end_date = $1, status = 'lido' 
+         WHERE email = $2 AND book_name = $3`, [
                 endDate,
                 email,
                 bookName
@@ -194,6 +255,24 @@ async function POST(request) {
                 error: "Usuário não encontrado"
             });
             const userId = userRes[0].id;
+            const targetName = oldBookName || bookName;
+            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`UPDATE public.reading_data 
+         SET book_name = $1, total_pages = $2 
+         WHERE email = $3 AND book_name = $4`, [
+                bookName,
+                pages,
+                email,
+                targetName
+            ]);
+            if (oldBookName && oldBookName !== bookName) {
+                await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`UPDATE public.book_reviews 
+           SET title = $1 
+           WHERE user_id = $2 AND title = $3`, [
+                    bookName,
+                    userId,
+                    oldBookName
+                ]);
+            }
             await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`
         INSERT INTO public.book_reviews (user_id, title, rating, cover_url, total_pages, genre, review, year, month)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -213,11 +292,6 @@ async function POST(request) {
                 review,
                 year,
                 month
-            ]);
-            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`UPDATE public.reading_data SET total_pages = $1 WHERE email = $2 AND book_name = $3`, [
-                pages,
-                email,
-                bookName
             ]);
             return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
                 success: true
