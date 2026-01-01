@@ -112,14 +112,12 @@ async function GET(request) {
     const { searchParams } = new URL(request.url);
     const email = searchParams.get("email");
     const year = Number(searchParams.get("year"));
-    // Detecta se é a página de retrospectiva
     const isRetrospective = searchParams.get("isRetrospective") === "true";
     if (!email || !year) return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
         data: [],
         userGoal: 12
     });
     try {
-        // Query adaptada: na retrospectiva traz só o ano, na home traz o ano + o que está "lendo"
         const query = isRetrospective ? `
       SELECT rd.*, br.rating, br.cover_url, br.genre, br.review,
              COALESCE(br.total_pages, rd.total_pages, 0) as total_pages
@@ -141,7 +139,6 @@ async function GET(request) {
             email,
             year
         ]);
-        // BUSCA META POR ANO NO CAMPO goals_by_year
         const userRow = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`SELECT literary_goal, goals_by_year FROM public.users WHERE email = $1`, [
             email
         ]);
@@ -179,9 +176,7 @@ async function POST(request) {
     try {
         const body = await request.json();
         const { email, bookName, oldBookName, action, rating, coverUrl, totalPages, review, genre, year, month, startDate, endDate, goal } = body;
-        // --- SALVAR META POR ANO (CORRIGIDO) ---
         if (action === "SET_GOAL") {
-            // Garante que a coluna existe
             await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`ALTER TABLE public.users ADD COLUMN IF NOT EXISTS goals_by_year JSONB DEFAULT '{}'::jsonb`, []);
             const userRes = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`SELECT goals_by_year FROM public.users WHERE email = $1`, [
                 email
@@ -242,7 +237,6 @@ async function POST(request) {
             });
         }
         if (action === "START_READING") {
-            // Usando DELETE + INSERT para evitar erro de ON CONFLICT sem constraint
             await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`DELETE FROM public.reading_data WHERE email = $1 AND book_name = $2`, [
                 email,
                 bookName
@@ -290,7 +284,6 @@ async function POST(request) {
                 email,
                 targetName
             ]);
-            // Atualiza ou Insere a Review
             await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["executeQuery"])(`DELETE FROM public.book_reviews WHERE user_id = $1 AND title = $2`, [
                 userId,
                 bookName

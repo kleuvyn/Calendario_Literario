@@ -101,8 +101,27 @@ export default function Home() {
   }
 
   const theme = THEMES[activeTheme]
-  const handlePrevMonth = () => { setDirection(-1); if (currentMonth === 0) { setCurrentYear(p => p - 1); setCurrentMonth(11); } else { setCurrentMonth(p => p - 1); } }
-  const handleNextMonth = () => { setDirection(1); if (currentMonth === 11) { setCurrentYear(p => p + 1); setCurrentMonth(0); } else { setCurrentMonth(p => p + 1); } }
+  
+  const handlePrevMonth = () => { 
+    setDirection(-1); 
+    if (currentMonth === 0) { 
+      setCurrentYear(p => p - 1); 
+      setCurrentMonth(11); 
+    } else { 
+      setCurrentMonth(p => p - 1); 
+    } 
+  }
+  
+  const handleNextMonth = () => { 
+    setDirection(1); 
+    if (currentMonth === 11) { 
+      setCurrentYear(p => p + 1); 
+      setCurrentMonth(0); 
+    } else { 
+      setCurrentMonth(p => p + 1); 
+    } 
+  }
+
   const progressPercent = Math.min(Math.round((totalReadThisYear / myBooksGoal) * 100), 100) || 0
 
   const months = useMemo(() => {
@@ -192,15 +211,28 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="relative">
+          <div className="relative touch-pan-y overflow-hidden">
             <AnimatePresence mode="wait" custom={direction}>
               <motion.div
                 key={`${currentYear}-${currentMonth}-${showBack}`}
                 custom={direction}
-                initial={{ opacity: 0, x: direction > 0 ? 30 : -30 }}
+                drag="x"
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.15}
+                onDragEnd={(e, info) => {
+                  const swipeThreshold = 40;
+                  if (info.offset.x > swipeThreshold) {
+                    handlePrevMonth();
+                  } else if (info.offset.x < -swipeThreshold) {
+                    handleNextMonth();
+                  }
+                }}
+                
+                initial={{ opacity: 0, x: direction > 0 ? 40 : -40 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: direction > 0 ? -30 : 30 }}
+                exit={{ opacity: 0, x: direction > 0 ? -40 : 40 }}
                 transition={{ duration: 0.2 }}
+                className="cursor-grab active:cursor-grabbing"
               >
                 {!showBack ? (
                     <MonthCalendar month={months[currentMonth].name} days={months[currentMonth].days} year={currentYear} userEmail={session.user?.email?.toLowerCase() || ""} monthIndex={currentMonth} />
