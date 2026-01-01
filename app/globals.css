@@ -38,3 +38,12 @@
   * { @apply border-border; }
   body { @apply bg-background text-foreground antialiased; }
 }
+
+input, button {
+  -webkit-appearance: none; 
+  border-radius: 8px;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

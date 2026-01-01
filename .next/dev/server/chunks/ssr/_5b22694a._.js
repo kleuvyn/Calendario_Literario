@@ -3,8 +3,6 @@ module.exports = [
 "use strict";
 
 __turbopack_context__.s([
-    "deleteBookRecord",
-    ()=>deleteBookRecord,
     "deleteFullAccount",
     ()=>deleteFullAccount,
     "getReadingData",
@@ -15,8 +13,10 @@ __turbopack_context__.s([
     ()=>saveReadingDay,
     "saveReview",
     ()=>saveReview,
-    "updateBookName",
-    ()=>updateBookName,
+    "searchGoogleBooks",
+    ()=>searchGoogleBooks,
+    "updateProfile",
+    ()=>updateProfile,
     "updateProfileImage",
     ()=>updateProfileImage,
     "updateUserGoal",
@@ -38,10 +38,9 @@ async function loginUser(email, name, image) {
     const data = await response.json();
     return data.user;
 }
-async function getReadingData(email, year, month, signal) {
-    let url = `/api/reading-data?email=${encodeURIComponent(email.toLowerCase())}&year=${year}`;
-    if (month !== undefined) url += `&month=${month}`;
-    url += `&t=${Date.now()}`;
+async function getReadingData(email, year, isRetrospective = false, signal) {
+    let url = `/api/reading-data?email=${encodeURIComponent(email.toLowerCase())}&year=${year}&isRetrospective=${isRetrospective}`;
+    url += `&t=${Date.now()}`; // Cache bust
     const response = await fetch(url, {
         cache: 'no-store',
         signal
@@ -52,7 +51,7 @@ async function getReadingData(email, year, month, signal) {
     }
     return await response.json();
 }
-async function updateUserGoal(email, goal) {
+async function updateUserGoal(email, goal, currentYear) {
     const response = await fetch("/api/reading-data", {
         method: "POST",
         headers: {
@@ -61,13 +60,14 @@ async function updateUserGoal(email, goal) {
         body: JSON.stringify({
             action: "SET_GOAL",
             email: email.toLowerCase(),
-            goal
+            goal: goal,
+            year: currentYear
         })
     });
     if (!response.ok) throw new Error("Erro ao salvar meta");
     return response.json();
 }
-async function saveReadingDay(email, year, month, day, startDate, endDate, bookName, action) {
+async function saveReadingDay(email, year, month, day, startDate, endDate, bookName, action, coverUrl, totalPages) {
     const response = await fetch("/api/reading-data", {
         method: "POST",
         headers: {
@@ -81,7 +81,9 @@ async function saveReadingDay(email, year, month, day, startDate, endDate, bookN
             startDate,
             endDate,
             bookName,
-            action
+            action,
+            coverUrl,
+            totalPages: Number(totalPages) || 0
         })
     });
     if (!response.ok) throw new Error("Erro ao salvar dados");
@@ -98,14 +100,14 @@ async function saveReview(email, bookName, rating, coverUrl, totalPages) {
             bookName,
             rating,
             coverUrl,
-            totalPages,
+            totalPages: Number(totalPages) || 0,
             action: "UPDATE_REVIEW"
         })
     });
     if (!response.ok) throw new Error("Erro ao salvar avaliação");
     return response.json();
 }
-async function updateProfileImage(email, imageUrl) {
+async function updateProfile(email, data) {
     const response = await fetch("/api/user/update-profile", {
         method: "POST",
         headers: {
@@ -113,42 +115,43 @@ async function updateProfileImage(email, imageUrl) {
         },
         body: JSON.stringify({
             email: email.toLowerCase(),
-            image: imageUrl
+            ...data
         })
     });
-    if (!response.ok) throw new Error("Erro ao atualizar foto de perfil");
+    if (!response.ok) throw new Error("Erro ao atualizar perfil");
     return response.json();
 }
-async function deleteBookRecord(id) {
-    const response = await fetch(`/api/books/${id}`, {
-        method: "DELETE"
+async function updateProfileImage(email, imageUrl) {
+    return updateProfile(email, {
+        image: imageUrl
     });
-    if (!response.ok) throw new Error("Erro ao deletar");
-    return response.json();
-}
-async function updateBookName(id, title) {
-    const response = await fetch(`/api/books/${id}`, {
-        method: "PATCH",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            title
-        })
-    });
-    if (!response.ok) throw new Error("Erro ao atualizar nome");
-    return response.json();
 }
 async function deleteFullAccount() {
     const response = await fetch("/api/user/delete-account", {
         method: "DELETE",
-        cache: 'no-store' // Evita que o navegador use cache para exclusão
+        cache: 'no-store'
     });
     if (!response.ok) {
         const errorData = await response.json().catch(()=>({}));
         throw new Error(errorData.error || "Erro ao apagar conta");
     }
     return response.json();
+}
+async function searchGoogleBooks(query) {
+    if (!query || query.length < 3) return [];
+    try {
+        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=5`);
+        const data = await res.json();
+        return data.items?.map((item)=>({
+                title: item.volumeInfo.title,
+                authors: item.volumeInfo.authors?.join(", "),
+                thumbnail: item.volumeInfo.imageLinks?.thumbnail?.replace("http:", "https:"),
+                pageCount: item.volumeInfo.pageCount || 0
+            })) || [];
+    } catch (e) {
+        console.error("Google Books Error:", e);
+        return [];
+    }
 }
 }),
 "[project]/lib/utils.ts [app-ssr] (ecmascript)", ((__turbopack_context__) => {
@@ -237,10 +240,12 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2d$auth$2f$react$2f$index$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next-auth/react/index.js [app-ssr] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$book$2d$open$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__BookOpen$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/book-open.js [app-ssr] (ecmascript) <export default as BookOpen>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$loader$2d$circle$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Loader2$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/loader-circle.js [app-ssr] (ecmascript) <export default as Loader2>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$star$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Star$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/star.js [app-ssr] (ecmascript) <export default as Star>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$arrow$2d$left$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__ArrowLeft$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/arrow-left.js [app-ssr] (ecmascript) <export default as ArrowLeft>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$instagram$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Instagram$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/instagram.js [app-ssr] (ecmascript) <export default as Instagram>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$crown$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Crown$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/crown.js [app-ssr] (ecmascript) <export default as Crown>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$calendar$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Calendar$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/calendar.js [app-ssr] (ecmascript) <export default as Calendar>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chevron$2d$down$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__ChevronDown$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/chevron-down.js [app-ssr] (ecmascript) <export default as ChevronDown>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$api$2d$client$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/api-client.ts [app-ssr] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/client/app-dir/link.js [app-ssr] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/ui/button.tsx [app-ssr] (ecmascript)");
@@ -283,6 +288,30 @@ const THEMES = {
         bg: '#fafaf9',
         text: '#4b3832',
         card: '#ffffff'
+    },
+    ocean: {
+        primary: '#0ea5e9',
+        bg: '#f0f9ff',
+        text: '#0369a1',
+        card: '#ffffff'
+    },
+    forest: {
+        primary: '#10b981',
+        bg: '#f0fdf4',
+        text: '#065f46',
+        card: '#ffffff'
+    },
+    sunset: {
+        primary: '#f59e0b',
+        bg: '#fffbeb',
+        text: '#92400e',
+        card: '#ffffff'
+    },
+    midnight: {
+        primary: '#818cf8',
+        bg: '#0f172a',
+        text: '#f8fafc',
+        card: '#1e293b'
     }
 };
 const GENRE_COLORS = [
@@ -295,25 +324,55 @@ const GENRE_COLORS = [
     "#64748b",
     "#06b6d4"
 ];
+const getProxyUrl = (url)=>{
+    if (!url) return "";
+    if (url.includes("googleusercontent.com") || url.includes("books.google.com")) {
+        return `https://images.weserv.nl/?url=${encodeURIComponent(url.replace("http://", "https://"))}`;
+    }
+    return url;
+};
 function RetrospectivaPage() {
     const { data: session, status } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2d$auth$2f$react$2f$index$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useSession"])();
     const [allBooks, setAllBooks] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])([]);
     const [loadingData, setLoadingData] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(true);
     const [isGenerating, setIsGenerating] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(false);
     const [currentTheme, setCurrentTheme] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])('rose');
-    const currentYear = 2025;
+    const [currentYear, setCurrentYear] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(()=>new Date().getFullYear());
+    const yearsAvailable = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useMemo"])(()=>{
+        const startYear = 2024;
+        const now = new Date().getFullYear();
+        const years = [];
+        for(let i = now; i >= startYear; i--){
+            years.push(i);
+        }
+        return years;
+    }, []);
     const theme = THEMES[currentTheme];
     const storyResumoRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useRef"])(null);
     const paginasLivrosRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useRef"])([]);
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
         async function loadData() {
             if (status === "authenticated" && session?.user?.email) {
+                setLoadingData(true);
                 try {
-                    const data = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$api$2d$client$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["getReadingData"])(session.user.email, currentYear);
+                    // 1. Busca os livros (Independente do tema)
+                    const data = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$api$2d$client$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["getReadingData"])(session.user.email, currentYear, true);
                     const booksArray = Array.isArray(data) ? data : data?.data || [];
-                    setAllBooks(booksArray.filter((b)=>b.status !== 'lendo'));
+                    setAllBooks(booksArray.filter((b)=>b.status !== 'lendo' && b.status !== 'reading'));
+                    // 2. Busca o tema (Com proteção contra erro 405 ou SyntaxError)
+                    try {
+                        const profileRes = await fetch(`/api/user/update-profile?email=${session.user.email}`);
+                        if (profileRes.ok) {
+                            const profileData = await profileRes.json();
+                            if (profileData?.theme && THEMES[profileData.theme]) {
+                                setCurrentTheme(profileData.theme);
+                            }
+                        }
+                    } catch (themeErr) {
+                        console.warn("Aviso: Não foi possível carregar o tema personalizado, usando padrão.");
+                    }
                 } catch (err) {
-                    console.error(err);
+                    console.error("Erro ao carregar dados dos livros:", err);
                 } finally{
                     setLoadingData(false);
                 }
@@ -327,6 +386,25 @@ function RetrospectivaPage() {
         session,
         currentYear
     ]);
+    const handleThemeChange = async (newTheme)=>{
+        setCurrentTheme(newTheme);
+        if (session?.user?.email) {
+            try {
+                await fetch('/api/user/update-profile', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: session.user.email,
+                        theme: newTheme
+                    })
+                });
+            } catch (err) {
+                console.error("Erro ao salvar tema:", err);
+            }
+        }
+    };
     const bookChunks = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useMemo"])(()=>{
         const chunks = [];
         const limit = allBooks.length <= 40 ? 40 : 100;
@@ -351,8 +429,8 @@ function RetrospectivaPage() {
             await new Promise((r)=>setTimeout(r, 1000));
             const downloadEl = async (el, fileName)=>{
                 const url = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$modern$2d$screenshot$2f$dist$2f$index$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["domToPng"])(el, {
-                    scale: 2,
-                    quality: 0.95,
+                    scale: 3,
+                    quality: 1,
                     width: 400,
                     height: 850
                 });
@@ -364,7 +442,7 @@ function RetrospectivaPage() {
                 document.body.removeChild(link);
             };
             if (storyResumoRef.current) {
-                await downloadEl(storyResumoRef.current, `01-resumo.png`);
+                await downloadEl(storyResumoRef.current, `01-resumo-${currentYear}.png`);
             }
             await new Promise((r)=>setTimeout(r, 1500));
             for(let i = 0; i < paginasLivrosRef.current.length; i++){
@@ -373,12 +451,13 @@ function RetrospectivaPage() {
                     el.scrollIntoView({
                         block: 'center'
                     });
+                    await new Promise((r)=>setTimeout(r, 500));
                     await downloadEl(el, `0${i + 2}-biblioteca-${i + 1}.png`);
-                    await new Promise((r)=>setTimeout(r, 1500)); // Delay maior entre imagens
+                    await new Promise((r)=>setTimeout(r, 1500));
                 }
             }
         } catch (err) {
-            alert("Erro ao gerar. Tente abrir pelo Safari (fora do Instagram).");
+            alert("Erro ao gerar. Tente abrir pelo Safari ou Chrome.");
         } finally{
             setIsGenerating(false);
         }
@@ -413,17 +492,17 @@ function RetrospectivaPage() {
         genreData
     ]);
     if (loadingData) return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-        className: "h-screen flex items-center justify-center",
+        className: "h-screen flex items-center justify-center bg-slate-50",
         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$loader$2d$circle$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Loader2$3e$__["Loader2"], {
             className: "animate-spin text-rose-500"
         }, void 0, false, {
             fileName: "[project]/app/retrospectiva/page.tsx",
-            lineNumber: 119,
-            columnNumber: 86
+            lineNumber: 177,
+            columnNumber: 98
         }, this)
     }, void 0, false, {
         fileName: "[project]/app/retrospectiva/page.tsx",
-        lineNumber: 119,
+        lineNumber: 177,
         columnNumber: 27
     }, this);
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -434,36 +513,90 @@ function RetrospectivaPage() {
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("header", {
                     className: "flex flex-col md:flex-row justify-between items-center gap-6 px-4 no-export",
                     children: [
-                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
-                            href: "/",
-                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
-                                variant: "ghost",
-                                className: "text-[10px] font-black uppercase",
-                                children: [
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$arrow$2d$left$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__ArrowLeft$3e$__["ArrowLeft"], {
-                                        size: 14,
-                                        className: "mr-2"
-                                    }, void 0, false, {
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                            className: "flex items-center gap-4",
+                            children: [
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
+                                    href: "/",
+                                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
+                                        variant: "ghost",
+                                        className: "text-[10px] font-black uppercase",
+                                        children: [
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$arrow$2d$left$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__ArrowLeft$3e$__["ArrowLeft"], {
+                                                size: 14,
+                                                className: "mr-2"
+                                            }, void 0, false, {
+                                                fileName: "[project]/app/retrospectiva/page.tsx",
+                                                lineNumber: 185,
+                                                columnNumber: 97
+                                            }, this),
+                                            " Voltar"
+                                        ]
+                                    }, void 0, true, {
                                         fileName: "[project]/app/retrospectiva/page.tsx",
-                                        lineNumber: 126,
-                                        columnNumber: 95
-                                    }, this),
-                                    " Voltar"
-                                ]
-                            }, void 0, true, {
-                                fileName: "[project]/app/retrospectiva/page.tsx",
-                                lineNumber: 126,
-                                columnNumber: 26
-                            }, this)
-                        }, void 0, false, {
+                                        lineNumber: 185,
+                                        columnNumber: 28
+                                    }, this)
+                                }, void 0, false, {
+                                    fileName: "[project]/app/retrospectiva/page.tsx",
+                                    lineNumber: 185,
+                                    columnNumber: 13
+                                }, this),
+                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                    className: "relative flex items-center bg-white border border-slate-200 rounded-full px-4 py-1.5 shadow-sm",
+                                    children: [
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$calendar$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Calendar$3e$__["Calendar"], {
+                                            size: 12,
+                                            className: "mr-2 text-slate-400"
+                                        }, void 0, false, {
+                                            fileName: "[project]/app/retrospectiva/page.tsx",
+                                            lineNumber: 188,
+                                            columnNumber: 15
+                                        }, this),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
+                                            value: currentYear,
+                                            onChange: (e)=>setCurrentYear(Number(e.target.value)),
+                                            className: "appearance-none bg-transparent text-[11px] font-black uppercase pr-6 outline-none cursor-pointer",
+                                            style: {
+                                                color: theme.text
+                                            },
+                                            children: yearsAvailable.map((y)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                    value: y,
+                                                    children: y
+                                                }, y, false, {
+                                                    fileName: "[project]/app/retrospectiva/page.tsx",
+                                                    lineNumber: 195,
+                                                    columnNumber: 42
+                                                }, this))
+                                        }, void 0, false, {
+                                            fileName: "[project]/app/retrospectiva/page.tsx",
+                                            lineNumber: 189,
+                                            columnNumber: 15
+                                        }, this),
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chevron$2d$down$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__ChevronDown$3e$__["ChevronDown"], {
+                                            size: 10,
+                                            className: "absolute right-3 pointer-events-none opacity-50"
+                                        }, void 0, false, {
+                                            fileName: "[project]/app/retrospectiva/page.tsx",
+                                            lineNumber: 197,
+                                            columnNumber: 15
+                                        }, this)
+                                    ]
+                                }, void 0, true, {
+                                    fileName: "[project]/app/retrospectiva/page.tsx",
+                                    lineNumber: 187,
+                                    columnNumber: 13
+                                }, this)
+                            ]
+                        }, void 0, true, {
                             fileName: "[project]/app/retrospectiva/page.tsx",
-                            lineNumber: 126,
+                            lineNumber: 184,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                             className: "flex bg-white/90 backdrop-blur-md p-2 rounded-full shadow-sm border border-slate-200 gap-2",
                             children: Object.keys(THEMES).map((t)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                    onClick: ()=>setCurrentTheme(t),
+                                    onClick: ()=>handleThemeChange(t),
                                     className: `p-2 transition-all rounded-full ${currentTheme === t ? 'bg-slate-100 scale-110' : 'opacity-30'}`,
                                     children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$book$2d$open$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__BookOpen$3e$__["BookOpen"], {
                                         size: 22,
@@ -471,29 +604,29 @@ function RetrospectivaPage() {
                                         fill: currentTheme === t ? THEMES[t].primary : "transparent"
                                     }, void 0, false, {
                                         fileName: "[project]/app/retrospectiva/page.tsx",
-                                        lineNumber: 130,
+                                        lineNumber: 204,
                                         columnNumber: 17
                                     }, this)
                                 }, t, false, {
                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                    lineNumber: 129,
+                                    lineNumber: 203,
                                     columnNumber: 15
                                 }, this))
                         }, void 0, false, {
                             fileName: "[project]/app/retrospectiva/page.tsx",
-                            lineNumber: 127,
+                            lineNumber: 201,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
                             onClick: handleExportAll,
                             disabled: isGenerating || allBooks.length === 0,
-                            className: "bg-slate-900 text-white rounded-full font-black uppercase text-[10px] px-8 h-11",
+                            className: "bg-slate-900 text-white rounded-full font-black uppercase text-[10px] px-8 h-11 hover:bg-black transition-all shadow-lg active:scale-95",
                             children: isGenerating ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$loader$2d$circle$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Loader2$3e$__["Loader2"], {
                                 className: "animate-spin",
                                 size: 14
                             }, void 0, false, {
                                 fileName: "[project]/app/retrospectiva/page.tsx",
-                                lineNumber: 135,
+                                lineNumber: 210,
                                 columnNumber: 29
                             }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
                                 children: [
@@ -502,7 +635,7 @@ function RetrospectivaPage() {
                                         className: "mr-2"
                                     }, void 0, false, {
                                         fileName: "[project]/app/retrospectiva/page.tsx",
-                                        lineNumber: 135,
+                                        lineNumber: 210,
                                         columnNumber: 79
                                     }, this),
                                     " Exportar Stories"
@@ -510,19 +643,19 @@ function RetrospectivaPage() {
                             }, void 0, true)
                         }, void 0, false, {
                             fileName: "[project]/app/retrospectiva/page.tsx",
-                            lineNumber: 134,
+                            lineNumber: 209,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/retrospectiva/page.tsx",
-                    lineNumber: 125,
+                    lineNumber: 183,
                     columnNumber: 9
                 }, this),
                 allBooks.length > 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
                     children: [
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                            className: "flex flex-wrap gap-8 justify-center",
+                            className: "flex flex-wrap gap-12 justify-center",
                             children: [
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                     ref: storyResumoRef,
@@ -544,7 +677,7 @@ function RetrospectivaPage() {
                                                     children: "Retrospectiva Literária"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                                    lineNumber: 144,
+                                                    lineNumber: 220,
                                                     columnNumber: 20
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
@@ -555,13 +688,13 @@ function RetrospectivaPage() {
                                                     children: currentYear
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                                    lineNumber: 145,
+                                                    lineNumber: 221,
                                                     columnNumber: 20
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                            lineNumber: 143,
+                                            lineNumber: 219,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
@@ -576,18 +709,18 @@ function RetrospectivaPage() {
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                         className: "w-20 h-32 bg-slate-100 rounded-xl overflow-hidden shadow-xl transform -rotate-1 border border-black/5",
                                                         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
-                                                            src: stats?.topBook?.cover_url,
+                                                            src: getProxyUrl(stats?.topBook?.cover_url),
                                                             className: "w-full h-full object-cover",
                                                             crossOrigin: "anonymous",
                                                             alt: ""
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                                            lineNumber: 151,
+                                                            lineNumber: 227,
                                                             columnNumber: 25
                                                         }, this)
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/retrospectiva/page.tsx",
-                                                        lineNumber: 150,
+                                                        lineNumber: 226,
                                                         columnNumber: 21
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -604,7 +737,7 @@ function RetrospectivaPage() {
                                                                         fill: "currentColor"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/app/retrospectiva/page.tsx",
-                                                                        lineNumber: 154,
+                                                                        lineNumber: 230,
                                                                         columnNumber: 116
                                                                     }, this),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -612,13 +745,13 @@ function RetrospectivaPage() {
                                                                         children: "Destaque do Ano"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/app/retrospectiva/page.tsx",
-                                                                        lineNumber: 154,
+                                                                        lineNumber: 230,
                                                                         columnNumber: 155
                                                                     }, this)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/app/retrospectiva/page.tsx",
-                                                                lineNumber: 154,
+                                                                lineNumber: 230,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -629,7 +762,7 @@ function RetrospectivaPage() {
                                                                 children: stats?.topBook?.book_name
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/retrospectiva/page.tsx",
-                                                                lineNumber: 155,
+                                                                lineNumber: 231,
                                                                 columnNumber: 25
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -643,24 +776,24 @@ function RetrospectivaPage() {
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/app/retrospectiva/page.tsx",
-                                                                lineNumber: 156,
+                                                                lineNumber: 232,
                                                                 columnNumber: 25
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/app/retrospectiva/page.tsx",
-                                                        lineNumber: 153,
+                                                        lineNumber: 229,
                                                         columnNumber: 21
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/app/retrospectiva/page.tsx",
-                                                lineNumber: 149,
+                                                lineNumber: 225,
                                                 columnNumber: 19
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                            lineNumber: 148,
+                                            lineNumber: 224,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -676,7 +809,7 @@ function RetrospectivaPage() {
                                                             children: stats?.totalBooks
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                                            lineNumber: 164,
+                                                            lineNumber: 240,
                                                             columnNumber: 24
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -684,13 +817,13 @@ function RetrospectivaPage() {
                                                             children: "Lidos"
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                                            lineNumber: 164,
+                                                            lineNumber: 240,
                                                             columnNumber: 148
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                                    lineNumber: 164,
+                                                    lineNumber: 240,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -704,7 +837,7 @@ function RetrospectivaPage() {
                                                             children: stats?.topGenre
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                                            lineNumber: 165,
+                                                            lineNumber: 241,
                                                             columnNumber: 41
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -712,13 +845,13 @@ function RetrospectivaPage() {
                                                             children: "Favorito"
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                                            lineNumber: 165,
+                                                            lineNumber: 241,
                                                             columnNumber: 221
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                                    lineNumber: 165,
+                                                    lineNumber: 241,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -731,7 +864,7 @@ function RetrospectivaPage() {
                                                             children: stats?.totalPagesYear.toLocaleString()
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                                            lineNumber: 166,
+                                                            lineNumber: 242,
                                                             columnNumber: 24
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -739,19 +872,19 @@ function RetrospectivaPage() {
                                                             children: "Págs no ano"
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                                            lineNumber: 166,
+                                                            lineNumber: 242,
                                                             columnNumber: 169
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                                    lineNumber: 166,
+                                                    lineNumber: 242,
                                                     columnNumber: 19
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                            lineNumber: 163,
+                                            lineNumber: 239,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -782,27 +915,27 @@ function RetrospectivaPage() {
                                                                         strokeWidth: 2
                                                                     }, index, false, {
                                                                         fileName: "[project]/app/retrospectiva/page.tsx",
-                                                                        lineNumber: 173,
+                                                                        lineNumber: 249,
                                                                         columnNumber: 56
                                                                     }, this))
                                                             }, void 0, false, {
                                                                 fileName: "[project]/app/retrospectiva/page.tsx",
-                                                                lineNumber: 172,
+                                                                lineNumber: 248,
                                                                 columnNumber: 33
                                                             }, this)
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                                            lineNumber: 172,
+                                                            lineNumber: 248,
                                                             columnNumber: 23
                                                         }, this)
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/retrospectiva/page.tsx",
-                                                        lineNumber: 171,
+                                                        lineNumber: 247,
                                                         columnNumber: 21
                                                     }, this)
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                                    lineNumber: 170,
+                                                    lineNumber: 246,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -817,7 +950,7 @@ function RetrospectivaPage() {
                                                                     }
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                                                    lineNumber: 180,
+                                                                    lineNumber: 256,
                                                                     columnNumber: 25
                                                                 }, this),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -828,24 +961,24 @@ function RetrospectivaPage() {
                                                                     children: item.name
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                                                    lineNumber: 181,
+                                                                    lineNumber: 257,
                                                                     columnNumber: 25
                                                                 }, this)
                                                             ]
                                                         }, index, true, {
                                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                                            lineNumber: 179,
+                                                            lineNumber: 255,
                                                             columnNumber: 23
                                                         }, this))
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                                    lineNumber: 177,
+                                                    lineNumber: 253,
                                                     columnNumber: 19
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                            lineNumber: 169,
+                                            lineNumber: 245,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -858,18 +991,18 @@ function RetrospectivaPage() {
                                                 children: "estante-literaria.vercel.app"
                                             }, void 0, false, {
                                                 fileName: "[project]/app/retrospectiva/page.tsx",
-                                                lineNumber: 186,
+                                                lineNumber: 262,
                                                 columnNumber: 97
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                            lineNumber: 186,
+                                            lineNumber: 262,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                    lineNumber: 142,
+                                    lineNumber: 218,
                                     columnNumber: 15
                                 }, this),
                                 bookChunks.map((chunk, index)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -894,7 +1027,7 @@ function RetrospectivaPage() {
                                                         children: "Minha Biblioteca"
                                                     }, void 0, false, {
                                                         fileName: "[project]/app/retrospectiva/page.tsx",
-                                                        lineNumber: 192,
+                                                        lineNumber: 269,
                                                         columnNumber: 22
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
@@ -909,13 +1042,13 @@ function RetrospectivaPage() {
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/app/retrospectiva/page.tsx",
-                                                        lineNumber: 193,
+                                                        lineNumber: 270,
                                                         columnNumber: 22
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/app/retrospectiva/page.tsx",
-                                                lineNumber: 191,
+                                                lineNumber: 268,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -923,23 +1056,23 @@ function RetrospectivaPage() {
                                                 children: chunk.map((book, bIdx)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                         className: "aspect-[3/4.5] w-full rounded-sm shadow-sm overflow-hidden bg-white border border-black/5",
                                                         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
-                                                            src: book.cover_url,
+                                                            src: getProxyUrl(book.cover_url),
                                                             className: "w-full h-full object-cover",
                                                             crossOrigin: "anonymous",
                                                             alt: ""
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                                            lineNumber: 198,
+                                                            lineNumber: 275,
                                                             columnNumber: 25
                                                         }, this)
                                                     }, bIdx, false, {
                                                         fileName: "[project]/app/retrospectiva/page.tsx",
-                                                        lineNumber: 197,
+                                                        lineNumber: 274,
                                                         columnNumber: 23
                                                     }, this))
                                             }, void 0, false, {
                                                 fileName: "[project]/app/retrospectiva/page.tsx",
-                                                lineNumber: 195,
+                                                lineNumber: 272,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -952,150 +1085,230 @@ function RetrospectivaPage() {
                                                     children: "estante-literaria.vercel.app"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                                    lineNumber: 202,
+                                                    lineNumber: 279,
                                                     columnNumber: 105
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/app/retrospectiva/page.tsx",
-                                                lineNumber: 202,
+                                                lineNumber: 279,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, index, true, {
                                         fileName: "[project]/app/retrospectiva/page.tsx",
-                                        lineNumber: 190,
+                                        lineNumber: 267,
                                         columnNumber: 17
                                     }, this))
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/retrospectiva/page.tsx",
-                            lineNumber: 141,
+                            lineNumber: 216,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                            className: "space-y-8 pt-12 border-t border-slate-200 px-4",
+                            className: "space-y-10 pt-16 border-t border-slate-200 px-4 max-w-6xl mx-auto",
                             children: [
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                     className: "flex items-center justify-between",
                                     children: [
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
-                                            className: "text-xs font-black uppercase text-slate-400 flex items-center gap-3 tracking-[0.4em]",
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                            className: "space-y-1",
                                             children: [
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$calendar$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Calendar$3e$__["Calendar"], {
-                                                    size: 20,
-                                                    className: "text-slate-300"
-                                                }, void 0, false, {
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
+                                                    className: "text-xs font-black uppercase text-slate-400 flex items-center gap-3 tracking-[0.4em]",
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$calendar$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Calendar$3e$__["Calendar"], {
+                                                            size: 18,
+                                                            className: "text-slate-300"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/retrospectiva/page.tsx",
+                                                            lineNumber: 289,
+                                                            columnNumber: 21
+                                                        }, this),
+                                                        " Sua Biblioteca ",
+                                                        currentYear
+                                                    ]
+                                                }, void 0, true, {
                                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                                    lineNumber: 210,
+                                                    lineNumber: 288,
                                                     columnNumber: 19
                                                 }, this),
-                                                " Sua Biblioteca ",
-                                                currentYear
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                    className: "text-2xl font-black italic uppercase tracking-tighter text-slate-800",
+                                                    children: "Todos os livros lidos"
+                                                }, void 0, false, {
+                                                    fileName: "[project]/app/retrospectiva/page.tsx",
+                                                    lineNumber: 291,
+                                                    columnNumber: 19
+                                                }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                            lineNumber: 209,
+                                            lineNumber: 287,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                            className: "bg-slate-200 text-slate-500 text-[10px] font-black px-4 py-1 rounded-full uppercase",
+                                            className: "bg-slate-900 text-white text-[11px] font-black px-6 py-2 rounded-full uppercase shadow-lg",
                                             children: [
                                                 allBooks.length,
-                                                " Lidos"
+                                                " Livros Lidos"
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                            lineNumber: 212,
+                                            lineNumber: 293,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                    lineNumber: 208,
+                                    lineNumber: 286,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    className: "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-8",
+                                    className: "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-8 pb-20",
                                     children: allBooks.map((book, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
                                             href: `/livro/${book.id || book.book_id}`,
                                             className: "group cursor-pointer",
                                             children: [
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                    className: "aspect-2/3 rounded-[25px] overflow-hidden shadow-md border-[6px] border-white bg-white transition-all duration-500 group-hover:shadow-2xl group-hover:-translate-y-3 group-hover:rotate-2",
-                                                    children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
-                                                        src: book.cover_url || "https://via.placeholder.com/300x450",
-                                                        className: "w-full h-full object-cover",
-                                                        alt: book.book_name
-                                                    }, void 0, false, {
-                                                        fileName: "[project]/app/retrospectiva/page.tsx",
-                                                        lineNumber: 220,
-                                                        columnNumber: 23
-                                                    }, this)
-                                                }, void 0, false, {
+                                                    className: "aspect-2/3 rounded-[28px] overflow-hidden shadow-md border-[6px] border-white bg-white transition-all duration-500 group-hover:shadow-2xl group-hover:-translate-y-3 group-hover:rotate-2 relative",
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
+                                                            src: getProxyUrl(book.cover_url) || "https://via.placeholder.com/300x450",
+                                                            className: "w-full h-full object-cover",
+                                                            alt: book.book_name
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/retrospectiva/page.tsx",
+                                                            lineNumber: 302,
+                                                            columnNumber: 23
+                                                        }, this),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            className: "absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/app/retrospectiva/page.tsx",
+                                                            lineNumber: 303,
+                                                            columnNumber: 23
+                                                        }, this)
+                                                    ]
+                                                }, void 0, true, {
                                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                                    lineNumber: 219,
+                                                    lineNumber: 301,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                     className: "mt-4 px-2",
                                                     children: [
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                            className: "text-[10px] font-black uppercase text-slate-800 line-clamp-1 tracking-tight group-hover:text-rose-500 transition-colors",
+                                                            className: "text-[11px] font-black uppercase text-slate-800 line-clamp-1 tracking-tight group-hover:text-rose-500 transition-colors",
                                                             children: book.book_name
                                                         }, void 0, false, {
                                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                                            lineNumber: 223,
+                                                            lineNumber: 306,
                                                             columnNumber: 23
                                                         }, this),
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                            className: "text-[9px] font-bold text-slate-400 uppercase tracking-tighter",
-                                                            children: book.genre
-                                                        }, void 0, false, {
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                            className: "flex items-center justify-between mt-1",
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                                    className: "text-[9px] font-bold text-slate-400 uppercase tracking-tighter",
+                                                                    children: book.genre
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/app/retrospectiva/page.tsx",
+                                                                    lineNumber: 308,
+                                                                    columnNumber: 25
+                                                                }, this),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                                    className: "flex items-center gap-1 text-amber-400",
+                                                                    children: [
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$star$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Star$3e$__["Star"], {
+                                                                            size: 8,
+                                                                            fill: "currentColor"
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/app/retrospectiva/page.tsx",
+                                                                            lineNumber: 310,
+                                                                            columnNumber: 28
+                                                                        }, this),
+                                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                                                            className: "text-[9px] font-black",
+                                                                            children: book.rating || 0
+                                                                        }, void 0, false, {
+                                                                            fileName: "[project]/app/retrospectiva/page.tsx",
+                                                                            lineNumber: 311,
+                                                                            columnNumber: 28
+                                                                        }, this)
+                                                                    ]
+                                                                }, void 0, true, {
+                                                                    fileName: "[project]/app/retrospectiva/page.tsx",
+                                                                    lineNumber: 309,
+                                                                    columnNumber: 25
+                                                                }, this)
+                                                            ]
+                                                        }, void 0, true, {
                                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                                            lineNumber: 224,
+                                                            lineNumber: 307,
                                                             columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                                    lineNumber: 222,
+                                                    lineNumber: 305,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, i, true, {
                                             fileName: "[project]/app/retrospectiva/page.tsx",
-                                            lineNumber: 218,
+                                            lineNumber: 300,
                                             columnNumber: 19
                                         }, this))
                                 }, void 0, false, {
                                     fileName: "[project]/app/retrospectiva/page.tsx",
-                                    lineNumber: 216,
+                                    lineNumber: 298,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/retrospectiva/page.tsx",
-                            lineNumber: 207,
+                            lineNumber: 285,
                             columnNumber: 13
                         }, this)
                     ]
                 }, void 0, true) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                    className: "text-center p-20 border-2 border-dashed rounded-[50px] text-slate-300 font-black uppercase text-xs tracking-[0.5em]",
-                    children: "Ainda não há livros lidos"
-                }, void 0, false, {
+                    className: "flex flex-col items-center justify-center py-40 border-4 border-dashed border-slate-200 rounded-[60px] text-slate-300 text-center space-y-4",
+                    children: [
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$book$2d$open$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__BookOpen$3e$__["BookOpen"], {
+                            size: 48,
+                            className: "opacity-20"
+                        }, void 0, false, {
+                            fileName: "[project]/app/retrospectiva/page.tsx",
+                            lineNumber: 322,
+                            columnNumber: 14
+                        }, this),
+                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                            className: "font-black uppercase text-sm tracking-[0.5em]",
+                            children: [
+                                "Nenhum livro lido em ",
+                                currentYear
+                            ]
+                        }, void 0, true, {
+                            fileName: "[project]/app/retrospectiva/page.tsx",
+                            lineNumber: 323,
+                            columnNumber: 14
+                        }, this)
+                    ]
+                }, void 0, true, {
                     fileName: "[project]/app/retrospectiva/page.tsx",
-                    lineNumber: 232,
+                    lineNumber: 321,
                     columnNumber: 11
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/app/retrospectiva/page.tsx",
-            lineNumber: 123,
+            lineNumber: 181,
             columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/app/retrospectiva/page.tsx",
-        lineNumber: 122,
+        lineNumber: 180,
         columnNumber: 5
     }, this);
 }

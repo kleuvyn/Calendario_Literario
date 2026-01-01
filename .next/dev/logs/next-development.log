@@ -1,14 +1,15 @@
-[00:00:02.407] Server  LOG      ✓ Ready in 1797ms
-[00:00:22.802] Server  LOG      ○ Compiling /retrospectiva ...
-[00:00:24.932] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:00:25.099] Browser LOG     %c[Vercel Web Analytics]%c Debug mode is enabled by default in development. No requests will be sent to the server. color: rgb(120, 120, 120) color: inherit
-[00:00:25.099] Browser LOG     %c[Vercel Web Analytics]%c Running queued event color: rgb(120, 120, 120) color: inherit pageview {"path":"/retrospectiva","route":"/retrospectiva"}
-[00:00:25.099] Browser LOG     %c[Vercel Web Analytics]%c [pageview] http://localhost:3000/retrospectiva color: rgb(120, 120, 120) color: inherit {"dp":"/retrospectiva","o":"http://localhost:3000/retrospectiva","r":"https://accounts.google.com/","sdkn":"@vercel/analytics/next","sdkv":"1.3.1","sv":"0.1.3","ts":1766963667229}
-[00:02:03.780] Server  LOG      ✓ Compiled in 153ms
-[00:02:12.063] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:02:12.221] Browser LOG     %c[Vercel Web Analytics]%c Debug mode is enabled by default in development. No requests will be sent to the server. color: rgb(120, 120, 120) color: inherit
-[00:02:12.221] Browser LOG     %c[Vercel Web Analytics]%c Running queued event color: rgb(120, 120, 120) color: inherit pageview {"path":"/retrospectiva","route":"/retrospectiva"}
-[00:02:12.221] Browser LOG     %c[Vercel Web Analytics]%c [pageview] http://localhost:3000/retrospectiva color: rgb(120, 120, 120) color: inherit {"dp":"/retrospectiva","o":"http://localhost:3000/retrospectiva","r":"https://accounts.google.com/","sdkn":"@vercel/analytics/next","sdkv":"1.3.1","sv":"0.1.3","ts":1766963774351}
-[00:03:06.646] Server  LOG      ✓ Compiled in 101ms
-[00:03:11.670] Server  LOG      ✓ Compiled in 192ms
-[00:03:37.589] Server  LOG      ✓ Compiled in 78ms
+[00:00:01.129] Server  LOG      ✓ Ready in 717ms
+[00:00:12.281] Server  LOG      ○ Compiling / ...
+[00:00:13.480] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:13.636] Browser LOG     %c[Vercel Web Analytics]%c Debug mode is enabled by default in development. No requests will be sent to the server. color: rgb(120, 120, 120) color: inherit
+[00:00:13.636] Browser LOG     %c[Vercel Web Analytics]%c Running queued event color: rgb(120, 120, 120) color: inherit pageview {"path":"/","route":"/"}
+[00:00:13.636] Browser LOG     %c[Vercel Web Analytics]%c [pageview] http://localhost:3000/ color: rgb(120, 120, 120) color: inherit {"dp":"/","o":"http://localhost:3000/","r":"","sdkn":"@vercel/analytics/next","sdkv":"1.3.1","sv":"0.1.3","ts":1767288573007}
+[00:01:19.802] Browser LOG     %c[Vercel Web Analytics]%c [pageview] http://localhost:3000/retrospectiva color: rgb(120, 120, 120) color: inherit {"dp":"/retrospectiva","o":"http://localhost:3000/retrospectiva","sdkn":"@vercel/analytics/next","sdkv":"1.3.1","sv":"0.1.3","ts":1767288639146}
+[00:01:32.299] Browser LOG     %c[Vercel Web Analytics]%c [pageview] http://localhost:3000/ color: rgb(120, 120, 120) color: inherit {"dp":"/","o":"http://localhost:3000/","sdkn":"@vercel/analytics/next","sdkv":"1.3.1","sv":"0.1.3","ts":1767288651656}
+[00:01:53.344] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:01:53.344] Browser LOG     %c[Vercel Web Analytics]%c Debug mode is enabled by default in development. No requests will be sent to the server. color: rgb(120, 120, 120) color: inherit
+[00:01:53.344] Browser LOG     %c[Vercel Web Analytics]%c Running queued event color: rgb(120, 120, 120) color: inherit pageview {"path":"/","route":"/"}
+[00:01:53.344] Browser LOG     %c[Vercel Web Analytics]%c [pageview] http://localhost:3000/ color: rgb(120, 120, 120) color: inherit {"dp":"/","o":"http://localhost:3000/","r":"","sdkn":"@vercel/analytics/next","sdkv":"1.3.1","sv":"0.1.3","ts":1767288672651}
+[00:01:53.344] Browser LOG     SW ok:  http://localhost:3000/
+[00:05:42.858] Server  LOG      ✓ Compiled in 67ms
+[00:05:57.087] Server  LOG      ✓ Compiled in 76ms

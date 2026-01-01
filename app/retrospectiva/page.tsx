@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react"
 import { useSession } from "next-auth/react"
-import { BookOpen, Loader2, Star, ArrowLeft, Instagram, Crown, Calendar } from "lucide-react"
+import { BookOpen, Loader2, Star, ArrowLeft, Instagram, Crown, Calendar, ChevronDown } from "lucide-react"
 import { getReadingData } from "@/lib/api-client"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -13,10 +13,22 @@ const THEMES = {
   rose: { primary: '#f4a6f0', bg: '#fff5f6', text: '#a64d9c', card: '#ffffff' },
   dark: { primary: '#38bdf8', bg: '#f0f7ff', text: '#1e293b', card: '#ffffff' },
   soft: { primary: '#a855f7', bg: '#faf5ff', text: '#5b1c87', card: '#ffffff' },
-  coffee: { primary: '#7c3f17', bg: '#fafaf9', text: '#4b3832', card: '#ffffff' }
+  coffee: { primary: '#7c3f17', bg: '#fafaf9', text: '#4b3832', card: '#ffffff' },
+  ocean: { primary: '#0ea5e9', bg: '#f0f9ff', text: '#0369a1', card: '#ffffff' },
+  forest: { primary: '#10b981', bg: '#f0fdf4', text: '#065f46', card: '#ffffff' },
+  sunset: { primary: '#f59e0b', bg: '#fffbeb', text: '#92400e', card: '#ffffff' },
+  midnight: { primary: '#818cf8', bg: '#0f172a', text: '#f8fafc', card: '#1e293b' } 
 }
 
 const GENRE_COLORS = ["#ec4899", "#3b82f6", "#a855f7", "#ef4444", "#10b981", "#f59e0b", "#64748b", "#06b6d4"];
+
+const getProxyUrl = (url: string) => {
+  if (!url) return "";
+  if (url.includes("googleusercontent.com") || url.includes("books.google.com")) {
+    return `https://images.weserv.nl/?url=${encodeURIComponent(url.replace("http://", "https://"))}`;
+  }
+  return url;
+};
 
 export default function RetrospectivaPage() {
   const { data: session, status } = useSession()
@@ -25,24 +37,67 @@ export default function RetrospectivaPage() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [currentTheme, setCurrentTheme] = useState<keyof typeof THEMES>('rose')
   
-  const currentYear = 2025
-  const theme = THEMES[currentTheme]
+  const [currentYear, setCurrentYear] = useState(() => new Date().getFullYear())
+  
+  const yearsAvailable = useMemo(() => {
+    const startYear = 2024;
+    const now = new Date().getFullYear();
+    const years = [];
+    for (let i = now; i >= startYear; i--) {
+      years.push(i);
+    }
+    return years;
+  }, []);
 
+  const theme = THEMES[currentTheme]
   const storyResumoRef = useRef<HTMLDivElement>(null)
   const paginasLivrosRef = useRef<(HTMLDivElement | null)[]>([])
 
   useEffect(() => {
     async function loadData() {
       if (status === "authenticated" && session?.user?.email) {
+        setLoadingData(true)
         try {
-          const data: any = await getReadingData(session.user.email, currentYear)
+          const data: any = await getReadingData(session.user.email, currentYear, true)
           const booksArray = Array.isArray(data) ? data : (data?.data || [])
-          setAllBooks(booksArray.filter((b: any) => b.status !== 'lendo'))
-        } catch (err) { console.error(err) } finally { setLoadingData(false) }
-      } else if (status === "unauthenticated") { setLoadingData(false) }
+          setAllBooks(booksArray.filter((b: any) => b.status !== 'lendo' && b.status !== 'reading'))
+
+          try {
+            const profileRes = await fetch(`/api/user/update-profile?email=${session.user.email}`)
+            if (profileRes.ok) {
+                const profileData = await profileRes.json()
+                if (profileData?.theme && THEMES[profileData.theme as keyof typeof THEMES]) {
+                  setCurrentTheme(profileData.theme as keyof typeof THEMES)
+                }
+            }
+          } catch (themeErr) {
+            console.warn("Aviso: Não foi possível carregar o tema personalizado, usando padrão.");
+          }
+
+        } catch (err) { 
+          console.error("Erro ao carregar dados dos livros:", err) 
+        } finally { 
+          setLoadingData(false) 
+        }
+      } else if (status === "unauthenticated") { 
+        setLoadingData(false) 
+      }
     }
     loadData()
   }, [status, session, currentYear])
+
+  const handleThemeChange = async (newTheme: keyof typeof THEMES) => {
+    setCurrentTheme(newTheme)
+    if (session?.user?.email) {
+      try {
+        await fetch('/api/user/update-profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: session.user.email, theme: newTheme })
+        })
+      } catch (err) { console.error("Erro ao salvar tema:", err) }
+    }
+  }
 
   const bookChunks = useMemo(() => {
     const chunks = []
@@ -69,8 +124,8 @@ export default function RetrospectivaPage() {
 
       const downloadEl = async (el: HTMLElement, fileName: string) => {
         const url = await domToPng(el, { 
-          scale: 2,
-          quality: 0.95,
+          scale: 3, 
+          quality: 1,
           width: 400, 
           height: 850 
         });
@@ -83,7 +138,7 @@ export default function RetrospectivaPage() {
       };
 
       if (storyResumoRef.current) {
-        await downloadEl(storyResumoRef.current, `01-resumo.png`);
+        await downloadEl(storyResumoRef.current, `01-resumo-${currentYear}.png`);
       }
 
       await new Promise(r => setTimeout(r, 1500));
@@ -92,12 +147,13 @@ export default function RetrospectivaPage() {
         const el = paginasLivrosRef.current[i];
         if (el) {
           el.scrollIntoView({ block: 'center' });
+          await new Promise(r => setTimeout(r, 500));
           await downloadEl(el, `0${i + 2}-biblioteca-${i + 1}.png`);
-          await new Promise(r => setTimeout(r, 1500)); // Delay maior entre imagens
+          await new Promise(r => setTimeout(r, 1500)); 
         }
       }
     } catch (err) { 
-      alert("Erro ao gerar. Tente abrir pelo Safari (fora do Instagram)."); 
+      alert("Erro ao gerar. Tente abrir pelo Safari ou Chrome."); 
     } finally { 
       setIsGenerating(false); 
     }
@@ -116,29 +172,46 @@ export default function RetrospectivaPage() {
     return { totalBooks: allBooks.length, totalPagesYear, topGenre: genreData[0]?.name || "Nenhum", topBook }
   }, [allBooks, genreData])
 
-  if (loadingData) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin text-rose-500" /></div>
+  if (loadingData) return <div className="h-screen flex items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-rose-500" /></div>
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20 transition-colors duration-500">
       <div className="max-w-7xl mx-auto p-4 space-y-12">
         
         <header className="flex flex-col md:flex-row justify-between items-center gap-6 px-4 no-export">
-          <Link href="/"><Button variant="ghost" className="text-[10px] font-black uppercase"><ArrowLeft size={14} className="mr-2"/> Voltar</Button></Link>
+          <div className="flex items-center gap-4">
+            <Link href="/"><Button variant="ghost" className="text-[10px] font-black uppercase"><ArrowLeft size={14} className="mr-2"/> Voltar</Button></Link>
+            
+            <div className="relative flex items-center bg-white border border-slate-200 rounded-full px-4 py-1.5 shadow-sm">
+              <Calendar size={12} className="mr-2 text-slate-400" />
+              <select 
+                value={currentYear} 
+                onChange={(e) => setCurrentYear(Number(e.target.value))}
+                className="appearance-none bg-transparent text-[11px] font-black uppercase pr-6 outline-none cursor-pointer"
+                style={{ color: theme.text }}
+              >
+                {yearsAvailable.map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+              <ChevronDown size={10} className="absolute right-3 pointer-events-none opacity-50" />
+            </div>
+          </div>
+
           <div className="flex bg-white/90 backdrop-blur-md p-2 rounded-full shadow-sm border border-slate-200 gap-2">
             {Object.keys(THEMES).map((t) => (
-              <button key={t} onClick={() => setCurrentTheme(t as any)} className={`p-2 transition-all rounded-full ${currentTheme === t ? 'bg-slate-100 scale-110' : 'opacity-30'}`}>
+              <button key={t} onClick={() => handleThemeChange(t as any)} className={`p-2 transition-all rounded-full ${currentTheme === t ? 'bg-slate-100 scale-110' : 'opacity-30'}`}>
                 <BookOpen size={22} color={THEMES[t as keyof typeof THEMES].primary} fill={currentTheme === t ? THEMES[t as keyof typeof THEMES].primary : "transparent"} />
               </button>
             ))}
           </div>
-          <Button onClick={handleExportAll} disabled={isGenerating || allBooks.length === 0} className="bg-slate-900 text-white rounded-full font-black uppercase text-[10px] px-8 h-11">
+
+          <Button onClick={handleExportAll} disabled={isGenerating || allBooks.length === 0} className="bg-slate-900 text-white rounded-full font-black uppercase text-[10px] px-8 h-11 hover:bg-black transition-all shadow-lg active:scale-95">
             {isGenerating ? <Loader2 className="animate-spin" size={14}/> : <><Instagram size={14} className="mr-2"/> Exportar Stories</>}
           </Button>
         </header>
 
         {allBooks.length > 0 ? (
           <>
-            <div className="flex flex-wrap gap-8 justify-center">
+            <div className="flex flex-wrap gap-12 justify-center">
               <div ref={storyResumoRef} style={{ width: '400px', height: '850px', backgroundColor: theme.bg }} className="px-6 py-8 flex flex-col rounded-[50px] shadow-2xl relative border border-black/5 shrink-0 overflow-hidden">
                 <div className="text-center mb-6 pt-2">
                    <p style={{ color: theme.primary }} className="text-[10px] font-black uppercase tracking-[0.4em] mb-1">Retrospectiva Literária</p>
@@ -148,7 +221,7 @@ export default function RetrospectivaPage() {
                 <Link href={`/livro/${stats?.topBook?.id || stats?.topBook?.book_id}`} className="block transition-transform hover:scale-[1.02] active:scale-95">
                   <div style={{ backgroundColor: theme.card }} className="p-5 rounded-[40px] shadow-sm flex flex-col items-center text-center gap-3 border border-black/5 mx-1 mb-6">
                     <div className="w-20 h-32 bg-slate-100 rounded-xl overflow-hidden shadow-xl transform -rotate-1 border border-black/5">
-                        <img src={stats?.topBook?.cover_url} className="w-full h-full object-cover" crossOrigin="anonymous" alt="" />
+                        <img src={getProxyUrl(stats?.topBook?.cover_url)} className="w-full h-full object-cover" crossOrigin="anonymous" alt="" />
                     </div>
                     <div className="space-y-1 w-full px-2">
                         <div className="flex items-center justify-center gap-1.5" style={{ color: theme.primary }}><Crown size={12} fill="currentColor" /><span className="text-[8px] font-black uppercase tracking-widest">Destaque do Ano</span></div>
@@ -195,7 +268,7 @@ export default function RetrospectivaPage() {
                   <div className={`grid ${getGridCols(chunk.length)} gap-2 flex-1 content-center items-center px-2`}>
                     {chunk.map((book, bIdx) => (
                       <div key={bIdx} className="aspect-[3/4.5] w-full rounded-sm shadow-sm overflow-hidden bg-white border border-black/5">
-                        <img src={book.cover_url} className="w-full h-full object-cover" crossOrigin="anonymous" alt="" />
+                        <img src={getProxyUrl(book.cover_url)} className="w-full h-full object-cover" crossOrigin="anonymous" alt="" />
                       </div>
                     ))}
                   </div>
@@ -204,24 +277,35 @@ export default function RetrospectivaPage() {
               ))}
             </div>
 
-            <div className="space-y-8 pt-12 border-t border-slate-200 px-4">
+            <div className="space-y-10 pt-16 border-t border-slate-200 px-4 max-w-6xl mx-auto">
               <div className="flex items-center justify-between">
-                <h2 className="text-xs font-black uppercase text-slate-400 flex items-center gap-3 tracking-[0.4em]">
-                  <Calendar size={20} className="text-slate-300" /> Sua Biblioteca {currentYear}
-                </h2>
-                <span className="bg-slate-200 text-slate-500 text-[10px] font-black px-4 py-1 rounded-full uppercase">
-                  {allBooks.length} Lidos
+                <div className="space-y-1">
+                  <h2 className="text-xs font-black uppercase text-slate-400 flex items-center gap-3 tracking-[0.4em]">
+                    <Calendar size={18} className="text-slate-300" /> Sua Biblioteca {currentYear}
+                  </h2>
+                  <p className="text-2xl font-black italic uppercase tracking-tighter text-slate-800">Todos os livros lidos</p>
+                </div>
+                <span className="bg-slate-900 text-white text-[11px] font-black px-6 py-2 rounded-full uppercase shadow-lg">
+                  {allBooks.length} Livros Lidos
                 </span>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-8">
+              
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-8 pb-20">
                 {allBooks.map((book, i) => (
                   <Link href={`/livro/${book.id || book.book_id}`} key={i} className="group cursor-pointer">
-                    <div className="aspect-2/3 rounded-[25px] overflow-hidden shadow-md border-[6px] border-white bg-white transition-all duration-500 group-hover:shadow-2xl group-hover:-translate-y-3 group-hover:rotate-2">
-                      <img src={book.cover_url || "https://via.placeholder.com/300x450"} className="w-full h-full object-cover" alt={book.book_name} />
+                    <div className="aspect-2/3 rounded-[28px] overflow-hidden shadow-md border-[6px] border-white bg-white transition-all duration-500 group-hover:shadow-2xl group-hover:-translate-y-3 group-hover:rotate-2 relative">
+                      <img src={getProxyUrl(book.cover_url) || "https://via.placeholder.com/300x450"} className="w-full h-full object-cover" alt={book.book_name} />
+                      <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                     <div className="mt-4 px-2">
-                      <p className="text-[10px] font-black uppercase text-slate-800 line-clamp-1 tracking-tight group-hover:text-rose-500 transition-colors">{book.book_name}</p>
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{book.genre}</p>
+                      <p className="text-[11px] font-black uppercase text-slate-800 line-clamp-1 tracking-tight group-hover:text-rose-500 transition-colors">{book.book_name}</p>
+                      <div className="flex items-center justify-between mt-1">
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{book.genre}</p>
+                        <div className="flex items-center gap-1 text-amber-400">
+                           <Star size={8} fill="currentColor" />
+                           <span className="text-[9px] font-black">{book.rating || 0}</span>
+                        </div>
+                      </div>
                     </div>
                   </Link>
                 ))}
@@ -229,7 +313,10 @@ export default function RetrospectivaPage() {
             </div>
           </>
         ) : (
-          <div className="text-center p-20 border-2 border-dashed rounded-[50px] text-slate-300 font-black uppercase text-xs tracking-[0.5em]">Ainda não há livros lidos</div>
+          <div className="flex flex-col items-center justify-center py-40 border-4 border-dashed border-slate-200 rounded-[60px] text-slate-300 text-center space-y-4">
+             <BookOpen size={48} className="opacity-20" />
+             <p className="font-black uppercase text-sm tracking-[0.5em]">Nenhum livro lido em {currentYear}</p>
+          </div>
         )}
       </div>
     </div>
