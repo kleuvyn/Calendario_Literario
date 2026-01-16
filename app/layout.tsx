@@ -8,6 +8,11 @@ export const metadata: Metadata = {
   title: "Diário de Leituras",
   description: "Planejador literário elegante para registrar suas leituras ao longo do ano",
   manifest: "/manifest.json", 
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Calendário Lit",
+  },
   icons: {
     icon: "/icon-192.png",
     shortcut: "/icon-192.png",
@@ -16,7 +21,11 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: "#ffffff",
+  themeColor: "#6366f1",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 }
 
 export default function RootLayout({
@@ -38,10 +47,10 @@ export default function RootLayout({
           {`
             if ('serviceWorker' in navigator) {
               window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js').then(function(registration) {
-                  console.log('SW ok: ', registration.scope);
-                }, function(err) {
-                  console.log('SW erro: ', err);
+                navigator.serviceWorker.register('/sw.js').then(function(reg) {
+                  console.log('PWA: Service Worker registrado!', reg.scope);
+                }).catch(function(err) {
+                  console.log('PWA: Erro no registro:', err);
                 });
               });
             }
