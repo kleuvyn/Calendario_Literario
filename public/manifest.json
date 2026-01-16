@@ -43,7 +43,7 @@
       "sizes": "1920x1080",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "Vista de planeamento no computador"
+      "label": "Vista de planejamento"
     }
   ],
   "categories": ["books", "lifestyle", "education"],
@@ -63,14 +63,7 @@
       "url": "url"
     }
   },
-  "display_override": ["tabbed", "window-controls-overlay", "minimal-ui"],
-  "launch_handler": {
-    "client_mode": "focus-existing"
-  },
-  "note_taking": {
-    "new_note_url": "/nova-leitura"
-  },
-  "edge_side_panel": {
-    "preferred_width": 400
-  }
+  "display_override": ["window-controls-overlay", "minimal-ui"],
+  "launch_handler": { "client_mode": "focus-existing" },
+  "note_taking": { "new_note_url": "/nova-leitura" }
 }

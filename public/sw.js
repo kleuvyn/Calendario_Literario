@@ -1,4 +1,4 @@
-const CACHE_NAME = 'calendario-lit-v4'; // Aumentei a versão para forçar atualização
+const CACHE_NAME = 'calendario-lit-v3'; 
 const ASSETS = [
   '/',
   '/manifest.json',
@@ -9,12 +9,15 @@ const ASSETS = [
 ];
 
 async function enviarLeiturasPendentes() {
-  console.log('PWA: Sincronizando dados...');
+  console.log('PWA: Sincronizando dados pendentes...');
 }
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+    caches.open(CACHE_NAME).then((cache) => {
+      console.log('PWA: Cacheando arquivos essenciais');
+      return cache.addAll(ASSETS);
+    })
   );
   self.skipWaiting();
 });
@@ -23,7 +26,9 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
-        cacheNames.filter((name) => name !== CACHE_NAME).map((name) => caches.delete(name))
+        cacheNames
+          .filter((name) => name !== CACHE_NAME)
+          .map((name) => caches.delete(name))
       );
     })
   );
@@ -35,18 +40,22 @@ self.addEventListener('fetch', (event) => {
     fetch(event.request).catch(() => {
       return caches.match(event.request).then((response) => {
         if (response) return response;
-        if (event.request.mode === 'navigate') return caches.match('/');
+        if (event.request.mode === 'navigate') {
+          return caches.match('/');
+        }
       });
     })
   );
 });
 
 self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-leituras') event.waitUntil(enviarLeiturasPendentes()); 
+  if (event.tag === 'sync-leituras') {
+    event.waitUntil(enviarLeiturasPendentes()); 
+  }
 });
 
 self.addEventListener('push', (event) => {
-  const data = event.data ? event.data.json() : { title: 'Calendário Literário', body: 'Hora da leitura!' };
+  const data = event.data ? event.data.json() : { title: 'Calendário Literário', body: 'Sua leitura te espera!' };
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
