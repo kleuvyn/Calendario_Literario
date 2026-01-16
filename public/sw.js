@@ -3,13 +3,15 @@ const ASSETS = [
   '/',
   '/manifest.json',
   '/icon-192.png',
-  '/icon-512.png'
+  '/icon-512.png',
+  '/screenshot-mobile.png', 
+  '/screenshot-desktop.png'
 ];
 
+// Instalação e Cache
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('PWA: Cache aberto');
       return cache.addAll(ASSETS);
     })
   );
@@ -36,6 +38,22 @@ self.addEventListener('fetch', (event) => {
           return caches.match('/');
         }
       });
+    })
+  );
+});
+
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'sync-leituras') {
+    event.waitUntil(enviarLeiturasPendentes()); 
+  }
+});
+
+self.addEventListener('push', (event) => {
+  const data = event.data ? event.data.json() : { title: 'Calendário Literário', body: 'Hora da leitura!' };
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: '/icon-192.png'
     })
   );
 });

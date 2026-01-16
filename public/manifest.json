@@ -67,10 +67,26 @@
     }
   },
   "display_override": [
+    "tabbed",
     "window-controls-overlay",
     "minimal-ui"
   ],
   "launch_handler": {
     "client_mode": "focus-existing"
+  },
+  "note_taking": {
+    "new_note_url": "/nova-leitura"
+  },
+  "widgets": [
+    {
+      "name": "Livro Atual",
+      "tag": "current-book",
+      "ms_ac_template": "widgets/current-book.json",
+      "data": "widgets/data.json",
+      "type": "application/json"
+    }
+  ],
+  "edge_side_panel": {
+    "preferred_width": 400
   }
 }
