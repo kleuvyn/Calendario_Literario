@@ -2,7 +2,7 @@
   "name": "Calendário Literário",
   "short_name": "Calendário",
   "description": "Diário de leituras e planejamento literário para amantes de livros.",
-  "id": "calendario-literario-v3",
+  "id": "calendario-literario-v1",
   "start_url": "/?utm_source=pwa",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -21,7 +21,13 @@
       "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "screenshots": [
@@ -40,21 +46,12 @@
       "label": "Vista de planeamento no computador"
     }
   ],
-  "categories": [
-    "books",
-    "lifestyle",
-    "education"
-  ],
+  "categories": ["books", "lifestyle", "education"],
   "shortcuts": [
     {
       "name": "Nova Leitura",
       "url": "/nova-leitura",
-      "icons": [
-        {
-          "src": "/icon-192.png",
-          "sizes": "192x192"
-        }
-      ]
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ],
   "share_target": {
@@ -66,11 +63,7 @@
       "url": "url"
     }
   },
-  "display_override": [
-    "tabbed",
-    "window-controls-overlay",
-    "minimal-ui"
-  ],
+  "display_override": ["tabbed", "window-controls-overlay", "minimal-ui"],
   "launch_handler": {
     "client_mode": "focus-existing"
   },

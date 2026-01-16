@@ -1,4 +1,4 @@
-const CACHE_NAME = 'calendario-lit-v3';
+const CACHE_NAME = 'calendario-lit-v4'; // Aumentei a versão para forçar atualização
 const ASSETS = [
   '/',
   '/manifest.json',
@@ -9,14 +9,12 @@ const ASSETS = [
 ];
 
 async function enviarLeiturasPendentes() {
-  console.log('PWA: Sincronizando dados em segundo plano...');
+  console.log('PWA: Sincronizando dados...');
 }
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS);
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
   );
   self.skipWaiting();
 });
@@ -37,18 +35,14 @@ self.addEventListener('fetch', (event) => {
     fetch(event.request).catch(() => {
       return caches.match(event.request).then((response) => {
         if (response) return response;
-        if (event.request.mode === 'navigate') {
-          return caches.match('/');
-        }
+        if (event.request.mode === 'navigate') return caches.match('/');
       });
     })
   );
 });
 
 self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-leituras') {
-    event.waitUntil(enviarLeiturasPendentes()); 
-  }
+  if (event.tag === 'sync-leituras') event.waitUntil(enviarLeiturasPendentes()); 
 });
 
 self.addEventListener('push', (event) => {
