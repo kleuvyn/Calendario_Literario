@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Calendário Lit",
+    title: "Calendário Literário",
   },
   icons: {
     icon: "/icon-192.png",
@@ -47,10 +47,10 @@ export default function RootLayout({
           {`
             if ('serviceWorker' in navigator) {
               window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js').then(function(reg) {
-                  console.log('PWA: Service Worker registrado!', reg.scope);
+                navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(function(reg) {
+                  console.log('PWA: Ativo!', reg.scope);
                 }).catch(function(err) {
-                  console.log('PWA: Erro no registro:', err);
+                  console.log('PWA: Erro:', err);
                 });
               });
             }

@@ -8,7 +8,10 @@ const ASSETS = [
   '/screenshot-desktop.png'
 ];
 
-// Instalação e Cache
+async function enviarLeiturasPendentes() {
+  console.log('PWA: Sincronizando dados em segundo plano...');
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -53,7 +56,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
-      icon: '/icon-192.png'
+      icon: '/icon-192.png',
+      badge: '/icon-192.png'
     })
   );
 });

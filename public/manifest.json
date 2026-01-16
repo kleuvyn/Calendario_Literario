@@ -2,7 +2,7 @@
   "name": "Calendário Literário",
   "short_name": "Calendário",
   "description": "Diário de leituras e planejamento literário para amantes de livros.",
-  "id": "calendario-literario-v1",
+  "id": "calendario-literario-v3",
   "start_url": "/?utm_source=pwa",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -21,13 +21,13 @@
       "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     }
   ],
   "screenshots": [
     {
       "src": "/screenshot-mobile.png",
-      "sizes": "1080x1920",
+      "sizes": "413x904",
       "type": "image/png",
       "form_factor": "narrow",
       "label": "Ecrã principal do Calendário Literário"
@@ -77,15 +77,6 @@
   "note_taking": {
     "new_note_url": "/nova-leitura"
   },
-  "widgets": [
-    {
-      "name": "Livro Atual",
-      "tag": "current-book",
-      "ms_ac_template": "widgets/current-book.json",
-      "data": "widgets/data.json",
-      "type": "application/json"
-    }
-  ],
   "edge_side_panel": {
     "preferred_width": 400
   }
