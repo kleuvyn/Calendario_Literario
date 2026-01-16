@@ -2,15 +2,14 @@
   "name": "Calendário Literário",
   "short_name": "Calendário",
   "description": "Diário de leituras e planejamento literário para amantes de livros.",
-  "id": "/?source=pwa",
-  "start_url": "/",
+  "id": "calendario-literario-v1",
+  "start_url": "/?utm_source=pwa",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#6366f1",
   "orientation": "portrait",
   "scope": "/",
   "lang": "pt-BR",
-  "categories": ["books", "lifestyle", "education"],
   "icons": [
     {
       "src": "/icon-192.png",
@@ -22,30 +21,7 @@
       "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ],
-  "shortcuts": [
-    {
-      "name": "Ver Calendário",
-      "url": "/",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Tela Inicial"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Tela Inicial"
+      "purpose": "maskable"
     }
   ]
 }
