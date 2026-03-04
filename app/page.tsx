@@ -5,28 +5,51 @@ import { useSession, signOut, signIn } from "next-auth/react"
 import { MonthCalendar } from "@/components/month-calendar"
 import { MonthReview } from "@/components/month-review"
 import { LoginScreen } from "@/components/login-screen"
+import { UserProfileEdit } from "@/components/user-profile-edit"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, LogOut, Loader2, BarChart3, Quote, Target, Settings2, BookOpen, Trash2 } from "lucide-react"
+import { ChevronLeft, ChevronRight, LogOut, Loader2, BarChart3, Quote, Target, BookOpen, CheckCircle2, XCircle, Sun, Moon, Sparkles, Edit3, RefreshCw, TrendingUp, TrendingDown, Flame } from "lucide-react"
 import { getReadingData, updateUserGoal, deleteFullAccount } from "@/lib/api-client" 
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
+import { toast } from "sonner"
 
 const THEMES = {
-  rose: { primary: '#f4a6f0', bg: '#fff5f6', text: '#a64d9c', card: '#ffffff' },
-  dark: { primary: '#38bdf8', bg: '#f0f7ff', text: '#1e293b', card: '#ffffff' },
-  soft: { primary: '#a855f7', bg: '#faf5ff', text: '#5b1c87', card: '#ffffff' },
-  coffee: { primary: '#7c3f17', bg: '#fafaf9', text: '#4b3832', card: '#ffffff' },
-  ocean: { primary: '#0ea5e9', bg: '#f0f9ff', text: '#0369a1', card: '#ffffff' },
-  forest: { primary: '#10b981', bg: '#f0fdf4', text: '#065f46', card: '#ffffff' },
-  sunset: { primary: '#f59e0b', bg: '#fffbeb', text: '#92400e', card: '#ffffff' },
-  midnight: { primary: '#818cf8', bg: '#0f172a', text: '#f8fafc', card: '#1e293b' }
+  light: { 
+    primary: '#6366f1', 
+    bg: '#f8fafc', 
+    text: '#1e293b', 
+    card: '#ffffff',
+    name: 'Claro',
+    icon: Sun
+  },
+  dark: { 
+    primary: '#60a5fa',
+    bg: '#0a0f1f', 
+    text: '#e2e8f0',
+    card: '#1a1f35',
+    name: 'Escuro',
+    icon: Moon,
+    cardBorder: '#2d3a52',
+    accentBg: '#111827',
+    accentText: '#a0aec0'
+  },
+  purple: { 
+    primary: '#a855f7', 
+    bg: '#faf5ff', 
+    text: '#581c87', 
+    card: '#ffffff',
+    name: 'Roxo',
+    icon: Sparkles
+  }
 }
 
 const LITERARY_QUOTES = [
   "Um livro é um sonho que você segura na mão.",
   "Ler é sonhar pela mão de outrem.",
   "Livros são espelhos: você só vê neles o que já tem dentro de si.",
-  "A leitura é, para o espírito, o que o exercício é para o corpo."
+  "A leitura é, para o espírito, o que o exercício é para o corpo.",
+  "Os livros são os amigos mais silenciosos e constantes.",
+  "Ler é viajar sem sair do lugar."
 ];
 
 export default function Home() {
@@ -35,11 +58,12 @@ export default function Home() {
   const [currentMonth, setCurrentMonth] = useState(() => new Date().getMonth())
   const [showBack, setShowBack] = useState(false)
   const [quote, setQuote] = useState("")
-  const [activeTheme, setActiveTheme] = useState<keyof typeof THEMES>('rose')
+  const [activeTheme, setActiveTheme] = useState<keyof typeof THEMES>('light')
   const [goalsByYear, setGoalsByYear] = useState<Record<number, number>>({})
   const [totalReadThisYear, setTotalReadThisYear] = useState(0)
   const [isSaving, setIsSaving] = useState(false)
   const [direction, setDirection] = useState(0)
+  const [profileEditOpen, setProfileEditOpen] = useState(false)
 
   useEffect(() => {
     const savedGoals = localStorage.getItem("metas_por_ano")
@@ -61,7 +85,8 @@ export default function Home() {
           }
           const finished = books.filter((b: any) => b && (b.status === 'lido' || b.end_date)).length
           setTotalReadThisYear(finished)
-        } catch (e) { console.error(e) }
+        } catch (e) { 
+        }
       }
     }
     fetchData()
@@ -79,50 +104,59 @@ export default function Home() {
         const updated = { ...goalsByYear, [currentYear]: goalNum }
         setGoalsByYear(updated)
         localStorage.setItem("metas_por_ano", JSON.stringify(updated))
-      } catch (error) { alert("Erro ao salvar meta") } finally { setIsSaving(false) }
+        toast.success("Meta atualizada! 🎯", { 
+          description: `Sua nova meta para ${currentYear} é ${goalNum} livros`,
+          icon: <Target size={16} />
+        })
+      } catch (error) { 
+        toast.error("Erro ao salvar meta", { 
+          description: "Não foi possível atualizar sua meta.",
+          icon: <XCircle size={16} />
+        })
+      } finally { setIsSaving(false) }
     }
   }
 
-  const handleDeleteData = async () => {
-    const confirmFirst = confirm("Tem certeza que deseja apagar todos os seus registros? Esta ação é irreversível.");
-    if (confirmFirst) {
-      const confirmSecond = confirm("ÚLTIMO AVISO: Sua conta e livros serão deletados permanentemente. Confirmar?");
-      if (confirmSecond) {
-        setIsSaving(true);
-        try {
-          await deleteFullAccount();
-          alert("Conta removida.");
-          await signOut({ callbackUrl: "/" });
-        } catch (error: any) {
-          alert(`Erro: ${error.message}`);
-        } finally { setIsSaving(false); }
-      }
-    }
+  const refreshQuote = () => {
+    setQuote(LITERARY_QUOTES[Math.floor(Math.random() * LITERARY_QUOTES.length)])
   }
 
-  const theme = THEMES[activeTheme]
+  const theme = THEMES[activeTheme] || THEMES.light
   
-  const handlePrevMonth = () => { 
-    setDirection(-1); 
-    if (currentMonth === 0) { 
-      setCurrentYear(p => p - 1); 
-      setCurrentMonth(11); 
-    } else { 
-      setCurrentMonth(p => p - 1); 
-    } 
+  const isDark = activeTheme === 'dark'
+  
+  const getCardStyle = () => isDark 
+    ? { backgroundColor: 'rgba(26, 31, 53, 0.5)', borderColor: 'rgba(45, 58, 82, 0.5)' }
+    : { backgroundColor: 'rgba(255, 255, 255, 0.4)', borderColor: 'rgba(255, 255, 255, 0.5)' }
+  
+  const getHoverStyle = () => isDark
+    ? 'hover:bg-opacity-70'
+    : 'hover:bg-white/50'
+  const handlePrevMonth = () => {
+    setDirection(-1);
+    if (currentMonth === 0) {
+      setCurrentYear(p => p - 1);
+      setCurrentMonth(11);
+    } else {
+      setCurrentMonth(p => p - 1);
+    }
   }
   
-  const handleNextMonth = () => { 
-    setDirection(1); 
-    if (currentMonth === 11) { 
-      setCurrentYear(p => p + 1); 
-      setCurrentMonth(0); 
-    } else { 
-      setCurrentMonth(p => p + 1); 
-    } 
+  const handleNextMonth = () => {
+    setDirection(1);
+    if (currentMonth === 11) {
+      setCurrentYear(p => p + 1);
+      setCurrentMonth(0);
+    } else {
+      setCurrentMonth(p => p + 1);
+    }
   }
 
   const progressPercent = Math.min(Math.round((totalReadThisYear / myBooksGoal) * 100), 100) || 0
+  const booksRemaining = Math.max(myBooksGoal - totalReadThisYear, 0)
+  const isAhead = totalReadThisYear > myBooksGoal
+  const isOnTrack = progressPercent >= 75 && progressPercent < 100
+  const isBehind = progressPercent < 75
 
   const months = useMemo(() => {
     const isLeapYear = (currentYear % 4 === 0 && currentYear % 100 !== 0) || currentYear % 400 === 0
@@ -140,76 +174,271 @@ export default function Home() {
   if (!session) return <LoginScreen onLogin={async () => signIn("google")} />
 
   return (
-    <div className="flex flex-col min-h-screen transition-colors duration-500" style={{ backgroundColor: theme.bg }}>
-      <main className="grow p-4 md:p-8">
-        <div className="mx-auto max-w-6xl">
-          
-          <div className="mb-6 flex items-center gap-3 px-2 italic text-slate-500">
-            <Quote size={14} style={{ color: theme.primary, opacity: 0.4 }} />
-            <p className="text-xs font-medium" style={{ color: theme.text, opacity: 0.7 }}>{quote}</p>
-          </div>
+    <div className="flex flex-col min-h-screen transition-all duration-700" style={{ 
+      background: `linear-gradient(135deg, ${theme.bg} 0%, ${theme.bg}99 50%, ${theme.bg}cc 100%)`
+    }}>
+      <main className="grow p-3 md:p-6 lg:p-10">
+        <div className="mx-auto max-w-7xl">
 
-          <div className="mb-8 flex flex-col lg:flex-row items-center justify-between bg-white p-4 rounded-2xl border shadow-sm gap-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="mb-7 flex flex-col lg:flex-row items-center justify-between backdrop-blur-sm p-5 rounded-xl shadow-sm gap-5 border"
+            style={{
+              backgroundColor: isDark ? 'rgba(26, 31, 53, 0.5)' : 'rgba(255, 255, 255, 0.4)',
+              borderColor: isDark ? 'rgba(45, 58, 82, 0.5)' : 'rgba(255, 255, 255, 0.5)'
+            }}
+          >
             <div className="flex items-center gap-4 w-full lg:w-auto">
-              <div className="h-12 w-12 rounded-full border-2 overflow-hidden" style={{ borderColor: theme.primary }}>
-                {session.user?.image && <img src={session.user.image} alt="Perfil" className="h-full w-full object-cover" />}
+              <div className="relative">
+                <div className="h-12 w-12 rounded-lg border border-primary/20 overflow-hidden shadow-sm flex items-center justify-center" style={{ backgroundColor: session.user?.image ? 'transparent' : theme.primary }}>
+                  {session.user?.image ? (
+                    <img src={session.user.image} alt="Perfil" className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="text-white text-base font-medium">{session.user?.name?.charAt(0)?.toUpperCase() || 'U'}</span>
+                  )}
+                </div>
               </div>
               <div className="flex flex-col">
-                <h1 className="font-serif text-xl font-bold leading-none" style={{ color: theme.text }}>Calendário {currentYear}</h1>
-                <p className="text-xs mt-1" style={{ color: theme.text, opacity: 0.6 }}>Olá, {session.user?.name}</p>
-              </div>
-            </div>
-
-            <div className="flex bg-slate-50 p-1.5 rounded-full border border-slate-100 gap-1">
-              {Object.keys(THEMES).map((t) => (
-                <button key={t} onClick={() => { setActiveTheme(t as any); localStorage.setItem("app-theme", t); }} className={`p-2 rounded-full ${activeTheme === t ? 'bg-white shadow-sm' : 'opacity-20'}`}>
-                  <BookOpen size={18} color={THEMES[t as keyof typeof THEMES].primary} />
-                </button>
-              ))}
-            </div>
-
-            <div className="flex items-center gap-2">
-                <Button variant="outline" size="icon" onClick={handleDeleteData} disabled={isSaving} className="h-9 w-9 text-red-500 hover:bg-red-50">
-                  {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                </Button>
-                
-                <Button variant="outline" size="icon" onClick={() => signOut({ callbackUrl: "/" })} className="h-9 w-9 text-slate-500"><LogOut size={16} /></Button>
-                <Button variant="outline" size="icon" onClick={handlePrevMonth} className="h-9 w-9"><ChevronLeft size={16} /></Button>
-                <Button variant="outline" size="icon" onClick={handleNextMonth} className="h-9 w-9"><ChevronRight size={16} /></Button>
-            </div>
-          </div>
-
-          <div className="mb-8 bg-white rounded-2xl p-5 border shadow-sm group">
-            <div className="flex justify-between items-end mb-3">
-              <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <Target size={16} style={{ color: theme.primary }} />
-                  <span className="text-[11px] font-black uppercase" style={{ color: theme.text }}>Meta de {currentYear}</span>
-                  <button onClick={handleSetGoal} disabled={isSaving}>
-                    {isSaving ? <Loader2 size={12} className="animate-spin" /> : <Settings2 size={12} className="text-slate-400" />}
+                  <h1 className="text-base font-semibold tracking-tight" style={{ color: theme.text }}>
+                    {session.user?.name ? session.user.name.split(' ')[0].charAt(0).toUpperCase() + session.user.name.split(' ')[0].slice(1) : 'Usuário'}
+                  </h1>
+                  <button 
+                    onClick={() => setProfileEditOpen(true)}
+                    className="p-1 hover:bg-white/50 rounded transition-all"
+                    title="Editar perfil"
+                  >
+                    <Edit3 size={12} style={{ color: theme.primary, opacity: 0.6 }} strokeWidth={2} />
                   </button>
                 </div>
-                <p className="text-[10px] font-bold uppercase" style={{ color: theme.text, opacity: 0.4 }}>
-                   Lidos <span style={{ color: theme.primary }}>{totalReadThisYear}</span> de {myBooksGoal}
+                <p className="text-xs font-light" style={{ color: theme.text, opacity: 0.6 }}>
+                  Calendário {currentYear}
                 </p>
               </div>
-              <span className="text-2xl font-black" style={{ color: theme.primary }}>{progressPercent}%</span>
             </div>
-            <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
-               <div className="h-full transition-all duration-1000" style={{ width: `${progressPercent}%`, backgroundColor: theme.primary }}></div>
-            </div>
-          </div>
 
-          <div className="mt-6 flex flex-col sm:flex-row items-center justify-center mb-8 gap-3">
-            <Button onClick={() => setShowBack(!showBack)} className="gap-2 px-8 rounded-full shadow-md font-bold h-11 w-full sm:w-auto text-white" style={{ backgroundColor: theme.primary }}>
-              {showBack ? "← Calendário" : "Livros Lidos →"}
+            <div className="flex backdrop-blur-sm p-1.5 rounded-lg border gap-1 shadow-sm transition-all duration-300" style={getCardStyle()}>
+              {Object.entries(THEMES).map(([key, value]) => {
+                const ThemeIcon = value.icon
+                return (
+                  <motion.button 
+                    key={key} 
+                    whileHover={{ scale: 1.08 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => { 
+                      setActiveTheme(key as keyof typeof THEMES); 
+                      localStorage.setItem("app-theme", key);
+                      toast.success(`Tema ${value.name} ativado`, {
+                        icon: <ThemeIcon size={14} />
+                      })
+                    }} 
+                    className={`
+                      p-2.5 rounded-md transition-all duration-200 flex flex-col items-center gap-1
+                      ${activeTheme === key 
+                        ? isDark ? 'bg-slate-700 shadow-md border border-slate-600' : 'bg-white shadow-sm border border-primary/25'
+                        : 'opacity-55 hover:opacity-85'
+                      }
+                    `}
+                    style={{ 
+                      borderColor: activeTheme === key ? value.primary : 'transparent',
+                      boxShadow: activeTheme === key && isDark ? `0 0 12px ${value.primary}40` : 'none'
+                    }}
+                  > 
+                    <ThemeIcon 
+                      size={14} 
+                      style={{ color: activeTheme === key ? value.primary : '#94a3b8' }}
+                      strokeWidth={1.5}
+                    />
+                    <span 
+                      className="text-[8px] font-medium tracking-tight leading-none"
+                      style={{ color: activeTheme === key ? value.primary : '#94a3b8' }}
+                    >
+                      {value.name}
+                    </span>
+                  </motion.button>
+                )
+              })}
+            </div>
+
+            <div className="flex items-center gap-1.5">
+                <Button variant="outline" size="icon" onClick={() => signOut({ callbackUrl: "/" })} className="h-9 w-9 text-slate-500 hover:bg-slate-50/50 border-white/40 rounded-lg shadow-xs transition-all">
+                  <LogOut size={14} />
+                </Button>
+                
+                <div className="flex gap-1">
+                  <Button variant="outline" size="icon" onClick={handlePrevMonth} className="h-9 w-9 rounded-lg shadow-xs hover:shadow-xs transition-all border border-white/40" style={{ color: theme.primary }}>
+                    <ChevronLeft size={16} />
+                  </Button>
+                  <Button variant="outline" size="icon" onClick={handleNextMonth} className="h-9 w-9 rounded-lg shadow-xs hover:shadow-xs transition-all border border-white/40" style={{ color: theme.primary }}>
+                    <ChevronRight size={16} />
+                  </Button>
+                </div>
+            </div>
+          </motion.div>
+
+          <motion.div 
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="mb-6 backdrop-blur-md rounded-2xl p-8 border shadow-lg relative overflow-hidden transition-all duration-300"
+            style={{
+              background: isDark
+                ? 'linear-gradient(135deg, rgba(26, 31, 53, 0.6) 0%, rgba(26, 31, 53, 0.4) 100%)'
+                : 'linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.3) 100%)',
+              borderColor: isDark ? 'rgba(45, 58, 82, 0.5)' : 'rgba(255, 255, 255, 0.6)'
+            }}
+          >
+            <div className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl opacity-10" style={{ backgroundColor: theme.primary }}></div>
+            
+            <div className="relative grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
+              <div className="flex justify-center lg:col-span-1">
+                <div className="relative w-40 h-40">
+                  <svg className="w-full h-full -rotate-90">
+                    <circle 
+                      cx="80" cy="80" r="70" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="12" 
+                      className="text-white/40"
+                    />
+                    <circle 
+                      cx="80" cy="80" r="70" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="12" 
+                      strokeLinecap="round"
+                      strokeDasharray={`${2 * Math.PI * 70}`}
+                      strokeDashoffset={`${2 * Math.PI * 70 * (1 - progressPercent / 100)}`}
+                      className="transition-all duration-1000 ease-out"
+                      style={{ color: theme.primary }}
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-4xl font-bold" style={{ color: theme.primary }}>{progressPercent}%</span>
+                    <span className="text-xs font-light text-slate-600">completo</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="lg:col-span-2 space-y-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="text-2xl font-bold mb-1" style={{ color: theme.text }}>
+                      {totalReadThisYear} <span className="text-lg font-light">de {myBooksGoal}</span>
+                    </h3>
+                    <p className="text-sm font-light" style={{ color: theme.text, opacity: 0.6 }}>
+                      livros lidos em {currentYear}
+                    </p>
+                  </div>
+                  <button 
+                    onClick={handleSetGoal} 
+                    disabled={isSaving}
+                    className="p-2.5 hover:bg-white/50 rounded-lg transition-all group"
+                  >
+                    {isSaving ? (
+                      <Loader2 size={16} className="animate-spin text-slate-400" />
+                    ) : (
+                      <Target size={16} className="text-slate-400 group-hover:text-slate-600" />
+                    )}
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {isAhead && (
+                    <div className="inline-flex items-center gap-1.5 bg-green-100 text-green-700 px-3 py-1.5 rounded-full text-xs font-medium">
+                      <TrendingUp size={14} />
+                      <span>🎉 Acima da meta!</span>
+                    </div>
+                  )}
+                  {isOnTrack && !isAhead && (
+                    <div className="inline-flex items-center gap-1.5 bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full text-xs font-medium">
+                      <Flame size={14} />
+                      <span>🔥 No ritmo!</span>
+                    </div>
+                  )}
+                  {isBehind && (
+                    <div className="inline-flex items-center gap-1.5 bg-amber-100 text-amber-700 px-3 py-1.5 rounded-full text-xs font-medium">
+                      <TrendingDown size={14} />
+                      <span>Faltam {booksRemaining} livros</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-xs font-light" style={{ color: theme.text, opacity: 0.5 }}>
+                    <span>Progresso</span>
+                    <span>{totalReadThisYear}/{myBooksGoal}</span>
+                  </div>
+                  <div className="w-full h-2 rounded-full overflow-hidden shadow-inner" style={{ backgroundColor: isDark ? 'rgba(45, 58, 82, 0.4)' : 'rgba(255, 255, 255, 0.5)' }}>
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${progressPercent}%` }}
+                      transition={{ duration: 1.5, ease: "easeOut" }}
+                      className="h-full rounded-full shadow-lg"
+                      style={{ backgroundColor: theme.primary }}
+                    ></motion.div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="mb-6 flex items-center gap-3 px-5 py-4 backdrop-blur-sm rounded-lg border shadow-xs group transition-all duration-300"
+            style={{
+              ...getCardStyle(),
+              ...(isDark ? { backgroundColor: 'rgba(26, 31, 53, 0.6)' } : {})
+            }}
+          >
+            <Quote size={20} style={{ color: theme.primary, opacity: 0.4, flexShrink: 0 }} strokeWidth={1.5} />
+            <p className="text-sm font-light leading-relaxed italic flex-1" style={{ color: theme.text, opacity: 0.75 }}>
+              {quote}
+            </p>
+            <motion.button
+              whileHover={{ rotate: 180 }}
+              transition={{ duration: 0.3 }}
+              onClick={refreshQuote}
+              className="p-2 rounded-lg hover:bg-white/60 transition-all opacity-0 group-hover:opacity-100"
+              title="Nova citação"
+            >
+              <RefreshCw size={14} style={{ color: theme.primary }} />
+            </motion.button>
+          </motion.div>
+
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="flex flex-col sm:flex-row items-stretch gap-3 mb-8"
+          >
+            <Button 
+              onClick={() => setShowBack(!showBack)} 
+              className="gap-2 px-8 py-3 rounded-lg shadow-sm font-medium text-sm text-white hover:shadow-md transition-all flex-1" 
+              style={{ 
+                backgroundColor: theme.primary,
+                opacity: 0.92
+              }}
+            >
+              {showBack ? "← Voltar ao Calendário" : "Meus Livros Lidos →"}
             </Button>
-            <Link href="/retrospectiva" className="w-full sm:w-auto">
-              <Button variant="outline" className="gap-2 px-8 rounded-full shadow-sm h-11 font-bold w-full sm:w-auto border-2" style={{ borderColor: `${theme.primary}20`, color: theme.primary }}>
-                <BarChart3 size={18} /> Retrospectiva
+            <Link href="/retrospectiva" className="flex-1">
+              <Button 
+                variant="outline" 
+                className="gap-2 px-8 py-3 rounded-lg shadow-sm font-medium text-sm w-full border transition-all" 
+                style={{ 
+                  borderColor: theme.primary, 
+                  color: theme.primary,
+                  backgroundColor: `${theme.primary}08`
+                }}
+              >
+                <BarChart3 size={16} /> Retrospectiva do Ano
               </Button>
             </Link>
-          </div>
+          </motion.div>
 
           <div className="relative touch-pan-y overflow-hidden">
             <AnimatePresence mode="wait" custom={direction}>
@@ -228,10 +457,13 @@ export default function Home() {
                   }
                 }}
                 
-                initial={{ opacity: 0, x: direction > 0 ? 40 : -40 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: direction > 0 ? -40 : 40 }}
-                transition={{ duration: 0.2 }}
+                initial={{ opacity: 0, x: direction > 0 ? 60 : -60, scale: 0.95 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                exit={{ opacity: 0, x: direction > 0 ? -60 : 60, scale: 0.95 }}
+                transition={{ 
+                  duration: 0.35, 
+                  ease: [0.4, 0, 0.2, 1]
+                }}
                 className="cursor-grab active:cursor-grabbing"
               >
                 {!showBack ? (
@@ -244,6 +476,16 @@ export default function Home() {
           </div>
         </div>
       </main>
+
+      <UserProfileEdit
+        open={profileEditOpen}
+        onCloseAction={() => setProfileEditOpen(false)}
+        user={session.user || {}}
+        onUpdateAction={() => {
+          // Recarregar dados se necessário
+          window.location.reload()
+        }}
+      />
     </div>
   )
 }

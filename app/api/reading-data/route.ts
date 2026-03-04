@@ -68,7 +68,7 @@ export async function POST(request: Request) {
     const { 
       email, bookName, oldBookName, action, rating, coverUrl, 
       totalPages, review, genre, year, month, 
-      startDate, endDate, goal 
+      startDate, endDate, goal, author, pages: bodyPages, notes
     } = body;
     
     if (action === "SET_GOAL") {
@@ -92,13 +92,54 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true });
     }
 
-    const pages = Number(totalPages) || 0;
+    // Usar pages do body ou totalPages como fallback
+    const numPages = Number(bodyPages || totalPages) || 0;
 
     if (action === "EDIT_READING") {
+      // Garantir que as colunas existam
+      await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS author_name TEXT`, []);
+      await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS rating INTEGER`, []);
+      await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS notes TEXT`, []);
+      
+      // Construir query de atualização
+      const updates: string[] = [];
+      const params: any[] = [];
+      let paramIndex = 1;
+
+      // Sempre atualiza o nome do livro
+      updates.push(`book_name = $${paramIndex++}`);
+      params.push(bookName);
+
+      // Atualiza campos opcionais se fornecidos
+      if (author !== undefined) {
+        updates.push(`author_name = $${paramIndex++}`);
+        params.push(author || null);
+      }
+      
+      if (bodyPages !== undefined) {
+        updates.push(`total_pages = $${paramIndex++}`);
+        params.push(Number(bodyPages) || 0);
+      }
+      
+      if (rating !== undefined) {
+        updates.push(`rating = $${paramIndex++}`);
+        params.push(rating ? Number(rating) : null);
+      }
+      
+      if (notes !== undefined) {
+        updates.push(`notes = $${paramIndex++}`);
+        params.push(notes || null);
+      }
+
+      // Adiciona email e oldBookName no final
+      params.push(email, oldBookName);
+
       await executeQuery(
-        `UPDATE public.reading_data SET book_name = $1 WHERE email = $2 AND book_name = $3`,
-        [bookName, email, oldBookName]
+        `UPDATE public.reading_data SET ${updates.join(', ')} WHERE email = $${paramIndex++} AND book_name = $${paramIndex}`,
+        params
       );
+      
+      // Atualiza book_reviews se necessário
       const userRes = await executeQuery(`SELECT id FROM public.users WHERE email = $1`, [email]);
       if (userRes.length > 0) {
         await executeQuery(
@@ -119,11 +160,14 @@ export async function POST(request: Request) {
     }
 
     if (action === "START_READING") {
+      // Garantir que as colunas existam
+      await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS author_name TEXT`, []);
+      
       await executeQuery(`DELETE FROM public.reading_data WHERE email = $1 AND book_name = $2`, [email, bookName]);
       await executeQuery(`
-        INSERT INTO public.reading_data (email, book_name, start_date, status, year, month, cover_url, total_pages)
-        VALUES ($1, $2, $3, 'lendo', $4, $5, $6, $7)
-      `, [email, bookName, startDate, year, month, coverUrl, pages]);
+        INSERT INTO public.reading_data (email, book_name, author_name, start_date, status, year, month, cover_url, total_pages)
+        VALUES ($1, $2, $3, $4, 'lendo', $5, $6, $7, $8)
+      `, [email, bookName, author || null, startDate, year, month, coverUrl, numPages]);
       return NextResponse.json({ success: true });
     }
 
@@ -144,14 +188,14 @@ export async function POST(request: Request) {
       await executeQuery(
         `UPDATE public.reading_data SET book_name = $1, total_pages = $2, cover_url = $3 
          WHERE email = $4 AND book_name = $5`,
-        [bookName, pages, coverUrl, email, targetName]
+        [bookName, numPages, coverUrl, email, targetName]
       );
 
       await executeQuery(`DELETE FROM public.book_reviews WHERE user_id = $1 AND title = $2`, [userId, bookName]);
       await executeQuery(`
         INSERT INTO public.book_reviews (user_id, title, rating, cover_url, total_pages, genre, review, year, month)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-      `, [userId, bookName, rating, coverUrl, pages, genre, review, year, month]);
+      `, [userId, bookName, rating, coverUrl, numPages, genre, review, year, month]);
 
       return NextResponse.json({ success: true });
     }

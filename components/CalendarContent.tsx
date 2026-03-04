@@ -6,7 +6,8 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, BarChart3 } from "lucide-react" 
 import { MonthReview } from "./month-review"
-import Link from "next/link" 
+import Link from "next/link"
+import { motion } from "framer-motion" 
 
 const MONTHS = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -75,19 +76,27 @@ export function CalendarContent() {
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {MONTHS.map((month, index) => (
-          <Card 
+          <motion.div
             key={month}
-            className="group cursor-pointer hover:border-primary transition-all duration-300 overflow-hidden border-slate-100"
-            onClick={() => setSelectedMonth(index)}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.2, delay: index * 0.03 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
-            <div className="p-6 text-center">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 group-hover:text-primary transition-colors">
-                Mês {index + 1}
-              </p>
-              <h3 className="text-lg font-black uppercase text-slate-800 mt-1">{month}</h3>
-            </div>
-            <div className="h-1 bg-slate-50 group-hover:bg-primary transition-colors" />
-          </Card>
+            <Card 
+              className="group cursor-pointer hover:border-primary transition-all duration-300 overflow-hidden border-slate-100"
+              onClick={() => setSelectedMonth(index)}
+            >
+              <div className="p-6 text-center">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 group-hover:text-primary transition-colors">
+                  Mês {index + 1}
+                </p>
+                <h3 className="text-lg font-black uppercase text-slate-800 mt-1">{month}</h3>
+              </div>
+              <div className="h-1 bg-slate-50 group-hover:bg-primary transition-colors" />
+            </Card>
+          </motion.div>
         ))}
       </div>
       <div className="mt-8 flex justify-center sm:hidden">

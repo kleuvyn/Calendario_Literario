@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 28, "column": 0}, "map": {"version":3,"sources":["file:///home/kleuvyn/Documentos/MeusRepositorios/Calendario_Literario/components/AuthProvider.tsx"],"sourcesContent":["\"use client\"\n\nimport { SessionProvider } from \"next-auth/react\"\nimport React from \"react\"\n\ninterface AuthProviderProps {\n  children: React.ReactNode\n}\n\nexport default function AuthProvider({ children }: AuthProviderProps) {\n  return <SessionProvider>{children}</SessionProvider>\n}"],"names":[],"mappings":";;;;;AAEA;AAFA;;;AASe,SAAS,aAAa,EAAE,QAAQ,EAAqB;IAClE,qBAAO,8OAAC,iKAAe;kBAAE;;;;;;AAC3B"}}]
-}

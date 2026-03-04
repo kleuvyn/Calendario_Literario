@@ -89,6 +89,7 @@ export async function saveReadingDay(
   bookName: string,
   action: "START_READING" | "FINISH_READING",
   coverUrl?: string,      
+  author?: string,
   totalPages?: number     
 ) {
   const response = await fetch("/api/reading-data", {
@@ -101,7 +102,8 @@ export async function saveReadingDay(
       day, 
       startDate, 
       endDate, 
-      bookName, 
+      bookName,
+      author,
       action,
       coverUrl,    
       totalPages: Number(totalPages) || 0 
