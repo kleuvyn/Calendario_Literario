@@ -5,8 +5,8 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Star, BookOpen, User, Hash } from "lucide-react"
-import { useState } from "react"
+import { Star, BookOpen, User, Hash, Upload, Image as ImageIcon } from "lucide-react"
+import { useState, useRef } from "react"
 
 interface EditBookDialogProps {
   open: boolean
@@ -17,6 +17,7 @@ interface EditBookDialogProps {
     pages?: number
     rating?: number
     notes?: string
+    cover_url?: string
   }
   onSave: (data: {
     newName: string
@@ -24,6 +25,7 @@ interface EditBookDialogProps {
     pages: number
     rating: number
     notes: string
+    cover_url?: string
   }) => void
 }
 
@@ -33,6 +35,30 @@ export function EditBookDialog({ open, onClose, bookName, bookData, onSave }: Ed
   const [pages, setPages] = useState(bookData?.pages?.toString() || "")
   const [rating, setRating] = useState(bookData?.rating || 0)
   const [notes, setNotes] = useState(bookData?.notes || "")
+  const [coverUrl, setCoverUrl] = useState(bookData?.cover_url || "")
+  const [previewCover, setPreviewCover] = useState(bookData?.cover_url || "")
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        const base64 = event.target?.result as string
+        setCoverUrl(base64)
+        setPreviewCover(base64)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleRemoveCover = () => {
+    setCoverUrl("")
+    setPreviewCover("")
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -42,13 +68,14 @@ export function EditBookDialog({ open, onClose, bookName, bookData, onSave }: Ed
       pages: parseInt(pages) || 0,
       rating,
       notes,
+      cover_url: coverUrl || undefined,
     })
     onClose()
   }
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-2xl">
             <BookOpen className="text-primary" />
@@ -57,6 +84,93 @@ export function EditBookDialog({ open, onClose, bookName, bookData, onSave }: Ed
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Foto da Capa */}
+          <div className="space-y-3">
+            <Label className="flex items-center gap-2">
+              <ImageIcon size={16} />
+              Foto da Capa do Livro
+            </Label>
+            
+            {/* Área de upload com drag and drop */}
+            <div
+              onDragOver={(e) => {
+                e.preventDefault()
+                e.currentTarget.classList.add('bg-primary/10')
+              }}
+              onDragLeave={(e) => {
+                e.currentTarget.classList.remove('bg-primary/10')
+              }}
+              onDrop={(e) => {
+                e.preventDefault()
+                e.currentTarget.classList.remove('bg-primary/10')
+                const file = e.dataTransfer.files?.[0]
+                if (file && file.type.startsWith('image/')) {
+                  const reader = new FileReader()
+                  reader.onload = (event) => {
+                    const base64 = event.target?.result as string
+                    setCoverUrl(base64)
+                    setPreviewCover(base64)
+                  }
+                  reader.readAsDataURL(file)
+                }
+              }}
+              className="border-2 border-dashed border-slate-300 rounded-xl p-6 transition-colors hover:border-primary hover:bg-primary/5 cursor-pointer"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
+                className="hidden"
+                aria-label="Selecionar foto da capa"
+              />
+              
+              {previewCover ? (
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-24 h-36 rounded-lg overflow-hidden border-2 border-slate-200 shadow-md">
+                    <img
+                      src={previewCover}
+                      alt="Capa do livro"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <Upload size={14} />
+                    Trocar foto
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-3 text-center">
+                  <div className="w-16 h-24 rounded-lg border-2 border-dashed border-slate-400 flex items-center justify-center bg-slate-50">
+                    <ImageIcon size={32} className="text-slate-400" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="font-semibold text-slate-700">Clique ou arraste a foto</p>
+                    <p className="text-xs text-slate-500">PNG, JPG ou GIF (máx 5MB)</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {previewCover && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleRemoveCover}
+                className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                ✕ Remover foto
+              </Button>
+            )}
+          </div>
+
           {/* Título */}
           <div className="space-y-2">
             <Label htmlFor="title" className="flex items-center gap-2">

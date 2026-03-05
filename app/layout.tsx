@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
+import "@/styles/calendar.css"
 import AuthProvider from '@/components/AuthProvider' 
 import { Toaster } from "@/components/ui/sonner"
 import Script from 'next/script'

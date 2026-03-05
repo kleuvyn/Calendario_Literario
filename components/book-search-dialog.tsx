@@ -1,24 +1,25 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Search, Loader2, BookOpen, User, FileText } from "lucide-react"
+import { Search, Loader2, BookOpen, User, FileText, Upload, ImageIcon } from "lucide-react"
 import { searchBooks, type BookSearchResult } from "@/lib/google-books"
 
 interface BookSearchDialogProps {
   open: boolean
   onClose: () => void
-  onSelectBook: (book: BookSearchResult) => void
+  onSelectBook: (book: BookSearchResult & { cover?: string }) => void
 }
 
 export function BookSearchDialog({ open, onClose, onSelectBook }: BookSearchDialogProps) {
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<BookSearchResult[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [manualMode, setManualMode] = useState(false)
+  const [selectedCover, setSelectedCover] = useState<string>("")
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (!query || query.length < 3) {
@@ -37,17 +38,33 @@ export function BookSearchDialog({ open, onClose, onSelectBook }: BookSearchDial
   }, [query])
 
   const handleSelect = (book: BookSearchResult) => {
-    onSelectBook(book)
+    onSelectBook({
+      ...book,
+      cover: selectedCover || book.cover,
+    })
     onClose()
     setQuery("")
     setResults([])
+    setSelectedCover("")
+  }
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        const base64 = event.target?.result as string
+        setSelectedCover(base64)
+      }
+      reader.readAsDataURL(file)
+    }
   }
 
   const handleManualEntry = () => {
     onSelectBook({
       title: query,
       authors: "",
-      cover: "",
+      cover: selectedCover || "",
       pages: 0,
       isbn: "",
       description: "",
@@ -55,18 +72,19 @@ export function BookSearchDialog({ open, onClose, onSelectBook }: BookSearchDial
     })
     onClose()
     setQuery("")
+    setSelectedCover("")
   }
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh]">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-2xl">
             <BookOpen className="text-primary" />
             Buscar Livro
           </DialogTitle>
           <DialogDescription>
-            Pesquise por título, autor ou ISBN. Os dados são do Google Books.
+            Digite o título do livro e escolha uma opção da busca
           </DialogDescription>
         </DialogHeader>
 
@@ -83,6 +101,64 @@ export function BookSearchDialog({ open, onClose, onSelectBook }: BookSearchDial
             />
             {isLoading && (
               <Loader2 className="absolute right-3 top-3 h-5 w-5 animate-spin text-primary" />
+            )}
+          </div>
+
+          {/* Upload de capa local (opcional) */}
+          <div className="border border-slate-200 rounded-lg p-3 bg-slate-50">
+            <label className="flex items-center gap-2 text-sm font-semibold cursor-pointer mb-2">
+              <ImageIcon size={14} className="text-primary" />
+              Capa do livro (opcional)
+            </label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            {selectedCover ? (
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-16 rounded border border-slate-300 overflow-hidden">
+                  <img
+                    src={selectedCover}
+                    alt="Capa selecionada"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="flex gap-2 flex-1">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex-1 gap-1"
+                  >
+                    <Upload size={12} />
+                    Trocar
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setSelectedCover("")}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    ✕
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full gap-2"
+              >
+                <Upload size={14} />
+                Selecionar imagem
+              </Button>
             )}
           </div>
 

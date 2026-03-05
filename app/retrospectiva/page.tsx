@@ -1335,11 +1335,12 @@ export default function RetrospectivaPage() {
                           className="group-hover:scale-110 transition-transform duration-300"
                         />
                         {/* Overlay ao hover */}
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-300 flex items-end justify-start p-2 rounded-lg">
-                          {/* Tooltip do livro */}
-                          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 translate-y-2 group-hover:translate-y-0 w-full">
-                            <p className="text-white text-[7px] font-black line-clamp-2 leading-tight text-shadow" style={{
-                              textShadow: '0 2px 4px rgba(0,0,0,0.8)'
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors duration-300 flex flex-col items-center justify-center p-3 rounded-lg">
+                          {/* Título do livro - sempre visível com melhor contraste */}
+                          <div className="w-full text-center">
+                            <p className="text-white text-[8.5px] font-black line-clamp-3 leading-tight drop-shadow-lg" style={{
+                              textShadow: '0 3px 6px rgba(0,0,0,0.9)',
+                              WebkitTextStroke: '0.5px rgba(0,0,0,0.3)'
                             }}>{book.book_name}</p>
                           </div>
                         </div>

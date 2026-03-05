@@ -235,68 +235,87 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
           const currentCover = bookEdits[book.id]?.cover || book.cover_url || PLACEHOLDER_IMAGE;
 
           return (
-            <Card key={book.id} className={`flex flex-col md:flex-row min-h-87.5 overflow-visible shadow-2xl rounded-[40px] transition-all border-none p-6 gap-8 ${isFav ? 'bg-amber-50/30' : 'bg-white'}`}>
+            <Card key={book.id} className={`flex flex-col shadow-2xl rounded-[40px] transition-all border-none p-6 gap-6 ${isFav ? 'bg-amber-50/30' : 'bg-white'}`}>
               
-              <div className="relative shrink-0 flex justify-center items-start">
-                <div className="w-47.5 sm:w-55 aspect-[3/4.2] relative group">
-                  <div className="w-full h-full rounded-r-xl overflow-hidden shadow-[20px_20px_40px_-15px_rgba(0,0,0,0.4)] border-l-[6px] border-black/30 bg-slate-200 transition-transform duration-500 group-hover:scale-[1.02]">
-                    <img 
-                      src={currentCover} 
-                      className="w-full h-full object-cover" 
-                      alt="capa" 
-                    />
-                    <div className="absolute inset-y-0 left-0 w-2 bg-linear-to-r from-white/10 to-transparent" />
-                  </div>
-                  {isFav && (
-                    <div className="absolute -top-3 -left-3 bg-amber-500 text-white p-3 rounded-2xl shadow-xl z-10 animate-bounce-slow">
-                      <Crown size={20} fill="white" />
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              <div className="flex-1 flex flex-col gap-6">
-                <div className="flex justify-between items-start text-left">
-                  <div className="space-y-1 w-full pr-4">
-                    <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest">Título do Livro</p>
-                    <Input 
-                      className="h-auto font-black text-2xl uppercase text-slate-800 italic border-none bg-transparent p-0 focus-visible:ring-0 rounded-none mb-1" 
-                      value={bookEdits[book.id]?.name || ""}
-                      onChange={(e) => setBookEdits(p => ({...p, [book.id]: {...p[book.id], name: e.target.value}}))}
-                    />
-                    <p className="text-[10px] font-black text-primary/60 uppercase tracking-widest">{bookEdits[book.id]?.genre || "Sem gênero definido"}</p>
-                  </div>
-                  <div className="flex gap-3">
-                    <button onClick={() => handleDelete(book.id, book.book_name)} className="text-slate-200 hover:text-red-500 transition-colors p-2 bg-slate-50 rounded-xl">
-                        {isDeleting === book.id ? <Loader2 size={20} className="animate-spin" /> : <Trash2 size={20}/>}
-                    </button>
-                  </div>
+              {/* Topo: Botões e Título */}
+              <div className="flex justify-between items-start gap-6">
+                {/* Botões à esquerda */}
+                <div className="flex gap-3 shrink-0 pt-1">
+                  <button onClick={() => handleDelete(book.id, book.book_name)} className="text-slate-200 hover:text-red-500 transition-colors p-2 bg-slate-50 rounded-xl hover:bg-red-50">
+                    {isDeleting === book.id ? <Loader2 size={20} className="animate-spin" /> : <Trash2 size={20}/>}
+                  </button>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 text-left">
-                  <div className="space-y-5">
-                    <div className="flex gap-4">
-                      <div className="flex-1">
-                        <p className="text-[9px] font-black text-slate-400 uppercase mb-2 flex justify-between items-center">
-                          URL da Capa
-                          <button 
-                            type="button" 
-                            onClick={() => buscarCapaAutomatica(book.id, bookEdits[book.id]?.name)}
-                            disabled={isSearching === book.id}
-                            className="text-primary font-black text-[8px] flex items-center gap-1 bg-primary/5 px-2 py-1 rounded-md"
-                          >
-                            <Zap size={10} className="fill-current" /> AUTO
-                          </button>
-                        </p>
-                        <Input 
-                          className="h-10 text-[11px] bg-slate-50 border-none rounded-xl" 
-                          value={bookEdits[book.id]?.cover || ""} 
-                          onChange={(e) => setBookEdits(p => ({...p, [book.id]: {...p[book.id], cover: e.target.value}}))} 
-                        />
+                {/* Título à direita */}
+                <div className="flex-1 space-y-1">
+                  <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest">Título do Livro</p>
+                  <Input 
+                    className="h-auto font-black text-2xl uppercase text-slate-800 italic border-none bg-transparent p-0 focus-visible:ring-0 rounded-none" 
+                    value={bookEdits[book.id]?.name || ""}
+                    onChange={(e) => setBookEdits(p => ({...p, [book.id]: {...p[book.id], name: e.target.value}}))}
+                  />
+                  <p className="text-[10px] font-black text-primary/60 uppercase tracking-widest">{bookEdits[book.id]?.genre || "Sem gênero definido"}</p>
+                </div>
+              </div>
+
+              {/* Conteúdo: Capa e Dados */}
+              <div className="flex flex-col md:flex-row gap-8">
+                {/* Capa com grupo hover */}
+                <div className="relative shrink-0 flex flex-col justify-start items-center">
+                  <div className="w-47.5 sm:w-55 aspect-[3/4.2] relative group">
+                    <div className="w-full h-full rounded-r-xl overflow-hidden shadow-[20px_20px_40px_-15px_rgba(0,0,0,0.4)] border-l-[6px] border-black/30 bg-slate-200 transition-transform duration-500 group-hover:scale-[1.02]">
+                      <img 
+                        src={currentCover} 
+                        className="w-full h-full object-cover" 
+                        alt="capa" 
+                      />
+                      <div className="absolute inset-y-0 left-0 w-2 bg-linear-to-r from-white/10 to-transparent" />
+                    </div>
+                    {isFav && (
+                      <div className="absolute -top-3 -left-3 bg-amber-500 text-white p-3 rounded-2xl shadow-xl z-10 animate-bounce-slow">
+                        <Crown size={20} fill="white" />
                       </div>
-                      <div className="w-24">
-                        <p className="text-[9px] font-black text-slate-400 uppercase mb-2">Págs</p>
-                        <Input type="number" className="h-10 text-sm bg-slate-50 border-none rounded-xl font-black" value={bookEdits[book.id]?.pages || ""} onChange={(e) => setBookEdits(p => ({...p, [book.id]: {...p[book.id], pages: Number(e.target.value)}}))} />
+                    )}
+                  </div>
+                  
+                  {/* Título abaixo da capa - sempre visível e bem grande */}
+                  <div className="mt-4 w-47.5 sm:w-55 px-5 py-4 rounded-2xl bg-gradient-to-r from-slate-700 to-slate-800 shadow-2xl border border-slate-600">
+                    <p className="text-white text-center font-black text-base leading-tight line-clamp-3" style={{
+                      textShadow: '0 3px 6px rgba(0,0,0,0.95)',
+                      letterSpacing: '0.02em'
+                    }}>
+                      {bookEdits[book.id]?.name || book.book_name}
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Dados do livro à direita */}
+                <div className="flex-1 flex flex-col gap-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 text-left">
+                    <div className="space-y-5">
+                      <div className="flex gap-4">
+                        <div className="flex-1">
+                          <p className="text-[9px] font-black text-slate-400 uppercase mb-2 flex justify-between items-center">
+                            URL da Capa
+                            <button 
+                              type="button" 
+                              onClick={() => buscarCapaAutomatica(book.id, bookEdits[book.id]?.name)}
+                              disabled={isSearching === book.id}
+                              className="text-primary font-black text-[8px] flex items-center gap-1 bg-primary/5 px-2 py-1 rounded-md"
+                            >
+                              <Zap size={10} className="fill-current" /> AUTO
+                            </button>
+                          </p>
+                          <Input 
+                            className="h-10 text-[11px] bg-slate-50 border-none rounded-xl" 
+                            value={bookEdits[book.id]?.cover || ""} 
+                            onChange={(e) => setBookEdits(p => ({...p, [book.id]: {...p[book.id], cover: e.target.value}}))} 
+                          />
+                        </div>
+                        <div className="w-24">
+                          <p className="text-[9px] font-black text-slate-400 uppercase mb-2">Págs</p>
+                          <Input type="number" className="h-10 text-sm bg-slate-50 border-none rounded-xl font-black" value={bookEdits[book.id]?.pages || ""} onChange={(e) => setBookEdits(p => ({...p, [book.id]: {...p[book.id], pages: Number(e.target.value)}}))} />
+                        </div>
                       </div>
                     </div>
                     

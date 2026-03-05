@@ -28,18 +28,17 @@ export interface BookSearchResult {
   categories: string[]
 }
 
-const GOOGLE_BOOKS_API = 'https://www.googleapis.com/books/v1/volumes'
-
 export async function searchBooks(query: string): Promise<BookSearchResult[]> {
   if (!query || query.length < 2) return []
 
   try {
     const response = await fetch(
-      `${GOOGLE_BOOKS_API}?q=${encodeURIComponent(query)}&maxResults=10&langRestrict=pt`
+      `/api/google-books?q=${encodeURIComponent(query)}`
     )
 
     if (!response.ok) {
-      throw new Error('Erro ao buscar livros')
+      const data = await response.json().catch(() => ({}))
+      throw new Error(data?.error || 'Erro ao buscar livros')
     }
 
     const data = await response.json()
@@ -55,13 +54,17 @@ export async function searchBooks(query: string): Promise<BookSearchResult[]> {
       categories: book.volumeInfo.categories || [],
     }))
   } catch (error) {
+    console.error('Erro Google Books:', error)
     return []
   }
 }
 
 export async function getBookByISBN(isbn: string): Promise<BookSearchResult | null> {
   try {
-    const response = await fetch(`${GOOGLE_BOOKS_API}?q=isbn:${isbn}`)
+    const response = await fetch(`/api/google-books?isbn=${encodeURIComponent(isbn)}`)
+    if (!response.ok) {
+      return null
+    }
     const data = await response.json()
     
     if (!data.items || data.items.length === 0) return null

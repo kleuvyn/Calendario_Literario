@@ -1,0 +1,5 @@
+/* Bordas dos cards do calendário com cores do tema */
+.calendar-day-card {
+  border: 2px solid var(--primary) !important;
+  border-color: var(--primary) !important;
+}

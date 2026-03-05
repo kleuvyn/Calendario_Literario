@@ -68,7 +68,7 @@ export async function POST(request: Request) {
     const { 
       email, bookName, oldBookName, action, rating, coverUrl, 
       totalPages, review, genre, year, month, 
-      startDate, endDate, goal, author, pages: bodyPages, notes
+      startDate, endDate, goal, author, pages: bodyPages, notes, cover_url
     } = body;
     
     if (action === "SET_GOAL") {
@@ -129,6 +129,11 @@ export async function POST(request: Request) {
       if (notes !== undefined) {
         updates.push(`notes = $${paramIndex++}`);
         params.push(notes || null);
+      }
+
+      if (cover_url !== undefined) {
+        updates.push(`cover_url = $${paramIndex++}`);
+        params.push(cover_url || null);
       }
 
       // Adiciona email e oldBookName no final

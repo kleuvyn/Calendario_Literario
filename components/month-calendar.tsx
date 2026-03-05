@@ -104,7 +104,8 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
           author: data.author,
           pages: data.pages,
           rating: data.rating,
-          notes: data.notes
+          notes: data.notes,
+          cover_url: data.cover_url
         })
       })
       
@@ -246,52 +247,101 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
             return started && notFinishedYet
           })
 
+          // Calcular stats do dia
+          const completedBooks = dayReadings.filter(r => r.status !== 'lendo').length
+          const totalPagesDay = dayReadings.reduce((sum, r) => sum + (Number(r.total_pages) || 0), 0)
+          const hasMultipleBooks = dayReadings.length > 1
+          const isHighActivity = totalPagesDay > 300
+
           return (
             <motion.div 
               key={`${monthIndex}-${day}`}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: index * 0.02 }}
-              className={`
-                min-h-48 rounded-xl border-2 p-4 flex flex-col bg-white shadow-sm hover:shadow-md transition-all duration-300 relative
-                ${isToday ? 'ring-2 ring-primary shadow-lg bg-linear-to-br from-primary/10 to-white border-primary/40' : 'border-slate-200 hover:border-primary/30'} 
-                ${isFuture ? 'opacity-40 grayscale pointer-events-none' : ''}
+              whileHover={{ scale: 1.05, y: -4 }}
+              onClick={() => {
+                if (!isFuture && dayReadings.length > 0) {
+                  const newSet = new Set(expandedDays)
+                  if (newSet.has(day)) {
+                    newSet.delete(day)
+                  } else {
+                    newSet.add(day)
+                  }
+                  setExpandedDays(newSet)
+                }
+              }}
+              className={`calendar-day-card 
+                h-40 rounded-3xl p-4 flex flex-col bg-gradient-to-br shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden group ${dayReadings.length > 0 ? 'cursor-pointer' : ''}
+                ${isToday 
+                  ? 'from-primary/30 via-card to-primary/20 shadow-lg shadow-primary/30 ring-1 ring-primary hover:shadow-2xl hover:shadow-primary/40 dark:from-primary/40 dark:via-card dark:to-primary/30' 
+                  : dayReadings.length > 0
+                  ? 'from-card via-card to-card/80 shadow-md shadow-primary/20 dark:from-card dark:shadow-primary/30'
+                  : 'from-card via-background to-card/60 shadow-sm shadow-primary/15 dark:from-muted/50 dark:to-background dark:shadow-primary/25'
+                } 
+                ${isFuture ? 'opacity-30 grayscale pointer-events-none' : ''}
+                ${expandedDays.has(day) ? 'min-h-96 h-auto ring-2 ring-primary/50 shadow-2xl shadow-primary/40' : ''}
               `}
+              style={{ border: '2px solid var(--primary)' }}
             >
-              <div className="flex justify-between items-start mb-3">
-                <span className={`
-                  font-bold text-sm px-3 py-1.5 rounded-lg shadow-sm transition-colors
-                  ${isToday ? 'bg-primary text-white' : 'bg-linear-to-br from-slate-100 to-slate-50 text-slate-700 border border-slate-200'}
+              {/* Efeito de fundo */}
+              <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full blur-2xl group-hover:blur-3xl transition-all duration-300"></div>
+              
+              {/* Header do dia com stats */}
+              <div className="flex justify-between items-start mb-2 relative z-10">
+                <span className={`calendar-day-card 
+                  font-black text-lg px-3 py-1 rounded-lg shadow-sm transition-all transform
+                  ${isToday 
+                    ? 'bg-primary text-primary-foreground scale-110 shadow-md shadow-primary/40 hover:scale-125' 
+                    : 'bg-muted text-foreground border border-border hover:bg-muted/80'}
                 `}>
                   {day}
                 </span>
-                {isUpdating && <Loader2 size={14} className="animate-spin text-primary" />}
+                
+                {/* Badges de atividade com efeitos */}
+                <div className="flex gap-2 flex-wrap justify-end">
+                </div>
               </div>
               
-              <div className="flex-1 space-y-2 mb-3">
+              {/* Stats resumidas - sempre visível */}
+              {dayReadings.length > 0 && (
+                <div className="flex gap-2 mb-2 text-xs relative z-10 cursor-pointer">
+                  <span className="text-[9px] font-bold text-foreground/70">{dayReadings.length} livros</span>
+                  <span className="text-[9px] font-bold text-foreground/70">{totalPagesDay}p</span>
+                </div>
+              )}
+              
+              {/* Lista de livros do dia - só mostra quando expandido */}
+              {expandedDays.has(day) && (
                 <AnimatePresence>
-                  {dayReadings.slice(0, expandedDays.has(day) ? undefined : 1).map((r, idx) => (
+                  {dayReadings.map((r, idx) => (
                     <motion.div 
                       key={idx}
                       initial={{ opacity: 0, y: -8 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, x: -20 }}
-                      className={`
-                        p-3 rounded-lg border-2 shadow-sm relative flex gap-2.5 transition-all
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      className={`calendar-day-card 
+                        p-3 rounded-xl border-2 shadow-md relative flex gap-2.5 transition-all group overflow-hidden
                         ${r.status === 'lendo' 
-                          ? 'bg-linear-to-br from-green-50 to-emerald-50 border-green-300 hover:shadow-md hover:border-green-400' 
-                          : 'bg-linear-to-br from-white to-slate-50 border-slate-200 hover:shadow-md hover:border-slate-300'}
+                          ? 'bg-gradient-to-br from-green-100 via-emerald-50 to-white border-green-400/70 hover:shadow-lg hover:border-green-500 shadow-green-200/50' 
+                          : r.rating === 5
+                          ? 'bg-gradient-to-br from-amber-100 via-yellow-50 to-white border-amber-400/70 hover:shadow-lg hover:border-amber-500 shadow-amber-200/50'
+                          : 'bg-gradient-to-br from-blue-50 via-white to-slate-50 border-blue-300/50 hover:shadow-lg hover:border-blue-400'}
                       `}
                     >
-                      <div className="w-8 h-12 rounded-md shadow-sm shrink-0 border-2 border-slate-200 overflow-hidden flex items-center justify-center" style={{ backgroundColor: r.cover_url ? 'transparent' : '#e2e8f0' }}>
+                      {/* Efeito de fundo */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/30 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+                      <div className="w-8 h-12 rounded-md shadow-md shrink-0 border-2 border-slate-300 overflow-hidden flex items-center justify-center relative z-10 group-hover:shadow-lg transition-all" style={{ backgroundColor: r.cover_url ? 'transparent' : '#e2e8f0' }}>
                         {r.cover_url ? (
                           <img
                             src={r.cover_url}
                             alt="capa"
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                             onError={(e) => {
                               e.currentTarget.style.display = 'none';
-                              e.currentTarget.parentElement!.innerHTML = '<div class="text-[9px] text-slate-600 font-bold text-center px-1">📚</div>';
+                              e.currentTarget.parentElement!.innerHTML = '<div class="text-lg">📚</div>';
                             }}
                           />
                         ) : (
@@ -299,30 +349,12 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
                         )}
                       </div>
 
-                      <div className="flex-1 min-w-0 flex flex-col justify-between gap-1.5">
-                        <div className="flex justify-between items-start gap-2">
-                          <div className="flex items-start gap-1.5 flex-1 min-w-0">
-                            <BookMarked size={12} className={r.status === 'lendo' ? 'text-green-600 mt-0.5 shrink-0' : 'text-slate-500 mt-0.5 shrink-0'} strokeWidth={2} />
-                            <p className="text-xs font-semibold text-slate-800 leading-tight line-clamp-2">
-                              {r.book_name}
-                            </p>
-                          </div>
-                          <div className="flex gap-1 shrink-0">
-                            <button 
-                              onClick={() => openEditDialog(r)} 
-                              className="p-1.5 hover:bg-blue-100 rounded-md transition-all hover:scale-110 bg-white border border-blue-200 shadow-sm hover:shadow"
-                              title="Editar livro"
-                            >
-                              <Edit2 size={11} className="text-blue-600" strokeWidth={2.5} />
-                            </button>
-                            <button 
-                              onClick={() => openDeleteDialog(r.book_name)} 
-                              className="p-1.5 hover:bg-red-100 rounded-md transition-all hover:scale-110 bg-white border border-red-200 shadow-sm hover:shadow"
-                              title="Excluir livro"
-                            >
-                              <Trash2 size={11} className="text-red-600" strokeWidth={2.5} />
-                            </button>
-                          </div>
+                      <div className="flex-1 min-w-0 flex flex-col justify-between gap-1.5 relative z-10">
+                        <div className="flex items-start gap-1.5 flex-1 min-w-0">
+                          <BookMarked size={12} className={r.status === 'lendo' ? 'text-green-600 mt-0.5 shrink-0 animate-bounce' : 'text-slate-600 mt-0.5 shrink-0'} strokeWidth={2} />
+                          <p className="text-xs font-bold text-slate-800 leading-tight line-clamp-2 cursor-help" title={r.book_name}>
+                            {r.book_name}
+                          </p>
                         </div>
 
                         {r.status !== 'lendo' && r.rating && (
@@ -353,61 +385,65 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
                           </div>
                         )}
 
-                        {r.status === "lendo" && (
-                          <Button 
-                            size="sm" 
-                            className="h-7 w-full text-[10px] mt-2 font-medium bg-linear-to-r from-green-400 to-emerald-500 hover:from-green-500 hover:to-emerald-600 text-white border-0 shadow-sm hover:shadow-md transition-all" 
-                            onClick={() => handleFinishReading(day, r.book_name)}
-                          >
-                            ✓ Concluir
-                          </Button>
-                        )}
+                        {/* Botões embaixo */}
+                        <div className="flex flex-col gap-1.5 mt-2 pt-2 border-t border-slate-300/50 relative z-10">
+                          {/* Editar e Apagar no topo */}
+                          <div className="flex gap-1">
+                            <button 
+                              onClick={() => openEditDialog(r)} 
+                              className="flex-1 py-1 px-2 bg-muted hover:bg-muted/80 text-foreground rounded-md transition-all font-bold text-[7px] shadow-sm border border-border"
+                              title="Editar livro"
+                            >
+                              ✏️
+                            </button>
+                            <button 
+                              onClick={() => openDeleteDialog(r.book_name)} 
+                              className="flex-1 py-1 px-2 bg-muted hover:bg-muted/80 text-foreground rounded-md transition-all font-bold text-[7px] shadow-sm border border-border"
+                              title="Excluir livro"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+
+                          {/* Concluir embaixo (só aparece se está lendo) */}
+                          {r.status === "lendo" && (
+                            <button 
+                              onClick={() => handleFinishReading(day, r.book_name)} 
+                              className="w-full py-1.5 px-2 bg-muted hover:bg-muted/80 text-foreground rounded-md transition-all font-bold text-[7px] shadow-sm border border-border"
+                              title="Concluir leitura"
+                            >
+                              ✓ Concluir
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Tooltip ao hover com o título completo */}
+                      <div className="invisible group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-foreground text-card px-4 py-2 rounded-lg max-w-xs z-50 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none dark:bg-card dark:text-foreground">
+                        <p className="text-sm font-bold text-center">{r.book_name}</p>
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-foreground dark:border-t-card"></div>
                       </div>
                     </motion.div>
                   ))}
                 </AnimatePresence>
-
-                {dayReadings.length > 1 && (
-                  <button
-                    onClick={() => {
-                      const newSet = new Set(expandedDays)
-                      if (newSet.has(day)) {
-                        newSet.delete(day)
-                      } else {
-                        newSet.add(day)
-                      }
-                      setExpandedDays(newSet)
-                    }}
-                    className="w-full py-1.5 text-[10px] font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-md transition-all flex items-center justify-center gap-1"
-                  >
-                    {expandedDays.has(day) ? (
-                      <>
-                        <ChevronUp size={12} />
-                        Ver menos
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown size={12} />
-                        Ver todos ({dayReadings.length})
-                      </>
-                    )}
-                  </button>
-                )}
-              </div>
-
+              )}
+              
+              {/* Botão adicionar livro - sempre visível */}
               {!isFuture && (
                 <motion.div 
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="mt-auto pt-3 border-t-2 border-slate-100"
+                  className="pt-1 mt-auto"
                 >
                   <Button 
-                    className="h-10 w-full text-sm font-semibold bg-linear-to-r from-primary to-primary/90 hover:from-primary hover:to-primary/95 text-white border-0 rounded-lg shadow-sm hover:shadow-md transition-all flex items-center gap-2 justify-center" 
-                    onClick={() => openBookSearch(day)}
+                    className="h-7 w-full text-[7px] font-bold bg-muted hover:bg-muted/80 text-foreground border border-border rounded-md shadow-sm transition-all flex items-center gap-1 justify-center" 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      openBookSearch(day)
+                    }}
                     disabled={isUpdating}
                   >
-                    <Search size={14} strokeWidth={2.5} />
-                    Adicionar Livro
+                    ➕ Livro
                   </Button>
                 </motion.div>
               )}
@@ -437,7 +473,8 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
           author: bookToEdit.author_name || '',
           pages: bookToEdit.total_pages || 0,
           rating: bookToEdit.rating || 0,
-          notes: bookToEdit.notes || ''
+          notes: bookToEdit.notes || '',
+          cover_url: bookToEdit.cover_url || ''
         } : undefined}
       />
 
