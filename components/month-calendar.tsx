@@ -57,11 +57,16 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
     const dateFormatted = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}T12:00:00Z`
     
     try {
-      await saveReadingDay(
+      const response = await saveReadingDay(
         userEmail, year, monthIndex + 1, selectedDay, 
         dateFormatted, dateFormatted, book.title, "START_READING",
         book.cover, book.authors, book.pages
       )
+      
+      if (!response || response.error) {
+        throw new Error(response?.error || "Erro ao salvar")
+      }
+      
       setSelectedDay(null)
       await loadData()
       
@@ -70,6 +75,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
         icon: <BookMarked size={16} />
       })
     } catch (err) { 
+      console.error("Erro ao iniciar leitura:", err)
       toast.error("Erro ao salvar", { 
         description: "Não foi possível salvar a leitura.",
         icon: <XCircle size={16} />
@@ -87,7 +93,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
     
     setIsUpdating(true)
     try {
-      await fetch("/api/reading-data", {
+      const response = await fetch("/api/reading-data", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -101,15 +107,27 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
           notes: data.notes
         })
       })
+      
+      if (!response.ok) {
+        throw new Error("Erro na resposta da API")
+      }
+      
+      const result = await response.json()
+      
+      if (!result.success) {
+        throw new Error("Erro ao salvar")
+      }
+      
       await loadData()
       toast.success("Livro atualizado!", { 
-        description: `"${bookToEdit.book_name}" foi atualizado`,
+        description: `"${data.newName}" foi atualizado com sucesso`,
         icon: <CheckCircle2 size={16} />
       })
       setBookToEdit(null)
     } catch (err) { 
+      console.error("Erro ao atualizar livro:", err)
       toast.error("Erro ao atualizar", { 
-        description: "Não foi possível atualizar o livro.",
+        description: "Não foi possível salvar as alterações.",
         icon: <XCircle size={16} />
       })
     } finally { setIsUpdating(false) }
@@ -125,11 +143,22 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
     
     setIsUpdating(true)
     try {
-      await fetch("/api/reading-data", {
+      const response = await fetch("/api/reading-data", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "DELETE_READING", email: userEmail, bookName: bookToDelete })
       })
+      
+      if (!response.ok) {
+        throw new Error("Erro na resposta da API")
+      }
+      
+      const result = await response.json()
+      
+      if (!result.success) {
+        throw new Error("Erro ao deletar")
+      }
+      
       await loadData()
       toast.success("Livro excluído!", { 
         description: `"${bookToDelete}" foi removido da sua estante.`,
@@ -138,6 +167,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
       setDeleteDialogOpen(false)
       setBookToDelete("")
     } catch (err) {
+      console.error("Erro ao excluir livro:", err)
       toast.error("Erro ao excluir", { 
         description: "Não foi possível excluir o livro.",
         icon: <XCircle size={16} />
@@ -148,23 +178,40 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
   async function handleFinishReading(day: number, bookName: string) {
     if (isUpdating || !userEmail) return
     
+    const book = readings.find(r => r.book_name === bookName && r.status === 'lendo')
+    
     setIsUpdating(true)
     const dateFormatted = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T12:00:00Z`
     
     try {
-      await saveReadingDay(
+      const response = await saveReadingDay(
         userEmail, year, monthIndex + 1, day, 
         dateFormatted, dateFormatted, bookName, "FINISH_READING"
       )
+      
+      if (!response || response.error) {
+        throw new Error(response?.error || "Erro ao salvar")
+      }
+      
       await loadData()
       
+      let daysReading = 0
+      if (book?.start_date) {
+        const startDate = new Date(book.start_date)
+        const endDate = new Date(dateFormatted)
+        daysReading = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+      }
+      
       toast.success("Leitura concluída! 🎉", { 
-        description: `Parabéns por terminar "${bookName}"!`,
+        description: daysReading > 0 
+          ? `Parabéns! Você leu "${bookName}" em ${daysReading} ${daysReading === 1 ? 'dia' : 'dias'}!`
+          : `Parabéns por terminar "${bookName}"!`,
         icon: <CheckCircle2 size={16} />
       })
     } catch (err) { 
+      console.error("Erro ao concluir leitura:", err)
       toast.error("Erro ao salvar", { 
-        description: "Não foi possível salvar a leitura.",
+        description: "Não foi possível concluir a leitura.",
         icon: <XCircle size={16} />
       })
     } finally { setIsUpdating(false) }
@@ -289,6 +336,20 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
                                 strokeWidth={1.5}
                               />
                             ))}
+                          </div>
+                        )}
+
+                        {r.status !== 'lendo' && r.start_date && r.end_date && (
+                          <div className="flex items-center gap-1 px-1">
+                            <Calendar size={9} className="text-slate-400" strokeWidth={2} />
+                            <span className="text-[9px] text-slate-500 font-medium">
+                              {(() => {
+                                const start = new Date(r.start_date)
+                                const end = new Date(r.end_date)
+                                const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+                                return `${days} ${days === 1 ? 'dia' : 'dias'}`
+                              })()}
+                            </span>
                           </div>
                         )}
 

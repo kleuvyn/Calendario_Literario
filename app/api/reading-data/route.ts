@@ -12,7 +12,7 @@ export async function GET(request: Request) {
   try {
     const query = isRetrospective 
       ? `
-      SELECT rd.*, br.rating, br.cover_url, br.genre, br.review,
+      SELECT rd.*, br.rating, COALESCE(br.cover_url, rd.cover_url) as cover_url, br.genre, br.review,
              COALESCE(br.total_pages, rd.total_pages, 0) as total_pages
       FROM public.reading_data rd
       LEFT JOIN public.users u ON u.email = rd.email
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
       ORDER BY rd.month ASC, rd.status DESC
     `
       : `
-      SELECT rd.*, br.rating, br.cover_url, br.genre, br.review,
+      SELECT rd.*, br.rating, COALESCE(br.cover_url, rd.cover_url) as cover_url, br.genre, br.review,
              COALESCE(br.total_pages, rd.total_pages, 0) as total_pages
       FROM public.reading_data rd
       LEFT JOIN public.users u ON u.email = rd.email
@@ -162,6 +162,7 @@ export async function POST(request: Request) {
     if (action === "START_READING") {
       // Garantir que as colunas existam
       await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS author_name TEXT`, []);
+      await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS cover_url TEXT`, []);
       
       await executeQuery(`DELETE FROM public.reading_data WHERE email = $1 AND book_name = $2`, [email, bookName]);
       await executeQuery(`

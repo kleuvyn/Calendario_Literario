@@ -95,7 +95,7 @@ export function BookFilters({ onFilterChangeAction, availableGenres }: BookFilte
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-80" align="end">
+        <PopoverContent className="w-80 bg-white border border-slate-200 shadow-xl" align="end">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h4 className="font-semibold text-sm">Filtros Avançados</h4>
