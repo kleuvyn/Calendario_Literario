@@ -876,7 +876,7 @@ export default function RetrospectivaPage() {
           <div 
             ref={cardOptionARef}
             style={{ width: '400px', height: '850px', backgroundColor: theme.bg, margin: '0 auto' }}
-            className="px-8 py-10 flex flex-col rounded-[50px] shadow-2xl relative border-2 shrink-0 overflow-hidden"
+            className="px-8 py-6 flex flex-col rounded-[50px] shadow-2xl relative border-2 shrink-0 overflow-hidden"
           >
             {/* Decoração de fundo */}
             <div className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl opacity-10" style={{ backgroundColor: theme.primary }}></div>
@@ -884,7 +884,7 @@ export default function RetrospectivaPage() {
             
             <div className="flex flex-col flex-1 relative z-10">
               {/* Header */}
-              <div className="text-center mb-8">
+              <div className="text-center mb-6">
                 <div className="inline-block px-4 py-2 rounded-full mb-3" style={{ backgroundColor: `${theme.primary}20` }}>
                   <p style={{ color: theme.primary }} className="text-[10px] font-black uppercase tracking-[0.3em]">🎯 Meu Ano em Livros</p>
                 </div>
@@ -943,7 +943,7 @@ export default function RetrospectivaPage() {
               </div>
               
               {/* Logo/Marca */}
-              <div className="mt-8 pt-6 text-center border-t-2" style={{ borderColor: `${theme.primary}30` }}>
+              <div className="mt-auto pt-3 text-center border-t-2" style={{ borderColor: `${theme.primary}30` }}>
                 <p style={{ color: theme.text, opacity: 0.5 }} className="text-[9px] font-black uppercase tracking-[0.5em]">📚 Calendário Literário</p>
               </div>
             </div>
@@ -954,7 +954,7 @@ export default function RetrospectivaPage() {
           <div 
             ref={cardOptionBRef}
             style={{ width: '400px', height: '850px', backgroundColor: theme.bg, margin: '0 auto' }}
-            className="px-8 py-10 flex flex-col rounded-[50px] shadow-2xl relative border-2 shrink-0 overflow-hidden"
+            className="px-8 py-6 flex flex-col rounded-[50px] shadow-2xl relative border-2 shrink-0 overflow-hidden"
           >
             {/* Padrão de fundo */}
             <div className="absolute inset-0 opacity-5" style={{ 
@@ -963,7 +963,7 @@ export default function RetrospectivaPage() {
             
             <div className="flex flex-col flex-1 relative z-10">
               {/* Header */}
-              <div className="text-center mb-8">
+              <div className="text-center mb-6">
                 <div className="inline-block px-4 py-2 rounded-full mb-3" style={{ backgroundColor: `${theme.primary}20` }}>
                   <p style={{ color: theme.primary }} className="text-[10px] font-black uppercase tracking-[0.3em]">⚡ Os Extremos</p>
                 </div>
@@ -1036,7 +1036,7 @@ export default function RetrospectivaPage() {
               </div>
               
               {/* Logo/Marca */}
-              <div className="mt-8 pt-6 text-center border-t-2" style={{ borderColor: `${theme.primary}30` }}>
+              <div className="mt-auto pt-3 text-center border-t-2" style={{ borderColor: `${theme.primary}30` }}>
                 <p style={{ color: theme.text, opacity: 0.5 }} className="text-[9px] font-black uppercase tracking-[0.5em]">📚 Calendário Literário</p>
               </div>
             </div>
@@ -1047,7 +1047,7 @@ export default function RetrospectivaPage() {
           <div 
             ref={cardOptionCRef}
             style={{ width: '400px', height: '850px', backgroundColor: theme.bg, margin: '0 auto' }}
-            className="px-8 py-10 flex flex-col rounded-[50px] shadow-2xl relative border-2 shrink-0 overflow-hidden"
+            className="px-8 py-6 flex flex-col rounded-[50px] shadow-2xl relative border-2 shrink-0 overflow-hidden"
           >
             {/* Decoração de fundo - diamantes */}
             <div className="absolute top-10 right-10 text-6xl opacity-5">💎</div>
@@ -1056,7 +1056,7 @@ export default function RetrospectivaPage() {
             
             <div className="flex flex-col flex-1 relative z-10">
               {/* Header */}
-              <div className="text-center mb-8">
+              <div className="text-center mb-6">
                 <div className="inline-block px-4 py-2 rounded-full mb-3" style={{ background: `linear-gradient(135deg, ${theme.primary}30, ${theme.primary}20)` }}>
                   <p style={{ color: theme.primary }} className="text-[10px] font-black uppercase tracking-[0.3em]">💎 Minhas Verdades</p>
                 </div>
@@ -1132,7 +1132,7 @@ export default function RetrospectivaPage() {
               </div>
               
               {/* Logo/Marca */}
-              <div className="mt-8 pt-6 text-center border-t-2" style={{ borderColor: `${theme.primary}30` }}>
+              <div className="mt-auto pt-3 text-center border-t-2" style={{ borderColor: `${theme.primary}30` }}>
                 <p style={{ color: theme.text, opacity: 0.5 }} className="text-[9px] font-black uppercase tracking-[0.5em]">📚 Calendário Literário</p>
               </div>
             </div>
@@ -1142,7 +1142,7 @@ export default function RetrospectivaPage() {
         {/* Stories - Retrospectiva (apenas resumo) */}
           {allBooks.length > 0 && selectedCardOption === 'retrospectiva' && (
             <div className="flex flex-wrap gap-12 justify-center">
-              <div ref={storyResumoRef} style={{ width: '400px', height: '850px', backgroundColor: theme.bg, borderImage: `linear-gradient(135deg, ${theme.primary}40, transparent) 1` }} className="px-8 py-8 flex flex-col rounded-[50px] shadow-2xl relative border-2 shrink-0 overflow-hidden">
+              <div ref={storyResumoRef} style={{ width: '400px', height: '850px', backgroundColor: theme.bg, borderImage: `linear-gradient(135deg, ${theme.primary}40, transparent) 1` }} className="px-8 py-6 flex flex-col rounded-[50px] shadow-2xl relative border-2 shrink-0 overflow-hidden">
                 {/* Decoração de fundo */}
                 <div className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl opacity-10" style={{ backgroundColor: theme.primary }}></div>
                 <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full blur-3xl opacity-10" style={{ backgroundColor: '#ec4899' }}></div>
@@ -1150,7 +1150,7 @@ export default function RetrospectivaPage() {
                 
                 <div className="relative z-10">
                   {/* Header */}
-                  <div className="text-center mb-8">
+                  <div className="text-center mb-6">
                     <div className="inline-block px-4 py-2 rounded-full mb-3" style={{ backgroundColor: `${theme.primary}20` }}>
                       <p style={{ color: theme.primary }} className="text-[10px] font-black uppercase tracking-[0.4em]">📊 Retrospectiva Literária</p>
                     </div>
@@ -1257,7 +1257,7 @@ export default function RetrospectivaPage() {
                   </div>
                   
                   {/* Footer */}
-                  <div className="text-center mt-5 pt-4 border-t-2" style={{ borderColor: `${theme.primary}30` }}>
+                  <div className="text-center mt-auto pt-3 border-t-2" style={{ borderColor: `${theme.primary}30` }}>
                     <p style={{ color: theme.text, opacity: 0.5 }} className="text-[9px] font-black uppercase tracking-[0.5em]">📚 Calendário Literário</p>
                   </div>
                 </div>
@@ -1269,14 +1269,14 @@ export default function RetrospectivaPage() {
           {allBooks.length > 0 && selectedCardOption === 'biblioteca' && (
             <div className="flex flex-wrap gap-12 justify-center">
               {bookChunks.map((chunk, index) => (
-                <div key={index} ref={el => { paginasLivrosRef.current[index] = el }} style={{ width: '400px', height: '850px', backgroundColor: theme.bg, borderImage: `linear-gradient(135deg, ${theme.primary}40, transparent) 1` }} className="px-6 py-10 flex flex-col rounded-[50px] shadow-2xl relative border-2 overflow-hidden shrink-0">
+                <div key={index} ref={el => { paginasLivrosRef.current[index] = el }} style={{ width: '400px', height: '850px', backgroundColor: theme.bg, borderImage: `linear-gradient(135deg, ${theme.primary}40, transparent) 1` }} className="px-6 py-6 flex flex-col rounded-[50px] shadow-2xl relative border-2 overflow-hidden shrink-0">
                   {/* Decoração de fundo */}
                   <div className="absolute top-0 left-0 w-48 h-48 rounded-full blur-3xl opacity-10" style={{ backgroundColor: theme.primary }}></div>
                   <div className="absolute bottom-0 right-0 w-48 h-48 rounded-full blur-3xl opacity-10" style={{ backgroundColor: '#10b981' }}></div>
                   <div className="absolute top-20 right-10 w-32 h-32 rounded-full blur-2xl opacity-5" style={{ backgroundColor: '#06b6d4' }}></div>
                   
                   {/* Header */}
-                  <div className="text-center mb-6 relative z-10">
+                  <div className="text-center mb-4 relative z-10">
                     <div className="inline-block px-4 py-1.5 rounded-full mb-2" style={{ backgroundColor: `${theme.primary}20` }}>
                       <p style={{ color: theme.primary }} className="text-[10px] font-black uppercase tracking-[0.4em]">📚 Minha Biblioteca</p>
                     </div>
@@ -1301,7 +1301,7 @@ export default function RetrospectivaPage() {
                   
                   {/* Stats - apenas na primeira página */}
                   {index === 0 && (
-                    <div className="grid grid-cols-2 gap-2 mb-4 relative z-10">
+                    <div className="grid grid-cols-2 gap-2 mb-3 relative z-10">
                       <div className="rounded-xl p-2 text-center shadow-md" style={{ background: `linear-gradient(135deg, ${theme.primary}25, ${theme.primary}15)` }}>
                         <p style={{ color: theme.text }} className="text-lg font-black">{allBooks.length}</p>
                         <p className="text-[7px] font-bold uppercase opacity-60" style={{ color: theme.text }}>Livros</p>
@@ -1315,7 +1315,7 @@ export default function RetrospectivaPage() {
                   
                   
                   {/* Badge de quantidade de livros */}
-                  <div className="flex justify-center mb-4 relative z-10">
+                  <div className="flex justify-center mb-3 relative z-10">
                     <div className="px-4 py-1.5 rounded-xl shadow-md flex items-center gap-2" style={{ backgroundColor: `${theme.primary}30`, border: `1px solid ${theme.primary}50` }}>
                       <BookOpen size={12} style={{ color: theme.primary }} />
                       <p className="text-[8px] font-black uppercase" style={{ color: theme.primary }}>{chunk.length} livros nesta página</p>
@@ -1353,7 +1353,7 @@ export default function RetrospectivaPage() {
                   </div>
                   
                   {/* Footer */}
-                  <div className="text-center mt-6 pt-4 border-t-2 relative z-10" style={{ borderColor: `${theme.primary}30` }}>
+                  <div className="text-center mt-auto pt-3 border-t-2 relative z-10" style={{ borderColor: `${theme.primary}30` }}>
                     <p style={{ color: theme.text, opacity: 0.5 }} className="text-[9px] font-black uppercase tracking-[0.5em]">📚 Calendário Literário</p>
                   </div>
                 </div>
