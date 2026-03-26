@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Star, BookOpen, User, Hash, Upload, Image as ImageIcon } from "lucide-react"
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 
 interface EditBookDialogProps {
   open: boolean
@@ -38,6 +38,18 @@ export function EditBookDialog({ open, onClose, bookName, bookData, onSave }: Ed
   const [coverUrl, setCoverUrl] = useState(bookData?.cover_url || "")
   const [previewCover, setPreviewCover] = useState(bookData?.cover_url || "")
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+
+    setNewName(bookName)
+    setAuthor(bookData?.author || "")
+    setPages(bookData?.pages?.toString() || "")
+    setRating(bookData?.rating ?? 0)
+    setNotes(bookData?.notes || "")
+    setCoverUrl(bookData?.cover_url || "")
+    setPreviewCover(bookData?.cover_url || "")
+  }, [open, bookName, bookData])
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]

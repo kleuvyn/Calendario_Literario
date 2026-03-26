@@ -7,10 +7,70 @@ import { Toaster } from "@/components/ui/sonner"
 import Script from 'next/script'
 import { ErrorBoundary } from '@/components/error-boundary'
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://calendario-literario.kleuvyn.tec.br"
+
 export const metadata: Metadata = {
   title: "Diário de Leituras",
   description: "Planejador literário elegante para registrar suas leituras ao longo do ano",
-  manifest: "/manifest.json", 
+  applicationName: "Calendário Literário",
+  metadataBase: new URL(SITE_URL),
+  keywords: [
+    "diário de leitura",
+    "calendário literário",
+    "metas de leitura",
+    "planner de livros",
+    "registro de leituras",
+    "resenhas de livros",
+    "capa de livro",
+  ],
+  authors: [
+    { name: "Calendário Literário", url: "https://seudominio.com" }
+  ],
+  creator: "Calendário Literário",
+  publisher: "Calendário Literário",
+  openGraph: {
+    title: `Retrospectiva de ${new Date().getFullYear()} - Calendário Literário`,
+    description: "Acompanhe seus livros lidos, dias de leitura e metas literárias em um calendário interativo.",
+    url: SITE_URL,
+    siteName: "Calendário Literário",
+    locale: "pt_BR",
+    type: "website",
+    images: [
+      {
+        url: `${SITE_URL}/og-image.png`,
+        width: 1200,
+        height: 630,
+        alt: "Calendário Literário - Diário de Leituras"
+      }
+    ]
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Diário de Leituras",
+    description: "Planejador literário elegante para registrar suas leituras ao longo do ano",
+    images: [`${SITE_URL}/og-image.png`],
+    creator: "@seuusuario",
+  },
+  alternates: {
+    canonical: SITE_URL,
+    languages: {
+      "pt-BR": SITE_URL,
+      "en-US": `${SITE_URL}/en`
+    }
+  },
+  robots: {
+    index: true,
+    follow: true,
+    nocache: false,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -28,7 +88,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  userScalable: false,
+  userScalable: true,
 }
 
 export default function RootLayout({

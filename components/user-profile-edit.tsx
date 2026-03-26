@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useSession } from "next-auth/react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -23,11 +24,31 @@ interface UserProfileEditProps {
 }
 
 export function UserProfileEdit({ open, onCloseAction, user, onUpdateAction }: UserProfileEditProps) {
+  const { update: updateSession } = useSession()
   const [name, setName] = useState(user.name || "")
   const [photoUrl, setPhotoUrl] = useState(user.image || "")
   const [isUploading, setIsUploading] = useState(false)
   const [uploadMethod, setUploadMethod] = useState<"url" | "file">("url")
   const [isDeleting, setIsDeleting] = useState(false)
+
+  useEffect(() => {
+    setName(user.name || "")
+    setPhotoUrl(user.image || "")
+  }, [user])
+
+  // Função para capitalizar o nome
+  const capitalizeName = (str: string) => {
+    return str
+      .toLowerCase()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ')
+  }
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setName(capitalizeName(value))
+  }
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -69,6 +90,7 @@ export function UserProfileEdit({ open, onCloseAction, user, onUpdateAction }: U
   const handleSave = async () => {
     if (!user.email) return
     
+    const capitalizedName = capitalizeName(name)
     setIsUploading(true)
     try {
       const response = await fetch("/api/user/update-profile", {
@@ -76,12 +98,18 @@ export function UserProfileEdit({ open, onCloseAction, user, onUpdateAction }: U
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: user.email,
-          name: name,
-          photo: photoUrl
+          name: capitalizedName,
+          image: photoUrl
         })
       })
 
       if (!response.ok) throw new Error("Erro ao atualizar perfil")
+
+      // Atualizar a sessão do NextAuth com os novos dados
+      await updateSession({
+        name: capitalizedName,
+        image: photoUrl
+      })
 
       toast.success("Perfil atualizado!", {
         description: "Suas informações foram salvas com sucesso.",
@@ -214,9 +242,10 @@ export function UserProfileEdit({ open, onCloseAction, user, onUpdateAction }: U
               type="text"
               placeholder="Seu nome"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={handleNameChange}
               className="mt-1.5 text-sm"
             />
+            <p className="text-xs text-slate-500 mt-1">Nome será capitalizado automaticamente</p>
           </div>
 
           <div>
@@ -277,7 +306,7 @@ export function UserProfileEdit({ open, onCloseAction, user, onUpdateAction }: U
           <Button
             onClick={handleSave}
             disabled={isUploading}
-            className="bg-primary text-white text-sm font-medium"
+            className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-sm font-semibold transition-all shadow-md hover:shadow-lg disabled:opacity-60"
           >
             {isUploading ? (
               <>
@@ -285,7 +314,7 @@ export function UserProfileEdit({ open, onCloseAction, user, onUpdateAction }: U
                 Salvando...
               </>
             ) : (
-              "Salvar"
+              "Salvar Alterações"
             )}
           </Button>
         </div>

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card" 
 import { Button } from "@/components/ui/button" 
 import { Input } from "@/components/ui/input" 
-import { BookOpen, Loader2 } from "lucide-react" 
+import { BookOpen, Loader2, Sparkles, Book, Users, TrendingUp } from "lucide-react" 
 import { type UserData } from "@/lib/storage"
 
 interface LoginScreenProps {
@@ -69,88 +69,160 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md border-accent/20 bg-card p-8 shadow-xl">
-        <div className="mb-8 text-center">
-          <div className="mb-4 flex justify-center">
-            <div className="rounded-2xl bg-primary/10 p-4">
-              <BookOpen className="h-12 w-12 text-primary" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center p-4">
+      {/* Decorative elements */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-200/20 dark:bg-indigo-900/20 rounded-full blur-3xl -z-10" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-200/20 dark:bg-purple-900/20 rounded-full blur-3xl -z-10" />
+
+      <div className="w-full max-w-5xl grid md:grid-cols-2 gap-8 items-center">
+        {/* Left side - Hero */}
+        <div className="hidden md:flex flex-col justify-center space-y-8">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-sm font-medium mb-4">
+              <Sparkles className="h-4 w-4" />
+              Seu Diário de Leituras
+            </div>
+            <h1 className="text-5xl font-bold bg-gradient-to-br from-slate-900 to-slate-700 dark:from-white dark:to-slate-200 bg-clip-text text-transparent mb-4 leading-tight">
+              Organize suas Leituras
+            </h1>
+            <p className="text-xl text-slate-600 dark:text-slate-400">
+              Acompanhe cada livro que você lê, defina metas anuais e revise suas leituras com estilo.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center">
+                <BookOpen className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-900 dark:text-white">Calendário Interativo</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400">Visualize seus livros lidos ao longo do ano</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center">
+                <TrendingUp className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-900 dark:text-white">Acompanhe Metas</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400">Defina objetivos e monitore seu progresso</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-pink-100 dark:bg-pink-900/40 flex items-center justify-center">
+                <Book className="h-6 w-6 text-pink-600 dark:text-pink-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-900 dark:text-white">Resenhas e Notas</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400">Registre suas impressões sobre cada leitura</p>
+              </div>
             </div>
           </div>
-          <h1 className="mb-2 font-serif text-3xl font-bold text-foreground">Literário</h1>
-          <p className="text-muted-foreground">
-            {isRegistering ? "Crie sua conta para começar" : "Entre para acessar suas leituras"}
-          </p>
         </div>
 
-        <form onSubmit={handleEmailAction} className="space-y-4">
-          {isRegistering && (
+        {/* Right side - Form */}
+        <Card className="w-full border-none bg-white dark:bg-slate-900 shadow-2xl rounded-2xl p-8">
+          <div className="mb-8">
+            <div className="mb-4 flex justify-center">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+                <BookOpen className="h-8 w-8 text-white" />
+              </div>
+            </div>
+            <h2 className="text-center text-3xl font-bold text-slate-900 dark:text-white mb-2">
+              Literário
+            </h2>
+            <p className="text-center text-slate-600 dark:text-slate-400">
+              {isRegistering ? "Crie sua conta para começar" : "Bem-vindo de volta!"}
+            </p>
+          </div>
+
+          <form onSubmit={handleEmailAction} className="space-y-4">
+            {isRegistering && (
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">Nome Completo</label>
+                <Input
+                  type="text"
+                  placeholder="João Silva"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  className="h-11 rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                />
+              </div>
+            )}
+
             <div>
-              <label className="mb-2 block text-sm font-medium">Nome</label>
+              <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">Email</label>
               <Input
-                type="text"
-                placeholder="Seu nome"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                type="email"
+                placeholder="você@exemplo.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
+                className="h-11 rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
             </div>
-          )}
 
-          <div>
-            <label className="mb-2 block text-sm font-medium">Email</label>
-            <Input
-              type="email"
-              placeholder="seu@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">Senha</label>
+              <Input
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="h-11 rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              />
+            </div>
+
+            <Button 
+              type="submit" 
+              className="w-full h-11 gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold rounded-lg mt-6" 
+              size="lg" 
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Processando...
+                </>
+              ) : (
+                isRegistering ? "Criar Conta" : "Entrar"
+              )}
+            </Button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <button 
+              type="button"
+              onClick={() => setIsRegistering(!isRegistering)}
+              className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium transition"
+            >
+              {isRegistering ? "Já tem conta? Entre aqui" : "Não tem conta? Cadastre-se"}
+            </button>
           </div>
 
-          <div>
-            <label className="mb-2 block text-sm font-medium">Senha</label>
-            <Input
-              type="password"
-              placeholder="Sua senha"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+          <div className="my-6 flex items-center gap-3">
+            <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">OU</span>
+            <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
           </div>
 
-          <Button type="submit" className="w-full gap-2" size="lg" disabled={isLoading}>
-            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (isRegistering ? "Criar Conta" : "Entrar com Email")}
-          </Button>
-        </form>
-
-        <div className="mt-4 text-center">
-          <button 
+          <Button
             type="button"
-            onClick={() => setIsRegistering(!isRegistering)}
-            className="text-sm text-primary hover:underline"
+            onClick={handleGoogleLogin}
+            disabled={isLoading}
+            className="w-full h-11 gap-3 bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm rounded-lg font-medium transition"
+            size="lg"
           >
-            {isRegistering ? "Já tem conta? Entre aqui" : "Não tem conta? Cadastre-se"}
-          </button>
-        </div>
-
-        <div className="my-6 flex items-center gap-3">
-          <div className="h-px flex-1 bg-border" />
-          <span className="text-xs text-muted-foreground">ou</span>
-          <div className="h-px flex-1 bg-border" />
-        </div>
-
-        <Button
-          type="button"
-          onClick={handleGoogleLogin}
-          disabled={isLoading}
-          className="w-full gap-3 bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 shadow-sm"
-          size="lg"
-        >
-          <GoogleIcon />
-          Entrar com Google
-        </Button>
-      </Card>
+            <GoogleIcon />
+            Continuar com Google
+          </Button>
+        </Card>
+      </div>
     </div>
   )
 }

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea" 
 import { 
-  Star, Loader2, Trash2, Crown, Trophy, Heart, Zap, Quote, BookOpen, Layers, BarChart3, ChevronDown
+  Star, Loader2, Trash2, Crown, Trophy, Heart, Zap, Quote, BookOpen, Layers, BarChart3, ChevronDown, Calendar
 } from "lucide-react"
 import { getReadingData } from "@/lib/api-client"
 
@@ -40,6 +40,34 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
 
   const isDecember = monthIndex === 11;
 
+  // FUNÇÃO PARA CALCULAR QUANTOS DIAS LEVOU
+  const calculateDays = (start: string, end: string) => {
+    if (!start || !end) return null;
+    const s = new Date(start);
+    const e = new Date(end);
+    s.setHours(0,0,0,0);
+    e.setHours(0,0,0,0);
+    const diff = Math.abs(e.getTime() - s.getTime());
+    const days = Math.ceil(diff / (1000 * 60 * 60 * 24)) + 1;
+    return days;
+  };
+
+  const getBookMonth = (b: any) => {
+    if (b.status === 'lido' && b.end_date) {
+      const endDate = new Date(b.end_date);
+      if (!isNaN(endDate.getTime())) {
+        return endDate.getMonth() + 1;
+      }
+    }
+    if (b.start_date) {
+      const startDate = new Date(b.start_date);
+      if (!isNaN(startDate.getTime())) {
+        return startDate.getMonth() + 1;
+      }
+    }
+    return Number(b.month) || 0;
+  };
+
   const loadData = useCallback(async () => {
     if (!userEmail || !year) return
     try {
@@ -70,9 +98,9 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
   useEffect(() => { loadData() }, [loadData, monthIndex])
 
   const stats = useMemo(() => {
-    const currentMonthBooks = allBooks.filter(b => Number(b.month) === (monthIndex + 1));
-    const finishedYear = allBooks.filter(b => b.status !== 'lendo');
-    const finishedMonth = currentMonthBooks.filter(b => b.status !== 'lendo');
+    const currentMonthBooks = allBooks.filter(b => getBookMonth(b) === (monthIndex + 1));
+    const finishedYear = allBooks.filter(b => b.status === 'lido');
+    const finishedMonth = currentMonthBooks.filter(b => b.status === 'lido');
 
     const totalPagesYear = finishedYear.reduce((acc, b) => acc + (Number(b.total_pages) || 0), 0);
     const monthPages = finishedMonth.reduce((acc, b) => {
@@ -102,8 +130,20 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
   }, [allBooks, monthIndex, bookEdits])
 
   const currentMonthBooks = useMemo(() => {
-    return allBooks.filter(b => Number(b.month) === (monthIndex + 1))
+    return allBooks.filter(b => getBookMonth(b) === (monthIndex + 1))
   }, [allBooks, monthIndex])
+
+  const isImageUrl = (url: string) => {
+    const trimmed = url.trim()
+    if (!trimmed) return false
+    if (/^(data:image\/(?:png|jpe?g|webp|avif|gif);base64,[A-Za-z0-9+/=]+)$/i.test(trimmed)) return true
+    return /^(https?:\/\/.*\.(?:png|jpe?g|webp|avif|gif))(\?.*)?$/i.test(trimmed)
+  }
+
+  const safeCoverUrl = (url?: string) => {
+    if (!url || !url.trim()) return PLACEHOLDER_IMAGE
+    return isImageUrl(url) ? url : PLACEHOLDER_IMAGE
+  }
 
   const buscarCapaAutomatica = async (bookId: string, bookName: string) => {
     setIsSearching(bookId);
@@ -135,6 +175,10 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
     setIsSaving(bookId)
     try {
       const data = bookEdits[bookId]
+      if (data.cover && !isImageUrl(data.cover)) {
+        alert("A URL da capa precisa ser uma imagem (jpg/png/webp/gif). Remova ou use uma imagem direta.")
+        return
+      }
       await fetch("/api/reading-data", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -189,7 +233,8 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
               <div key={i} className="group relative w-28 sm:w-36 text-center transition-all hover:scale-105">
                 <div className="aspect-3/4 rounded-r-xl shadow-[10px_10px_20px_-5px_rgba(0,0,0,0.3)] overflow-hidden border-l-4 border-black/20 mb-3 bg-slate-100 group-hover:border-amber-400 transition-colors">
                   <img 
-                    src={bookEdits[fav.id]?.cover || fav.cover_url || PLACEHOLDER_IMAGE} 
+                    src={safeCoverUrl(bookEdits[fav.id]?.cover || fav.cover_url)} 
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_IMAGE }}
                     className="w-full h-full object-cover" 
                     alt="" 
                   />
@@ -233,20 +278,18 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
         {currentMonthBooks.map((book, idx) => {
           const isFav = Number(bookEdits[book.id]?.rating || book.rating) === 5;
           const currentCover = bookEdits[book.id]?.cover || book.cover_url || PLACEHOLDER_IMAGE;
+          const daysRead = calculateDays(book.start_date, book.end_date);
 
           return (
             <Card key={book.id} className={`flex flex-col shadow-2xl rounded-[40px] transition-all border-none p-6 gap-6 ${isFav ? 'bg-amber-50/30' : 'bg-white'}`}>
               
-              {/* Topo: Botões e Título */}
               <div className="flex justify-between items-start gap-6">
-                {/* Botões à esquerda */}
                 <div className="flex gap-3 shrink-0 pt-1">
                   <button onClick={() => handleDelete(book.id, book.book_name)} className="text-slate-200 hover:text-red-500 transition-colors p-2 bg-slate-50 rounded-xl hover:bg-red-50">
                     {isDeleting === book.id ? <Loader2 size={20} className="animate-spin" /> : <Trash2 size={20}/>}
                   </button>
                 </div>
 
-                {/* Título à direita */}
                 <div className="flex-1 space-y-1">
                   <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest">Título do Livro</p>
                   <Input 
@@ -254,42 +297,49 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
                     value={bookEdits[book.id]?.name || ""}
                     onChange={(e) => setBookEdits(p => ({...p, [book.id]: {...p[book.id], name: e.target.value}}))}
                   />
-                  <p className="text-[10px] font-black text-primary/60 uppercase tracking-widest">{bookEdits[book.id]?.genre || "Sem gênero definido"}</p>
+                  
+                  {/* GÊNERO E DIAS DE LEITURA JUNTOS */}
+                  <div className="flex flex-wrap items-center gap-4">
+                    <p className="text-[10px] font-black text-primary/60 uppercase tracking-widest">{bookEdits[book.id]?.genre || "Sem gênero definido"}</p>
+                    
+                    {daysRead !== null && (
+                      <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-100 rounded-full">
+                        <Calendar size={10} className="text-slate-500" />
+                        <span className="text-[9px] font-black text-slate-600 uppercase tracking-tighter">
+                          Tempo: {daysRead} {daysRead === 1 ? 'Dia' : 'Dias'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Conteúdo: Capa e Dados */}
               <div className="flex flex-col md:flex-row gap-8">
-                {/* Capa com grupo hover */}
                 <div className="relative shrink-0 flex flex-col justify-start items-center">
                   <div className="w-47.5 sm:w-55 aspect-[3/4.2] relative group">
                     <div className="w-full h-full rounded-r-xl overflow-hidden shadow-[20px_20px_40px_-15px_rgba(0,0,0,0.4)] border-l-[6px] border-black/30 bg-slate-200 transition-transform duration-500 group-hover:scale-[1.02]">
                       <img 
-                        src={currentCover} 
+                        src={safeCoverUrl(currentCover)} 
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_IMAGE }}
                         className="w-full h-full object-cover" 
                         alt="capa" 
                       />
                       <div className="absolute inset-y-0 left-0 w-2 bg-linear-to-r from-white/10 to-transparent" />
                     </div>
                     {isFav && (
-                      <div className="absolute -top-3 -left-3 bg-amber-500 text-white p-3 rounded-2xl shadow-xl z-10 animate-bounce-slow">
+                      <div className="absolute -top-3 -left-3 bg-amber-500 text-white p-3 rounded-2xl shadow-xl z-10">
                         <Crown size={20} fill="white" />
                       </div>
                     )}
                   </div>
                   
-                  {/* Título abaixo da capa - sempre visível e bem grande */}
                   <div className="mt-4 w-47.5 sm:w-55 px-5 py-4 rounded-2xl bg-gradient-to-r from-slate-700 to-slate-800 shadow-2xl border border-slate-600">
-                    <p className="text-white text-center font-black text-base leading-tight line-clamp-3" style={{
-                      textShadow: '0 3px 6px rgba(0,0,0,0.95)',
-                      letterSpacing: '0.02em'
-                    }}>
+                    <p className="text-white text-center font-black text-base leading-tight line-clamp-3" style={{ textShadow: '0 3px 6px rgba(0,0,0,0.95)' }}>
                       {bookEdits[book.id]?.name || book.book_name}
                     </p>
                   </div>
                 </div>
                 
-                {/* Dados do livro à direita */}
                 <div className="flex-1 flex flex-col gap-6">
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 text-left">
                     <div className="space-y-5">
@@ -306,59 +356,58 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
                               <Zap size={10} className="fill-current" /> AUTO
                             </button>
                           </p>
-                          <Input 
-                            className="h-10 text-[11px] bg-slate-50 border-none rounded-xl" 
-                            value={bookEdits[book.id]?.cover || ""} 
-                            onChange={(e) => setBookEdits(p => ({...p, [book.id]: {...p[book.id], cover: e.target.value}}))} 
-                          />
+                          <Input className="h-10 text-[11px] bg-slate-50 border-none rounded-xl" value={bookEdits[book.id]?.cover || ""} onChange={(e) => setBookEdits(p => ({...p, [book.id]: {...p[book.id], cover: e.target.value}}))} />
                         </div>
                         <div className="w-24">
                           <p className="text-[9px] font-black text-slate-400 uppercase mb-2">Págs</p>
                           <Input type="number" className="h-10 text-sm bg-slate-50 border-none rounded-xl font-black" value={bookEdits[book.id]?.pages || ""} onChange={(e) => setBookEdits(p => ({...p, [book.id]: {...p[book.id], pages: Number(e.target.value)}}))} />
                         </div>
                       </div>
-                    </div>
-                    
-                    <div>
-                      <p className="text-[9px] font-black text-slate-400 uppercase mb-2">Gênero Literário</p>
-                      <div className="relative">
-                        <select 
-                          className="w-full h-10 text-[11px] font-black bg-slate-50 border-none rounded-xl px-4 appearance-none uppercase text-slate-600"
-                          value={bookEdits[book.id]?.genre || ""}
-                          onChange={(e) => setBookEdits(p => ({...p, [book.id]: {...p[book.id], genre: e.target.value}}))}
-                        >
-                          <option value="">Escolher Gênero...</option>
-                          {Object.entries(GENRE_CATEGORIES).map(([category, genres]) => (
-                            <optgroup key={category} label={category}>
-                              {genres.map(g => (
-                                <option key={g} value={g}>{g}</option>
-                              ))}
-                            </optgroup>
-                          ))}
-                        </select>
-                        <ChevronDown size={14} className="absolute right-3 top-3 text-slate-400" />
+                      
+                      <div>
+                        <p className="text-[9px] font-black text-slate-400 uppercase mb-2">Gênero Literário</p>
+                        <div className="relative">
+                          <select 
+                            className="w-full h-10 text-[11px] font-black bg-slate-50 border-none rounded-xl px-4 appearance-none uppercase text-slate-600"
+                            value={bookEdits[book.id]?.genre || ""}
+                            onChange={(e) => setBookEdits(p => ({...p, [book.id]: {...p[book.id], genre: e.target.value}}))}
+                          >
+                            <option value="">Escolher Gênero...</option>
+                            {Object.entries(GENRE_CATEGORIES).map(([category, genres]) => (
+                              <optgroup key={category} label={category}>
+                                {genres.map(g => (
+                                  <option key={g} value={g}>{g}</option>
+                                ))}
+                              </optgroup>
+                            ))}
+                          </select>
+                          <ChevronDown size={14} className="absolute right-3 top-3 text-slate-400" />
+                        </div>
                       </div>
                     </div>
 
                     <div>
                       <p className="text-[9px] font-black text-slate-400 uppercase mb-2 flex items-center gap-2"><Quote size={10} /> Review</p>
                       <Textarea 
-                        className="text-xs bg-slate-50 border-none resize-none h-24 rounded-2xl p-4"
+                        className="text-xs bg-slate-50 border-none resize-none h-full min-h-[140px] rounded-2xl p-4"
                         value={bookEdits[book.id]?.review || ""}
                         onChange={(e) => setBookEdits(p => ({...p, [book.id]: {...p[book.id], review: e.target.value}}))}
                       />
                     </div>
                   </div>
 
-                  <div className="flex flex-col justify-between items-center lg:items-end">
+                  <div className="flex flex-col justify-between items-center lg:items-end mt-auto">
+                    {/* LEITURA RÁPIDA (ZAP) */}
+                    {daysRead && daysRead <= 2 && (
+                      <div className="flex items-center gap-2 text-orange-500 bg-orange-50 px-4 py-2 rounded-xl mb-4 self-center lg:self-end">
+                        <Zap size={14} fill="currentColor" />
+                        <span className="text-[9px] font-black uppercase">Leitura Recorde!</span>
+                      </div>
+                    )}
+
                     <div className="flex gap-2 bg-slate-50 p-4 rounded-[20px] self-center lg:self-end">
                       {[1,2,3,4,5].map(s => (
-                        <Star 
-                          key={s} 
-                          size={28} 
-                          className={`cursor-pointer transition-all ${s <= (bookEdits[book.id]?.rating || 0) ? "fill-amber-400 text-amber-400" : "text-slate-200"}`} 
-                          onClick={() => setBookEdits(p => ({...p, [book.id]: {...p[book.id], rating: s}}))} 
-                        />
+                        <Star key={s} size={28} className={`cursor-pointer transition-all ${s <= (bookEdits[book.id]?.rating || 0) ? "fill-amber-400 text-amber-400" : "text-slate-200"}`} onClick={() => setBookEdits(p => ({...p, [book.id]: {...p[book.id], rating: s}}))} />
                       ))}
                     </div>
                     <Button 

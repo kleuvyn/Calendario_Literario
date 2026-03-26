@@ -30,17 +30,23 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    const body = await request.json();
+    const { name, image, theme, email } = body;
 
-    const { image, theme } = await request.json();
+    const userEmail = session?.user?.email || email;
+    if (!userEmail) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+
+    if (name) {
+      await executeQuery("UPDATE users SET name = $1 WHERE email = $2", [name, userEmail]);
+    }
 
     if (image) {
-      await executeQuery("UPDATE users SET image = $1 WHERE email = $2", [image, session.user.email]);
+      await executeQuery("UPDATE users SET image = $1 WHERE email = $2", [image, userEmail]);
     }
 
     if (theme) {
       await executeQuery("ALTER TABLE users ADD COLUMN IF NOT EXISTS theme TEXT DEFAULT 'rose';", []);
-      await executeQuery("UPDATE users SET theme = $1 WHERE email = $2", [theme, session.user.email]);
+      await executeQuery("UPDATE users SET theme = $1 WHERE email = $2", [theme, userEmail]);
     }
 
     return NextResponse.json({ message: "Perfil atualizado!" });

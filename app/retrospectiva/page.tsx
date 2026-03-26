@@ -6,6 +6,7 @@ import { BookOpen, Loader2, Star, ArrowLeft, Instagram, Crown, Calendar, Chevron
 import { getReadingData } from "@/lib/api-client"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts"
 import { domToPng } from "modern-screenshot"
 import { BookFilters, type FilterState } from "@/components/book-filters"
@@ -48,7 +49,7 @@ export default function RetrospectivaPage() {
   })
   
   const [currentYear, setCurrentYear] = useState(() => new Date().getFullYear())
-  const [selectedCardOption, setSelectedCardOption] = useState<'retrospectiva' | 'biblioteca' | 'a' | 'b' | 'c'>('retrospectiva')
+  const [selectedCardOption, setSelectedCardOption] = useState<'retrospectiva' | 'biblioteca' | 'a' | 'b' | 'c' | null>('retrospectiva')
   
   const isDarkTheme = currentTheme === 'midnight'
   
@@ -80,7 +81,7 @@ export default function RetrospectivaPage() {
         try {
           const data: any = await getReadingData(session.user.email, currentYear, true)
           const booksArray = Array.isArray(data) ? data : (data?.data || [])
-          setAllBooks(booksArray.filter((b: any) => b.status !== 'lendo' && b.status !== 'reading'))
+          setAllBooks(booksArray)
 
           try {
             const profileRes = await fetch(`/api/user/update-profile?email=${session.user.email}`)
@@ -148,6 +149,14 @@ export default function RetrospectivaPage() {
     
     return result
   }, [allBooks, filters])
+
+  const filteredFinishedBooks = useMemo(() => {
+    return filteredBooks.filter(b => b.status !== 'lendo' && b.status !== 'reading')
+  }, [filteredBooks])
+
+  const filteredReadingBooks = useMemo(() => {
+    return filteredBooks.filter(b => b.status === 'lendo' || b.status === 'reading')
+  }, [filteredBooks])
 
   const availableGenres = useMemo(() => {
     const genres = new Set<string>()
@@ -236,8 +245,13 @@ export default function RetrospectivaPage() {
           }
         }
       }
-    } catch (err) {
-      alert("Erro ao gerar. Tente abrir pelo Safari ou Chrome.");
+    } catch (err: unknown) {
+      console.error("Erro ao gerar exportação:", err)
+      if (err instanceof Event) {
+        alert("Erro ao gerar. Evento de erro detectado. Tente novamente.")
+      } else {
+        alert("Erro ao gerar. Tente abrir pelo Safari ou Chrome.")
+      }
     } finally { 
       setIsGenerating(false); 
     }
@@ -246,12 +260,16 @@ export default function RetrospectivaPage() {
   const handleExportCardOption = async () => {
     setIsGenerating(true)
     try {
+      if (!selectedCardOption || selectedCardOption === 'retrospectiva' || selectedCardOption === 'biblioteca') {
+        throw new Error('Opção inválida para exportar')
+      }
       const refs = { a: cardOptionARef, b: cardOptionBRef, c: cardOptionCRef }
       const titles = { a: 'meu-ano-em-livros', b: 'do-calhambaco-ao-flash', c: 'minhas-verdades-literarias' }
-      const ref = refs[selectedCardOption]
-      const title = titles[selectedCardOption]
+      const key = selectedCardOption as 'a' | 'b' | 'c'
+      const ref = refs[key]
+      const title = titles[key]
 
-      if (ref.current) {
+      if (ref?.current) {
         const url = await domToPng(ref.current, { 
           scale: 3, 
           quality: 1,
@@ -265,8 +283,13 @@ export default function RetrospectivaPage() {
         link.click();
         document.body.removeChild(link);
       }
-    } catch (err) {
-      alert("Erro ao gerar. Tente abrir pelo Safari ou Chrome.");
+    } catch (err: unknown) {
+      console.error("Erro ao gerar exportação (card):", err)
+      if (err instanceof Event) {
+        alert("Erro ao gerar. Evento de erro detectado. Tente novamente.")
+      } else {
+        alert("Erro ao gerar. Tente abrir pelo Safari ou Chrome.")
+      }
     } finally { 
       setIsGenerating(false); 
     }
@@ -1388,14 +1411,36 @@ export default function RetrospectivaPage() {
                 <div className="relative z-10">
                   <div className="px-6 py-3 rounded-xl shadow-md text-white font-semibold text-sm flex items-center gap-2" style={{ backgroundColor: theme.primary }}>
                     <BookOpen size={16} strokeWidth={2} />
-                    {filteredBooks.length} {filteredBooks.length === 1 ? 'livro' : 'livros'}
-                    {filteredBooks.length !== allBooks.length && (
-                      <span className="text-xs opacity-75">({allBooks.length} total)</span>
+                    {filteredFinishedBooks.length} {filteredFinishedBooks.length === 1 ? 'livro concluído' : 'livros concluídos'}
+                    {filteredReadingBooks.length > 0 && (
+                      <span className="text-xs opacity-75 ml-2">+ {filteredReadingBooks.length} em leitura</span>
+                    )}
+                    {allBooks.length !== filteredFinishedBooks.length && (
+                      <span className="text-xs opacity-75">({allBooks.length} no total)</span>
                     )}
                   </div>
                 </div>
               </div>
-              
+
+              {filteredReadingBooks.length > 0 && (
+                <Card className="p-4 border border-primary/20 bg-primary/5 rounded-2xl">
+                  <h3 className="text-sm font-bold text-primary mb-2">Livros em andamento ({filteredReadingBooks.length})</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {filteredReadingBooks.map((book) => {
+                      const start = book.start_date ? new Date(book.start_date) : null
+                      const days = start ? Math.max(1, Math.ceil((Date.now() - start.getTime()) / (1000 * 60 * 60 * 24))) : '-'
+                      return (
+                        <div key={book.id || book.book_name} className="border border-primary/30 p-3 rounded-lg bg-white">
+                          <p className="text-xs font-bold text-slate-600">{book.book_name}</p>
+                          <p className="text-[10px] text-slate-500 truncate">{book.author_name || 'Autor não informado'}</p>
+                          <p className="text-[10px] text-primary mt-1">{book.start_date ? `Iniciado há ${days} ${days === 1 ? 'dia' : 'dias'}` : 'Início pendente'}</p>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </Card>
+              )}
+
               {/* Grid de estantes - Visual de biblioteca */}
               <AnimatePresence mode="wait">
                 <motion.div 

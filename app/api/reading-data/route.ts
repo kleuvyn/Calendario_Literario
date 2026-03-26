@@ -178,9 +178,13 @@ export async function POST(request: Request) {
     }
 
     if (action === "FINISH_READING") {
+      const finishedDate = new Date(endDate)
+      const finishedYear = finishedDate.getUTCFullYear()
+      const finishedMonth = finishedDate.getUTCMonth() + 1
+
       await executeQuery(
-        `UPDATE public.reading_data SET end_date = $1, status = 'lido' WHERE email = $2 AND book_name = $3`,
-        [endDate, email, bookName]
+        `UPDATE public.reading_data SET end_date = $1, status = 'lido', year = $2, month = $3 WHERE email = $4 AND book_name = $5`,
+        [endDate, finishedYear, finishedMonth, email, bookName]
       );
       return NextResponse.json({ success: true });
     }

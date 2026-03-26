@@ -52,6 +52,7 @@ const LITERARY_QUOTES = [
   "Ler é viajar sem sair do lugar."
 ];
 
+
 export default function Home() {
   const { data: session, status } = useSession()
   const [currentYear, setCurrentYear] = useState(() => new Date().getFullYear())
@@ -64,6 +65,24 @@ export default function Home() {
   const [isSaving, setIsSaving] = useState(false)
   const [direction, setDirection] = useState(0)
   const [profileEditOpen, setProfileEditOpen] = useState(false)
+
+  const capitalize = (value: string) => {
+    if (!value) return ''
+    return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase()
+  }
+
+  const getFirstName = () => {
+    if (!session?.user?.name) return 'Usuário'
+    const first = session.user.name.split(' ')[0]
+    return capitalize(first)
+  }
+
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours()
+    if (hour < 12) return 'Bom dia'
+    if (hour < 18) return 'Boa tarde'
+    return 'Boa noite'
+  }, [])
 
   useEffect(() => {
     const savedGoals = localStorage.getItem("metas_por_ano")
@@ -170,62 +189,104 @@ export default function Home() {
     ]
   }, [currentYear])
 
-  if (status === "loading") return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>
+  if (status === "loading") return (
+    <div className="flex h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+      <div className="flex flex-col items-center gap-6">
+        <div className="relative w-20 h-20">
+          {/* Animated background circles */}
+          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 opacity-75 blur-lg animate-pulse"></div>
+          <div className="absolute inset-2 rounded-full bg-white dark:bg-slate-900"></div>
+          
+          {/* Rotating icon container */}
+          <div className="absolute inset-0 flex items-center justify-center animate-spin" style={{ animationDuration: '3s' }}>
+            <BookOpen size={32} className="text-indigo-600 dark:text-indigo-400" />
+          </div>
+          
+          {/* Pulsing dots */}
+          <div className="absolute inset-4 rounded-full border-2 border-transparent border-t-indigo-500 border-r-indigo-500 animate-spin" style={{ animationDuration: '2s' }}></div>
+        </div>
+        <div className="text-center">
+          <p className="text-slate-900 dark:text-slate-100 font-semibold">Carregando sua biblioteca...</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">Preparando seus livros e metas</p>
+        </div>
+      </div>
+    </div>
+  )
   if (!session) return <LoginScreen onLogin={async () => signIn("google")} />
 
   return (
-    <div className="flex flex-col min-h-screen transition-all duration-700" style={{ 
-      background: `linear-gradient(135deg, ${theme.bg} 0%, ${theme.bg}99 50%, ${theme.bg}cc 100%)`
+    <div className="flex flex-col min-h-screen transition-all duration-700 bg-gradient-to-br" style={{ 
+      backgroundImage: `linear-gradient(135deg, ${theme.bg} 0%, ${theme.bg}99 50%, ${theme.bg}cc 100%)`
     }}>
+      {/* Decorative background elements */}
+      <div className="fixed top-0 right-0 w-96 h-96 bg-gradient-to-br from-indigo-200/10 to-purple-200/10 dark:from-indigo-900/10 dark:to-purple-900/10 rounded-full blur-3xl -z-10 pointer-events-none" />
+      <div className="fixed bottom-0 left-0 w-96 h-96 bg-gradient-to-br from-pink-200/10 to-blue-200/10 dark:from-pink-900/10 dark:to-blue-900/10 rounded-full blur-3xl -z-10 pointer-events-none" />
+      
       <main className="grow p-3 md:p-6 lg:p-10">
         <div className="mx-auto max-w-7xl">
 
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="mb-7 flex flex-col lg:flex-row items-center justify-between backdrop-blur-sm p-5 rounded-xl shadow-sm gap-5 border"
+            className="mb-8 flex flex-col lg:flex-row items-center justify-between backdrop-blur-md p-6 rounded-2xl shadow-lg gap-6 border transition-all duration-300"
             style={{
-              backgroundColor: isDark ? 'rgba(26, 31, 53, 0.5)' : 'rgba(255, 255, 255, 0.4)',
-              borderColor: isDark ? 'rgba(45, 58, 82, 0.5)' : 'rgba(255, 255, 255, 0.5)'
+              background: isDark
+                ? 'linear-gradient(135deg, rgba(26, 31, 53, 0.6) 0%, rgba(26, 31, 53, 0.4) 100%)'
+                : 'linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.3) 100%)',
+              borderColor: isDark ? 'rgba(45, 58, 82, 0.6)' : 'rgba(255, 255, 255, 0.7)',
+              boxShadow: isDark 
+                ? '0 8px 32px -8px rgba(99, 102, 241, 0.1)'
+                : '0 8px 32px -8px rgba(99, 102, 241, 0.2)'
             }}
           >
             <div className="flex items-center gap-4 w-full lg:w-auto">
-              <div className="relative">
-                <div className="h-12 w-12 rounded-lg border border-primary/20 overflow-hidden shadow-sm flex items-center justify-center" style={{ backgroundColor: session.user?.image ? 'transparent' : theme.primary }}>
-                  {session.user?.image ? (
-                    <img src={session.user.image} alt="Perfil" className="h-full w-full object-cover" />
-                  ) : (
-                    <span className="text-white text-base font-medium">{session.user?.name?.charAt(0)?.toUpperCase() || 'U'}</span>
+              <motion.div 
+                whileHover={{ scale: 1.05 }}
+                className="relative"
+              >
+                <div className="h-14 w-14 rounded-xl border-2 border-white/30 dark:border-slate-600/50 overflow-hidden shadow-md flex items-center justify-center flex-shrink-0" style={{ 
+                  backgroundColor: session.user?.image ? 'transparent' : theme.primary,
+                  backgroundImage: session.user?.image ? `url('${session.user.image}')` : 'none',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center'
+                }}>
+                  {!session.user?.image && (
+                    <span className="text-white text-lg font-bold">{session.user?.name?.charAt(0)?.toUpperCase() || 'U'}</span>
                   )}
                 </div>
-              </div>
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2">
-                  <h1 className="text-base font-semibold tracking-tight" style={{ color: theme.text }}>
-                    {session.user?.name ? session.user.name.split(' ')[0].charAt(0).toUpperCase() + session.user.name.split(' ')[0].slice(1) : 'Usuário'}
+              </motion.div>
+              <div className="flex flex-col min-w-0">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <h1 className="text-xl font-bold tracking-tight truncate" style={{ color: theme.text }}>
+                    {greeting}, {getFirstName()}
                   </h1>
-                  <button 
+                  <motion.button 
+                    whileHover={{ rotate: 90, scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => setProfileEditOpen(true)}
-                    className="p-1 hover:bg-white/50 rounded transition-all"
+                    className="p-2 hover:bg-white/30 dark:hover:bg-slate-700/70 rounded-lg transition-all"
                     title="Editar perfil"
                   >
-                    <Edit3 size={12} style={{ color: theme.primary, opacity: 0.6 }} strokeWidth={2} />
-                  </button>
+                    <Edit3 size={16} style={{ color: theme.primary }} strokeWidth={2} />
+                  </motion.button>
                 </div>
-                <p className="text-xs font-light" style={{ color: theme.text, opacity: 0.6 }}>
-                  Calendário {currentYear}
+                <p className="text-sm font-light" style={{ color: theme.text, opacity: 0.6 }}>
+                  Calendário — {currentYear}
                 </p>
               </div>
             </div>
 
-            <div className="flex backdrop-blur-sm p-1.5 rounded-lg border gap-1 shadow-sm transition-all duration-300" style={getCardStyle()}>
+            <div className="flex backdrop-blur-sm p-2 rounded-xl border gap-2 shadow-md transition-all duration-300 flex-wrap justify-center" style={{
+              backgroundColor: isDark ? 'rgba(26, 31, 53, 0.4)' : 'rgba(255, 255, 255, 0.3)',
+              borderColor: isDark ? 'rgba(45, 58, 82, 0.5)' : 'rgba(255, 255, 255, 0.5)'
+            }}>
               {Object.entries(THEMES).map(([key, value]) => {
                 const ThemeIcon = value.icon
                 return (
                   <motion.button 
                     key={key} 
-                    whileHover={{ scale: 1.08 }}
-                    whileTap={{ scale: 0.95 }}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.92 }}
                     onClick={() => { 
                       setActiveTheme(key as keyof typeof THEMES); 
                       localStorage.setItem("app-theme", key);
@@ -234,24 +295,25 @@ export default function Home() {
                       })
                     }} 
                     className={`
-                      p-2.5 rounded-md transition-all duration-200 flex flex-col items-center gap-1
+                      p-3 rounded-lg transition-all duration-200 flex flex-col items-center gap-1.5
                       ${activeTheme === key 
-                        ? isDark ? 'bg-slate-700 shadow-md border border-slate-600' : 'bg-white shadow-sm border border-primary/25'
-                        : 'opacity-55 hover:opacity-85'
+                        ? isDark 
+                          ? 'bg-gradient-to-br from-slate-600 to-slate-700 shadow-lg border border-slate-500' 
+                          : 'bg-white shadow-md border border-primary/30'
+                        : 'opacity-50 hover:opacity-80'
                       }
                     `}
                     style={{ 
-                      borderColor: activeTheme === key ? value.primary : 'transparent',
-                      boxShadow: activeTheme === key && isDark ? `0 0 12px ${value.primary}40` : 'none'
+                      boxShadow: activeTheme === key && isDark ? `0 0 20px ${value.primary}50` : 'none'
                     }}
                   > 
                     <ThemeIcon 
-                      size={14} 
+                      size={16} 
                       style={{ color: activeTheme === key ? value.primary : '#94a3b8' }}
                       strokeWidth={1.5}
                     />
                     <span 
-                      className="text-[8px] font-medium tracking-tight leading-none"
+                      className="text-[9px] font-bold tracking-tight leading-none"
                       style={{ color: activeTheme === key ? value.primary : '#94a3b8' }}
                     >
                       {value.name}
@@ -261,18 +323,49 @@ export default function Home() {
               })}
             </div>
 
-            <div className="flex items-center gap-1.5">
-                <Button variant="outline" size="icon" onClick={() => signOut({ callbackUrl: "/" })} className="h-9 w-9 text-slate-500 hover:bg-slate-50/50 border-white/40 rounded-lg shadow-xs transition-all">
-                  <LogOut size={14} />
-                </Button>
+            <div className="flex items-center gap-2">
+                <motion.button 
+                  whileHover={{ scale: 1.08, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => signOut({ callbackUrl: "/" })} 
+                  className="h-11 w-11 rounded-xl shadow-md hover:shadow-lg border-2 transition-all flex items-center justify-center"
+                  style={{
+                    borderColor: 'rgba(239, 68, 68, 0.3)',
+                    backgroundColor: 'rgba(239, 68, 68, 0.05)',
+                    color: '#ef4444'
+                  }}
+                  title="Sair"
+                >
+                  <LogOut size={18} strokeWidth={2} />
+                </motion.button>
                 
-                <div className="flex gap-1">
-                  <Button variant="outline" size="icon" onClick={handlePrevMonth} className="h-9 w-9 rounded-lg shadow-xs hover:shadow-xs transition-all border border-white/40" style={{ color: theme.primary }}>
-                    <ChevronLeft size={16} />
-                  </Button>
-                  <Button variant="outline" size="icon" onClick={handleNextMonth} className="h-9 w-9 rounded-lg shadow-xs hover:shadow-xs transition-all border border-white/40" style={{ color: theme.primary }}>
-                    <ChevronRight size={16} />
-                  </Button>
+                <div className="flex gap-1.5">
+                  <motion.button 
+                    whileHover={{ scale: 1.08 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handlePrevMonth} 
+                    className="h-11 w-11 rounded-xl shadow-md hover:shadow-lg border-2 transition-all flex items-center justify-center"
+                    style={{
+                      borderColor: theme.primary + '30',
+                      backgroundColor: theme.primary + '08',
+                      color: theme.primary
+                    }}
+                  >
+                    <ChevronLeft size={18} strokeWidth={2} />
+                  </motion.button>
+                  <motion.button 
+                    whileHover={{ scale: 1.08 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleNextMonth} 
+                    className="h-11 w-11 rounded-xl shadow-md hover:shadow-lg border-2 transition-all flex items-center justify-center"
+                    style={{
+                      borderColor: theme.primary + '30',
+                      backgroundColor: theme.primary + '08',
+                      color: theme.primary
+                    }}
+                  >
+                    <ChevronRight size={18} strokeWidth={2} />
+                  </motion.button>
                 </div>
             </div>
           </motion.div>
@@ -281,106 +374,163 @@ export default function Home() {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="mb-6 backdrop-blur-md rounded-2xl p-8 border shadow-lg relative overflow-hidden transition-all duration-300"
+            className="mb-8 backdrop-blur-md rounded-3xl p-10 border shadow-2xl relative overflow-hidden transition-all duration-300 hover:shadow-3xl"
             style={{
               background: isDark
-                ? 'linear-gradient(135deg, rgba(26, 31, 53, 0.6) 0%, rgba(26, 31, 53, 0.4) 100%)'
-                : 'linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.3) 100%)',
-              borderColor: isDark ? 'rgba(45, 58, 82, 0.5)' : 'rgba(255, 255, 255, 0.6)'
+                ? 'linear-gradient(135deg, rgba(26, 31, 53, 0.7) 0%, rgba(26, 31, 53, 0.5) 100%)'
+                : 'linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.4) 100%)',
+              borderColor: isDark ? 'rgba(45, 58, 82, 0.6)' : 'rgba(255, 255, 255, 0.7)'
             }}
           >
-            <div className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl opacity-10" style={{ backgroundColor: theme.primary }}></div>
+            <div className="absolute top-0 right-0 w-72 h-72 rounded-full blur-3xl opacity-20 pointer-events-none" style={{ backgroundColor: theme.primary }}></div>
+            <div className="absolute top-20 left-0 w-48 h-48 rounded-full blur-3xl opacity-10 pointer-events-none" style={{ backgroundColor: theme.primary }}></div>
             
-            <div className="relative grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
-              <div className="flex justify-center lg:col-span-1">
-                <div className="relative w-40 h-40">
-                  <svg className="w-full h-full -rotate-90">
+            <div className="relative grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+              {/* Circular Progress */}
+              <motion.div 
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.3, type: 'spring' }}
+                className="flex justify-center"
+              >
+                <div className="relative w-48 h-48 md:col-span-1">
+                  <svg className="w-full h-full -rotate-90 drop-shadow-lg">
+                    <defs>
+                      <linearGradient id={`progressGradient-${currentYear}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style={{ stopColor: theme.primary, stopOpacity: 0.3 }} />
+                        <stop offset="100%" style={{ stopColor: theme.primary, stopOpacity: 0.1 }} />
+                      </linearGradient>
+                    </defs>
                     <circle 
-                      cx="80" cy="80" r="70" 
+                      cx="96" cy="96" r="85" 
                       fill="none" 
                       stroke="currentColor" 
-                      strokeWidth="12" 
-                      className="text-white/40"
+                      strokeWidth="14" 
+                      className="text-white/30 dark:text-slate-700"
                     />
-                    <circle 
-                      cx="80" cy="80" r="70" 
+                    <motion.circle 
+                      cx="96" cy="96" r="85" 
                       fill="none" 
-                      stroke="currentColor" 
-                      strokeWidth="12" 
+                      stroke={theme.primary}
+                      strokeWidth="14" 
                       strokeLinecap="round"
-                      strokeDasharray={`${2 * Math.PI * 70}`}
-                      strokeDashoffset={`${2 * Math.PI * 70 * (1 - progressPercent / 100)}`}
-                      className="transition-all duration-1000 ease-out"
-                      style={{ color: theme.primary }}
+                      strokeDasharray={`${2 * Math.PI * 85}`}
+                      initial={{ strokeDashoffset: `${2 * Math.PI * 85}` }}
+                      animate={{ strokeDashoffset: `${2 * Math.PI * 85 * (1 - progressPercent / 100)}` }}
+                      transition={{ duration: 2, ease: 'easeInOut' }}
+                      filter={`drop-shadow(0 0 12px ${theme.primary}80)`}
                     />
                   </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-4xl font-bold" style={{ color: theme.primary }}>{progressPercent}%</span>
-                    <span className="text-xs font-light text-slate-600">completo</span>
-                  </div>
+                  <motion.div 
+                    initial={{ scale: 0.8 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.4 }}
+                    className="absolute inset-0 flex flex-col items-center justify-center"
+                  >
+                    <motion.span 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.5 }}
+                      className="text-5xl font-bold text-center"
+                      style={{ color: theme.primary }}
+                    >
+                      {progressPercent}%
+                    </motion.span>
+                    <span className="text-xs font-light mt-2 text-slate-500 dark:text-slate-400">completo</span>
+                  </motion.div>
                 </div>
-              </div>
+              </motion.div>
 
-              <div className="lg:col-span-2 space-y-4">
+              {/* Stats Section */}
+              <motion.div 
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+                className="md:col-span-2 space-y-6"
+              >
                 <div className="flex items-start justify-between">
                   <div>
-                    <h3 className="text-2xl font-bold mb-1" style={{ color: theme.text }}>
-                      {totalReadThisYear} <span className="text-lg font-light">de {myBooksGoal}</span>
-                    </h3>
-                    <p className="text-sm font-light" style={{ color: theme.text, opacity: 0.6 }}>
-                      livros lidos em {currentYear}
+                    <div className="flex items-baseline gap-2">
+                      <h3 className="text-5xl font-bold" style={{ color: theme.primary }}>
+                        {totalReadThisYear}
+                      </h3>
+                      <span className="text-2xl font-light" style={{ color: theme.text, opacity: 0.6 }}>
+                        de {myBooksGoal}
+                      </span>
+                    </div>
+                    <p className="text-sm font-light mt-2" style={{ color: theme.text, opacity: 0.7 }}>
+                      livros lidos em {currentYear} 📚
                     </p>
                   </div>
-                  <button 
+                  <motion.button 
+                    whileHover={{ scale: 1.1, rotate: 15 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={handleSetGoal} 
                     disabled={isSaving}
-                    className="p-2.5 hover:bg-white/50 rounded-lg transition-all group"
+                    className="p-3 hover:bg-white/30 dark:hover:bg-slate-700/70 rounded-xl transition-all shadow-md border border-white/30 dark:border-slate-600/50"
                   >
                     {isSaving ? (
-                      <Loader2 size={16} className="animate-spin text-slate-400" />
+                      <Loader2 size={20} className="animate-spin text-slate-400" />
                     ) : (
-                      <Target size={16} className="text-slate-400 group-hover:text-slate-600" />
+                      <Target size={20} style={{ color: theme.primary }} />
                     )}
-                  </button>
+                  </motion.button>
                 </div>
 
-                <div className="flex items-center gap-2">
+                {/* Status badges */}
+                <div className="flex items-center gap-3 flex-wrap">
                   {isAhead && (
-                    <div className="inline-flex items-center gap-1.5 bg-green-100 text-green-700 px-3 py-1.5 rounded-full text-xs font-medium">
-                      <TrendingUp size={14} />
+                    <motion.div 
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="inline-flex items-center gap-2 bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-700 dark:text-green-400 px-4 py-2 rounded-full text-sm font-bold border border-green-500/40"
+                    >
+                      <TrendingUp size={16} />
                       <span>🎉 Acima da meta!</span>
-                    </div>
+                    </motion.div>
                   )}
                   {isOnTrack && !isAhead && (
-                    <div className="inline-flex items-center gap-1.5 bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full text-xs font-medium">
-                      <Flame size={14} />
+                    <motion.div 
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-blue-700 dark:text-blue-400 px-4 py-2 rounded-full text-sm font-bold border border-blue-500/40"
+                    >
+                      <Flame size={16} />
                       <span>🔥 No ritmo!</span>
-                    </div>
+                    </motion.div>
                   )}
                   {isBehind && (
-                    <div className="inline-flex items-center gap-1.5 bg-amber-100 text-amber-700 px-3 py-1.5 rounded-full text-xs font-medium">
-                      <TrendingDown size={14} />
-                      <span>Faltam {booksRemaining} livros</span>
-                    </div>
+                    <motion.div 
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-700 dark:text-amber-400 px-4 py-2 rounded-full text-sm font-bold border border-amber-500/40"
+                    >
+                      <TrendingDown size={16} />
+                      <span>Faltam {booksRemaining} livro{booksRemaining !== 1 ? 's' : ''}</span>
+                    </motion.div>
                   )}
                 </div>
 
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs font-light" style={{ color: theme.text, opacity: 0.5 }}>
-                    <span>Progresso</span>
-                    <span>{totalReadThisYear}/{myBooksGoal}</span>
+                {/* Progress bar */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-medium" style={{ color: theme.text, opacity: 0.6 }}>
+                    <span>Progresso anual</span>
+                    <span className="font-bold">{totalReadThisYear}/{myBooksGoal}</span>
                   </div>
-                  <div className="w-full h-2 rounded-full overflow-hidden shadow-inner" style={{ backgroundColor: isDark ? 'rgba(45, 58, 82, 0.4)' : 'rgba(255, 255, 255, 0.5)' }}>
+                  <div className="w-full h-3 rounded-full overflow-hidden shadow-inner backdrop-blur-sm" style={{ backgroundColor: isDark ? 'rgba(45, 58, 82, 0.4)' : 'rgba(255, 255, 255, 0.5)' }}>
                     <motion.div 
                       initial={{ width: 0 }}
                       animate={{ width: `${progressPercent}%` }}
-                      transition={{ duration: 1.5, ease: "easeOut" }}
+                      transition={{ duration: 2, ease: "easeOut" }}
                       className="h-full rounded-full shadow-lg"
-                      style={{ backgroundColor: theme.primary }}
+                      style={{ 
+                        background: `linear-gradient(90deg, ${theme.primary}, ${theme.primary}dd)`,
+                        boxShadow: `0 0 20px ${theme.primary}80`
+                      }}
                     ></motion.div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             </div>
           </motion.div>
 
@@ -388,55 +538,78 @@ export default function Home() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
-            className="mb-6 flex items-center gap-3 px-5 py-4 backdrop-blur-sm rounded-lg border shadow-xs group transition-all duration-300"
-            style={{
-              ...getCardStyle(),
-              ...(isDark ? { backgroundColor: 'rgba(26, 31, 53, 0.6)' } : {})
-            }}
+            className="mb-8 relative group cursor-pointer"
           >
-            <Quote size={20} style={{ color: theme.primary, opacity: 0.4, flexShrink: 0 }} strokeWidth={1.5} />
-            <p className="text-sm font-light leading-relaxed italic flex-1" style={{ color: theme.text, opacity: 0.75 }}>
-              {quote}
-            </p>
-            <motion.button
-              whileHover={{ rotate: 180 }}
-              transition={{ duration: 0.3 }}
-              onClick={refreshQuote}
-              className="p-2 rounded-lg hover:bg-white/60 transition-all opacity-0 group-hover:opacity-100"
-              title="Nova citação"
+            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-all duration-500" />
+            
+            <div 
+              className="relative backdrop-blur-md rounded-2xl p-8 border shadow-lg transition-all duration-300 hover:shadow-xl group-hover:scale-105"
+              style={{
+                background: isDark
+                  ? 'linear-gradient(135deg, rgba(26, 31, 53, 0.6) 0%, rgba(26, 31, 53, 0.4) 100%)'
+                  : 'linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.3) 100%)',
+                borderColor: isDark ? 'rgba(45, 58, 82, 0.5)' : 'rgba(255, 255, 255, 0.6)'
+              }}
             >
-              <RefreshCw size={14} style={{ color: theme.primary }} />
-            </motion.button>
+              <div className="flex items-start gap-4">
+                <Quote size={28} style={{ color: theme.primary, opacity: 0.3, flexShrink: 0, marginTop: 4 }} strokeWidth={1.5} />
+                <div className="flex-1">
+                  <p className="text-lg font-light leading-relaxed italic" style={{ color: theme.text, opacity: 0.85 }}>
+                    "{quote}"
+                  </p>
+                  <div className="mt-4 flex justify-end">
+                    <motion.button
+                      whileHover={{ rotate: 180, scale: 1.1 }}
+                      whileTap={{ scale: 0.95 }}
+                      transition={{ duration: 0.4 }}
+                      onClick={refreshQuote}
+                      className="p-3 rounded-xl hover:bg-white/20 dark:hover:bg-slate-700/50 transition-all backdrop-blur-sm border border-white/20 dark:border-slate-600/40"
+                      title="Nova citação"
+                    >
+                      <RefreshCw size={18} style={{ color: theme.primary }} />
+                    </motion.button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </motion.div>
 
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="flex flex-col sm:flex-row items-stretch gap-3 mb-8"
+            className="flex flex-col sm:flex-row items-stretch gap-4 mb-10"
           >
-            <Button 
+            <motion.button
+              whileHover={{ scale: 1.02, y: -2 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => setShowBack(!showBack)} 
-              className="gap-2 px-8 py-3 rounded-lg shadow-sm font-medium text-sm text-white hover:shadow-md transition-all flex-1" 
+              className="flex-1 gap-3 px-8 py-4 rounded-2xl shadow-lg font-semibold text-base text-white hover:shadow-xl transition-all relative group overflow-hidden"
               style={{ 
                 backgroundColor: theme.primary,
-                opacity: 0.92
+                background: `linear-gradient(135deg, ${theme.primary} 0%, ${theme.primary}dd 100%)`
               }}
             >
-              {showBack ? "← Voltar ao Calendário" : "Meus Livros Lidos →"}
-            </Button>
+              <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="relative flex items-center justify-center gap-2">
+                {showBack ? "← Voltar ao Calendário" : "Meus Livros Lidos →"}
+              </div>
+            </motion.button>
+            
             <Link href="/retrospectiva" className="flex-1">
-              <Button 
-                variant="outline" 
-                className="gap-2 px-8 py-3 rounded-lg shadow-sm font-medium text-sm w-full border transition-all" 
+              <motion.button
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full gap-3 px-8 py-4 rounded-2xl shadow-lg font-semibold text-base transition-all border-2 flex items-center justify-center"
                 style={{ 
                   borderColor: theme.primary, 
                   color: theme.primary,
-                  backgroundColor: `${theme.primary}08`
+                  backgroundColor: `${theme.primary}10`,
+                  background: `linear-gradient(135deg, ${theme.primary}15 0%, ${theme.primary}08 100%)`
                 }}
               >
-                <BarChart3 size={16} /> Retrospectiva do Ano
-              </Button>
+                <BarChart3 size={20} /> Retrospectiva do Ano
+              </motion.button>
             </Link>
           </motion.div>
 
@@ -482,8 +655,8 @@ export default function Home() {
         onCloseAction={() => setProfileEditOpen(false)}
         user={session.user || {}}
         onUpdateAction={() => {
-          // Recarregar dados se necessário
-          window.location.reload()
+          // Fechar o modal e a sessão já foi atualizada via updateSession()
+          setProfileEditOpen(false)
         }}
       />
     </div>

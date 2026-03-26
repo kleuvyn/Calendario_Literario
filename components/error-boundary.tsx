@@ -20,8 +20,19 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     this.state = { hasError: false, error: null }
   }
 
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { hasError: true, error }
+  static getDerivedStateFromError(error: unknown): ErrorBoundaryState {
+    let normalizedError: Error
+
+    if (error instanceof Error) {
+      normalizedError = error
+    } else if (error && typeof error === 'object' && 'message' in error) {
+      normalizedError = new Error((error as any).message || String(error))
+    } else {
+      normalizedError = new Error(String(error))
+    }
+
+    console.error('ErrorBoundary captured non-Error:', error)
+    return { hasError: true, error: normalizedError }
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
