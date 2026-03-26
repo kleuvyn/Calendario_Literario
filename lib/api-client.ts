@@ -47,15 +47,16 @@ export async function loginUser(email: string, name?: string, image?: string): P
 }
 
 export async function getReadingData(
-  email: string, 
-  year: number, 
+  email: string,
+  year: number,
   isRetrospective: boolean = false,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  month?: number
 ): Promise<any> {
   let url = `/api/reading-data?email=${encodeURIComponent(email.toLowerCase())}&year=${year}&isRetrospective=${isRetrospective}`;
-  
+  if (month) url += `&month=${month}`;
   url += `&t=${Date.now()}`;
-  
+
   const response = await fetch(url, { cache: 'no-store', signal });
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));

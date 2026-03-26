@@ -6,11 +6,12 @@ export async function GET(request: Request) {
   const email = searchParams.get("email");
   const year = Number(searchParams.get("year"));
   const isRetrospective = searchParams.get("isRetrospective") === "true";
+  const month = Number(searchParams.get("month")) || null;
 
   if (!email || !year) return NextResponse.json({ data: [], userGoal: 12 });
 
   try {
-    const query = isRetrospective 
+    const query = isRetrospective
       ? `
       SELECT rd.*, br.rating, COALESCE(br.cover_url, rd.cover_url) as cover_url, br.genre, br.review,
              COALESCE(br.total_pages, rd.total_pages, 0) as total_pages
@@ -18,6 +19,7 @@ export async function GET(request: Request) {
       LEFT JOIN public.users u ON u.email = rd.email
       LEFT JOIN public.book_reviews br ON (u.id = br.user_id AND rd.book_name = br.title)
       WHERE rd.email = $1 AND rd.year = $2
+      ${month ? 'AND (rd.month = $3 OR rd.status = \'lendo\')' : ''}
       ORDER BY rd.month ASC, rd.status DESC
     `
       : `
@@ -26,12 +28,14 @@ export async function GET(request: Request) {
       FROM public.reading_data rd
       LEFT JOIN public.users u ON u.email = rd.email
       LEFT JOIN public.book_reviews br ON (u.id = br.user_id AND rd.book_name = br.title)
-      WHERE rd.email = $1 AND (rd.year = $2 OR rd.status = 'lendo')
+      WHERE rd.email = $1 AND rd.year = $2
+      ${month ? 'AND (rd.month = $3 OR rd.status = \'lendo\')' : ''}
       ORDER BY rd.month ASC, rd.status DESC
     `;
-    
-    const rows = await executeQuery(query, [email, year]);
-    
+
+    const params = month ? [email, year, month] : [email, year];
+    const rows = await executeQuery(query, params);
+
     const userRow = await executeQuery(`SELECT literary_goal, goals_by_year FROM public.users WHERE email = $1`, [email]);
     let userGoal = 12;
 
@@ -196,16 +200,32 @@ export async function POST(request: Request) {
       const targetName = oldBookName || bookName;
 
       await executeQuery(
-        `UPDATE public.reading_data SET book_name = $1, total_pages = $2, cover_url = $3 
-         WHERE email = $4 AND book_name = $5`,
-        [bookName, numPages, coverUrl, email, targetName]
+        `UPDATE public.reading_data 
+         SET book_name = $1, total_pages = $2, cover_url = $3, genre = $4, review = $5, rating = $6
+         WHERE email = $7 AND book_name = $8`,
+        [bookName, numPages, coverUrl, genre, review, rating || null, email, targetName]
       );
 
-      await executeQuery(`DELETE FROM public.book_reviews WHERE user_id = $1 AND title = $2`, [userId, bookName]);
-      await executeQuery(`
-        INSERT INTO public.book_reviews (user_id, title, rating, cover_url, total_pages, genre, review, year, month)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-      `, [userId, bookName, rating, coverUrl, numPages, genre, review, year, month]);
+      await executeQuery(
+        `INSERT INTO public.book_reviews (user_id, title, rating, cover_url, total_pages, genre, review, year, month)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         ON CONFLICT (user_id, title) DO UPDATE SET
+           rating = EXCLUDED.rating,
+           cover_url = EXCLUDED.cover_url,
+           total_pages = EXCLUDED.total_pages,
+           genre = EXCLUDED.genre,
+           review = EXCLUDED.review,
+           year = EXCLUDED.year,
+           month = EXCLUDED.month`,
+        [userId, bookName, rating || 0, coverUrl || "", numPages, genre || "", review || "", year || null, month || null]
+      );
+
+      if (oldBookName && oldBookName !== bookName) {
+        await executeQuery(
+          `DELETE FROM public.book_reviews WHERE user_id = $1 AND title = $2`,
+          [userId, oldBookName]
+        );
+      }
 
       return NextResponse.json({ success: true });
     }

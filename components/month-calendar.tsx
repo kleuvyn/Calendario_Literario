@@ -16,9 +16,8 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
   const safeCoverUrl = (url?: string) => {
     if (!url || !url.trim()) return PLACEHOLDER_IMAGE
     const trimmed = url.trim()
-    // permite URL padrão de imagem ou data URI para imagens base64
     if (/^(data:image\/(?:png|jpe?g|webp|avif|gif);base64,[A-Za-z0-9+/=]+)$/i.test(trimmed)) return trimmed
-    if (/^(https?:\/\/.*\.(?:png|jpe?g|webp|avif|gif))(\?.*)?$/i.test(trimmed)) return trimmed
+    if (/^https?:\/\//i.test(trimmed)) return trimmed
     return PLACEHOLDER_IMAGE
   }
 
@@ -37,18 +36,23 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
   const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 
   // Carregar dados
-  async function loadData() {
+  async function loadData(signal?: AbortSignal) {
     if (!userEmail) return
     try {
-      const response: any = await getReadingData(userEmail, year)
+      const response: any = await getReadingData(userEmail, year, false, signal, monthIndex + 1)
       const finalData = response?.data ? response.data : response
       setReadings(Array.isArray(finalData) ? finalData : [])
     } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return
       console.error("Erro ao carregar dados:", err)
     }
   }
 
-  useEffect(() => { loadData() }, [userEmail, monthIndex, year])
+  useEffect(() => {
+    const controller = new AbortController()
+    loadData(controller.signal)
+    return () => controller.abort()
+  }, [userEmail, monthIndex, year])
 
   // Função para calcular dias (sua função de negócio)
   const calculateDays = (start: string, end: string) => {

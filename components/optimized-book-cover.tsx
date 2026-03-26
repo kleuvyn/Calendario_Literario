@@ -53,6 +53,17 @@ export function OptimizedBookCover({
     )
   }
 
+  if (typeof src === 'string' && src.startsWith('data:image/')) {
+    return (
+      <img
+        src={src}
+        alt={alt}
+        className={`${className} ${isLoading ? 'blur-sm' : 'blur-0'} transition-all duration-300`}
+        onError={() => setError(true)}
+      />
+    )
+  }
+
   const imageProps = fill
     ? { fill: true }
     : { width: width || 300, height: height || 450 }
