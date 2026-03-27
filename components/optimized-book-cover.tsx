@@ -58,7 +58,7 @@ export function OptimizedBookCover({
       <img
         src={src}
         alt={alt}
-        className={`${className} ${isLoading ? 'blur-sm' : 'blur-0'} transition-all duration-300`}
+        className={`${className} transition-all duration-300`}
         onError={() => setError(true)}
       />
     )
@@ -74,12 +74,11 @@ export function OptimizedBookCover({
         {...imageProps}
         src={src}
         alt={alt}
-        className={`${className} ${isLoading ? 'blur-sm' : 'blur-0'} transition-all duration-300`}
+        className={`${className} transition-all duration-300`}
         onError={() => setError(true)}
         onLoadingComplete={() => setIsLoading(false)}
         priority={priority}
-        placeholder="blur"
-        blurDataURL={`data:image/svg+xml;base64,${toBase64(shimmer(width || 300, height || 450))}`}
+        placeholder="empty"
         quality={85}
         style={{ objectFit: 'cover' }}
       />

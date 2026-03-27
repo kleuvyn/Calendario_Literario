@@ -7,7 +7,7 @@ import { MonthReview } from "@/components/month-review"
 import { LoginScreen } from "@/components/login-screen"
 import { UserProfileEdit } from "@/components/user-profile-edit"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, LogOut, Loader2, BarChart3, Quote, Target, BookOpen, CheckCircle2, XCircle, Sun, Moon, Sparkles, Edit3, RefreshCw, TrendingUp, TrendingDown, Flame } from "lucide-react"
+import { ChevronLeft, ChevronRight, LogOut, Loader2, BarChart3, Quote, Target, BookOpen, CheckCircle2, XCircle, Sun, Moon, Sparkles, Edit3, RefreshCw, TrendingUp, TrendingDown, Flame, Bookmark } from "lucide-react"
 import { getReadingData, updateUserGoal, deleteFullAccount } from "@/lib/api-client" 
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
@@ -595,7 +595,7 @@ export default function Home() {
                 {showBack ? "← Voltar ao Calendário" : "Meus Livros Lidos →"}
               </div>
             </motion.button>
-            
+
             <Link href="/retrospectiva" className="flex-1">
               <motion.button
                 whileHover={{ scale: 1.02, y: -2 }}
@@ -609,6 +609,22 @@ export default function Home() {
                 }}
               >
                 <BarChart3 size={20} /> Retrospectiva do Ano
+              </motion.button>
+            </Link>
+
+            <Link href="/planejados" className="flex-1">
+              <motion.button
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full gap-3 px-8 py-4 rounded-2xl shadow-lg font-semibold text-base transition-all border-2 flex items-center justify-center"
+                style={{ 
+                  borderColor: theme.primary, 
+                  color: theme.primary,
+                  backgroundColor: `${theme.primary}10`,
+                  background: `linear-gradient(135deg, ${theme.primary}15 0%, ${theme.primary}08 100%)`
+                }}
+              >
+                <Bookmark size={20} /> Planejados e Desejos
               </motion.button>
             </Link>
           </motion.div>

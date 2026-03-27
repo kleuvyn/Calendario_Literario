@@ -33,6 +33,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'm.media-amazon.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'photos.enjoei.com.br',
+      },
     ],
     formats: ['image/avif', 'image/webp'],
   },

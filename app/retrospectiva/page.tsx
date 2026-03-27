@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useMemo, useRef } from "react"
 import { useSession } from "next-auth/react"
-import { BookOpen, Loader2, Star, ArrowLeft, Instagram, Crown, Calendar, ChevronDown, Zap, Clock, X, FileText, Sparkles } from "lucide-react"
+import { BookOpen, Loader2, Star, ArrowLeft, Instagram, Crown, Calendar, ChevronDown, Zap, Clock, X, FileText, Sparkles, Bookmark } from "lucide-react"
 import { getReadingData } from "@/lib/api-client"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { toast } from "sonner"
 import { Card } from "@/components/ui/card"
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts"
 import { domToPng } from "modern-screenshot"
@@ -13,6 +14,7 @@ import { BookFilters, type FilterState } from "@/components/book-filters"
 import { RetrospectivaLoadingSkeleton } from "@/components/loading-skeletons"
 import { motion, AnimatePresence } from "framer-motion"
 import { OptimizedBookCover } from "@/components/optimized-book-cover"
+import { EditBookDialog } from "@/components/edit-book-dialog"
 
 const THEMES = {
   rose: { primary: '#f4a6f0', bg: '#fff5f6', text: '#a64d9c', card: '#ffffff' },
@@ -47,6 +49,11 @@ export default function RetrospectivaPage() {
     ratingMin: null,
     sortBy: 'date'
   })
+  const [bookToEdit, setBookToEdit] = useState<any>(null)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [isUpdating, setIsUpdating] = useState(false)
+  const [isDeletingBook, setIsDeletingBook] = useState(false)
+  const [bookToDelete, setBookToDelete] = useState<string | null>(null)
   
   const [currentYear, setCurrentYear] = useState(() => new Date().getFullYear())
   const [selectedCardOption, setSelectedCardOption] = useState<'retrospectiva' | 'biblioteca' | 'a' | 'b' | 'c' | null>('retrospectiva')
@@ -150,13 +157,28 @@ export default function RetrospectivaPage() {
     return result
   }, [allBooks, filters])
 
-  const filteredFinishedBooks = useMemo(() => {
-    return filteredBooks.filter(b => b.status !== 'lendo' && b.status !== 'reading')
+  const filteredPlannedBooks = useMemo(() => {
+    return filteredBooks.filter(b => {
+      const status = (b.status || '').toLowerCase()
+      return status === 'planejado' || status === 'planned'
+    })
   }, [filteredBooks])
 
   const filteredReadingBooks = useMemo(() => {
-    return filteredBooks.filter(b => b.status === 'lendo' || b.status === 'reading')
+    return filteredBooks.filter(b => {
+      const status = (b.status || '').toLowerCase()
+      return status === 'lendo' || status === 'reading'
+    })
   }, [filteredBooks])
+
+  const filteredFinishedBooks = useMemo(() => {
+    return filteredBooks.filter(b => {
+      const status = (b.status || '').toLowerCase()
+      return !['lendo', 'reading', 'planejado', 'planned'].includes(status)
+    })
+  }, [filteredBooks])
+
+  const libraryBooks = useMemo(() => filteredFinishedBooks, [filteredFinishedBooks])
 
   const availableGenres = useMemo(() => {
     const genres = new Set<string>()
@@ -180,14 +202,47 @@ export default function RetrospectivaPage() {
     }
   }
 
+  const handleSaveBook = async (data: { newName: string; author: string; pages: number; rating: number; notes: string; cover_url?: string }) => {
+    if (!session?.user?.email || !bookToEdit) return
+    setIsUpdating(true)
+    try {
+      await fetch('/api/reading-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'UPDATE_REVIEW',
+          email: session.user.email,
+          oldBookName: bookToEdit.book_name,
+          bookName: data.newName,
+          rating: data.rating,
+          coverUrl: data.cover_url || bookToEdit.cover_url || '',
+          totalPages: data.pages || bookToEdit.total_pages || 0,
+          review: data.notes,
+          genre: bookToEdit.genre || '',
+          year: bookToEdit.year || currentYear,
+          month: bookToEdit.month || (new Date(bookToEdit.start_date || Date.now()).getMonth() + 1)
+        })
+      })
+      const updatedData: any = await getReadingData(session.user.email, currentYear, true)
+      setAllBooks(Array.isArray(updatedData) ? updatedData : (updatedData?.data || []))
+      toast.success('Livro atualizado')
+    } catch (err) {
+      toast.error('Erro ao salvar')
+    } finally {
+      setIsUpdating(false)
+      setEditDialogOpen(false)
+      setBookToEdit(null)
+    }
+  }
+
   const bookChunks = useMemo(() => {
     const chunks = []
-    const limit = filteredBooks.length <= 40 ? 40 : 100
-    for (let i = 0; i < filteredBooks.length; i += limit) {
-      chunks.push(filteredBooks.slice(i, i + limit))
+    const limit = libraryBooks.length <= 40 ? 40 : 100
+    for (let i = 0; i < libraryBooks.length; i += limit) {
+      chunks.push(libraryBooks.slice(i, i + limit))
     }
     return chunks
-  }, [filteredBooks])
+  }, [libraryBooks])
 
   const getGridCols = (count: number) => {
     if (count <= 9) return 'grid-cols-3';
@@ -304,13 +359,20 @@ export default function RetrospectivaPage() {
     return Object.entries(counts).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
   }, [allBooks])
 
+  const finishedBooksData = useMemo(() => {
+    return allBooks.filter(b => {
+      const status = (b.status || '').toLowerCase()
+      return !['lendo', 'reading', 'planejado', 'planned'].includes(status)
+    })
+  }, [allBooks])
+
   const stats = useMemo(() => {
-    if (allBooks.length === 0) return null
-    const totalPagesYear = allBooks.reduce((acc, b) => acc + (Number(b.total_pages) || 0), 0)
-    const topBook = [...allBooks].sort((a, b) => (Number(b.total_pages) || 0) - (Number(a.total_pages) || 0))[0]
-    const shortestBook = [...allBooks].filter(b => b.total_pages).sort((a, b) => (Number(a.total_pages) || 0) - (Number(b.total_pages) || 0))[0]
+    if (finishedBooksData.length === 0) return null
+    const totalPagesYear = finishedBooksData.reduce((acc, b) => acc + (Number(b.total_pages) || 0), 0)
+    const topBook = [...finishedBooksData].sort((a, b) => (Number(b.total_pages) || 0) - (Number(a.total_pages) || 0))[0]
+    const shortestBook = [...finishedBooksData].filter(b => b.total_pages).sort((a, b) => (Number(a.total_pages) || 0) - (Number(b.total_pages) || 0))[0]
     
-    const bestRated = [...allBooks].filter(b => b.rating).sort((a, b) => (b.rating || 0) - (a.rating || 0))[0]
+    const bestRated = [...finishedBooksData].filter(b => b.rating).sort((a, b) => (b.rating || 0) - (a.rating || 0))[0]
     
     const booksWithDays = allBooks
       .filter(b => b.start_date && b.end_date)
@@ -392,29 +454,36 @@ export default function RetrospectivaPage() {
             ))}
           </div>
 
-          <Button 
-            onClick={() => {
-              if (selectedCardOption === 'retrospectiva') {
-                handleExportAll()
-              } else if (selectedCardOption === 'biblioteca') {
-                handleExportAll()
-              } else {
-                handleExportCardOption()
-              }
-            }} 
-            disabled={isGenerating || (selectedCardOption === 'retrospectiva' && allBooks.length === 0) || (selectedCardOption === 'biblioteca' && allBooks.length === 0)} 
-            className="rounded-lg font-medium text-sm px-6 py-2.5 shadow-sm hover:shadow-md transition-all" 
-            style={{ backgroundColor: theme.primary, color: 'white' }}
-          >
-            {isGenerating ? (
-              <Loader2 className="animate-spin" size={14}/>
-            ) : (
-              <>
-                <Instagram size={14} className="mr-2"/> 
-                Exportar {selectedCardOption === 'retrospectiva' ? 'Retrospectiva' : selectedCardOption === 'biblioteca' ? 'Biblioteca' : 'Story'}
-              </>
-            )}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              onClick={() => {
+                if (selectedCardOption === 'retrospectiva') {
+                  handleExportAll()
+                } else if (selectedCardOption === 'biblioteca') {
+                  handleExportAll()
+                } else {
+                  handleExportCardOption()
+                }
+              }} 
+              disabled={isGenerating || (selectedCardOption === 'retrospectiva' && allBooks.length === 0) || (selectedCardOption === 'biblioteca' && allBooks.length === 0)} 
+              className="rounded-lg font-medium text-sm px-6 py-2.5 shadow-sm hover:shadow-md transition-all" 
+              style={{ backgroundColor: theme.primary, color: 'white' }}
+            >
+              {isGenerating ? (
+                <Loader2 className="animate-spin" size={14}/>
+              ) : (
+                <>
+                  <Instagram size={14} className="mr-2"/> 
+                  Exportar {selectedCardOption === 'retrospectiva' ? 'Retrospectiva' : selectedCardOption === 'biblioteca' ? 'Biblioteca' : 'Story'}
+                </>
+              )}
+            </Button>
+            <Link href="/planejados">
+              <Button className="rounded-lg font-medium text-sm px-6 py-2.5 shadow-sm hover:shadow-md transition-all" variant="outline">
+                <Bookmark size={14} className="mr-2" /> Planejados
+              </Button>
+            </Link>
+          </div>
         </header>
 
         {/* Stats Cards - Destaque das métricas principais */}
@@ -1422,6 +1491,76 @@ export default function RetrospectivaPage() {
                 </div>
               </div>
 
+              {filteredPlannedBooks.length > 0 && (
+                <Card className="p-4 border border-blue-300 bg-blue-50 rounded-2xl">
+                  <h3 className="text-sm font-bold text-blue-700 mb-2">Livros planejados ({filteredPlannedBooks.length})</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {filteredPlannedBooks.map((book) => {
+                      return (
+                        <div key={book.id || book.book_name} className="border border-blue-200 p-3 rounded-lg bg-white">
+                          <p className="text-xs font-bold text-slate-700 truncate">{book.book_name}</p>
+                          <p className="text-[10px] text-slate-500 truncate">{book.author_name || 'Autor não informado'}</p>
+                          <div className="mt-2 flex gap-2">
+                            <Button size="sm" variant="outline" className="font-semibold" onClick={async () => {
+                              setIsUpdating(true)
+                              try {
+                                // se ainda não começou, iniciar leitura hoje
+                                const now = new Date()
+                                const dateFormatted = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}T12:00:00Z`
+                                await fetch('/api/reading-data', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    action: 'START_READING',
+                                    email: session?.user?.email,
+                                    bookName: book.book_name,
+                                    startDate: dateFormatted,
+                                    endDate: dateFormatted,
+                                    year: now.getFullYear(),
+                                    month: now.getMonth()+1,
+                                    day: now.getDate()
+                                  })
+                                })
+                                const userEmail = session?.user?.email
+                              if (!userEmail) return
+                              const data: any = await getReadingData(userEmail, currentYear, true)
+                                setAllBooks(Array.isArray(data) ? data : (data?.data || []))
+                                toast.success('Livro movido para leitura')
+                              } catch (err) {
+                                toast.error('Falha ao iniciar leitura')
+                              } finally {
+                                setIsUpdating(false)
+                              }
+                            }}>
+                              Iniciar leitura
+                            </Button>
+                            <Button size="sm" variant="ghost" className="text-slate-600" onClick={() => { setBookToEdit(book); setEditDialogOpen(true); }}>
+                              Editar
+                            </Button>
+                            <Button size="sm" variant="destructive" className="text-white" onClick={async () => {
+                              if (!window.confirm('Excluir livro planejado?')) return
+                              setIsDeletingBook(true)
+                              try {
+                                await fetch('/api/reading-data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'DELETE_READING', email: session?.user?.email, bookName: book.book_name }) })
+                                const userEmail = session?.user?.email
+                                if (!userEmail) return
+                                const data: any = await getReadingData(userEmail, currentYear, true)
+                                setAllBooks(Array.isArray(data) ? data : (data?.data || []))
+                                toast.success('Livro planejado removido')
+                              } catch (err) {
+                                toast.error('Erro ao remover')
+                              } finally { setIsDeletingBook(false) }
+                            }}>
+                              Apagar
+                            </Button>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </Card>
+              )}
+
               {filteredReadingBooks.length > 0 && (
                 <Card className="p-4 border border-primary/20 bg-primary/5 rounded-2xl">
                   <h3 className="text-sm font-bold text-primary mb-2">Livros em andamento ({filteredReadingBooks.length})</h3>
@@ -1557,6 +1696,21 @@ export default function RetrospectivaPage() {
              <p className="font-light text-sm">Nenhum livro lido em {currentYear}</p>
           </div>
         )}
+
+        <EditBookDialog
+          open={editDialogOpen}
+          onClose={() => { setEditDialogOpen(false); setBookToEdit(null)}}
+          bookName={bookToEdit?.book_name || ''}
+          bookData={{
+            author: bookToEdit?.author_name || bookToEdit?.author || '',
+            pages: Number(bookToEdit?.total_pages || 0),
+            rating: Number(bookToEdit?.rating || 0),
+            notes: bookToEdit?.review || '',
+            cover_url: bookToEdit?.cover_url || ''
+          }}
+          onSave={handleSaveBook}
+        />
+
       </div>
     </div>
   )

@@ -131,6 +131,85 @@ export async function saveReview(email: string, bookName: string, rating: number
   return response.json();
 }
 
+export async function editReading(
+  email: string,
+  oldBookName: string,
+  updates: {
+    bookName?: string,
+    author?: string | null,
+    pages?: number | null,
+    rating?: number | null,
+    notes?: string | null,
+    coverUrl?: string | null,
+    format?: string | null,
+    owned?: boolean | null,
+    status?: string | null,
+    startDate?: string | null,
+    endDate?: string | null
+  }
+) {
+  const body = {
+    action: 'EDIT_READING',
+    email: email.toLowerCase(),
+    oldBookName,
+    bookName: updates.bookName || oldBookName,
+    author: updates.author,
+    pages: updates.pages,
+    rating: updates.rating,
+    notes: updates.notes,
+    cover_url: updates.coverUrl,
+    format: updates.format || null,
+    owned: updates.owned === true
+    ,
+    status: updates.status || null,
+    startDate: updates.startDate || null,
+    endDate: updates.endDate || null
+  };
+
+  const response = await fetch('/api/reading-data', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!response.ok) throw new Error('Erro ao editar leitura');
+  return response.json();
+}
+
+export async function planReading(
+  email: string,
+  bookName: string,
+  author?: string,
+  startDate?: string | null,
+  year?: number,
+  month?: number,
+  coverUrl?: string,
+  totalPages?: number,
+  format?: string,
+  owned?: boolean,
+  notes?: string
+) {
+  const response = await fetch("/api/reading-data", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: email.toLowerCase(),
+      bookName,
+      author,
+      startDate: startDate || null,
+      year: year || new Date().getUTCFullYear(),
+      month: month || (new Date().getUTCMonth() + 1),
+      coverUrl: coverUrl || null,
+      totalPages: Number(totalPages) || 0,
+      action: "PLAN_READING",
+      format: format || null,
+      owned: owned === true,
+      notes: notes || null
+    }),
+  });
+  if (!response.ok) throw new Error("Erro ao salvar planejado");
+  return response.json();
+}
+
 export async function updateProfile(email: string, data: { image?: string, theme?: string }) {
   const response = await fetch("/api/user/update-profile", {
     method: "POST",
@@ -146,6 +225,16 @@ export async function updateProfile(email: string, data: { image?: string, theme
 
 export async function updateProfileImage(email: string, imageUrl: string) {
   return updateProfile(email, { image: imageUrl });
+}
+
+export async function deleteReading(email: string, bookName: string) {
+  const response = await fetch('/api/reading-data', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'DELETE_READING', email: email.toLowerCase(), bookName })
+  })
+  if (!response.ok) throw new Error('Erro ao excluir leitura');
+  return response.json();
 }
 
 export async function deleteFullAccount() {

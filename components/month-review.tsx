@@ -45,7 +45,7 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
     if (!userEmail || !year) return
     try {
       setLoading(true)
-      const data: any = await getReadingData(userEmail, year)
+      const data: any = await getReadingData(userEmail, year, false, undefined, monthIndex + 1)
       const booksArray = Array.isArray(data) ? data : (data?.data || [])
       setAllBooks(booksArray)
 
@@ -164,7 +164,10 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
 
   return (
     <div className="space-y-8 pb-20 max-w-6xl mx-auto px-4 font-sans">
-      
+      <div className="text-center">
+        <h2 className="text-4xl font-black text-slate-800 uppercase tracking-tight">{month} {year}</h2>
+        <p className="text-sm text-slate-500">Resumo do mês atual, incluindo lendo e finalizados</p>
+      </div>
       {/* CATEGORIAS DO MÊS */}
       {monthGenres.length > 0 && (
         <div className="flex flex-wrap gap-2 px-4">
@@ -198,14 +201,6 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
                     <h3 className="text-2xl font-black text-slate-800 italic uppercase leading-tight">{bookEdits[book.id]?.name || book.book_name}</h3>
                     <p className="text-xs text-slate-400 font-bold mt-1 uppercase tracking-tighter">{bookEdits[book.id]?.genre || "Sem gênero definido"}</p>
                     {daysRead && <p className="text-[10px] text-slate-500 font-black mt-2 uppercase">⏱ {daysRead} dias de imersão</p>}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={(e) => { e.stopPropagation(); setEditingId(book.id) }}
-                      className="mt-3 text-[10px] font-black"
-                    >
-                      Editar e Salvar
-                    </Button>
                   </div>
                   <ChevronDown className="ml-auto text-slate-200 group-hover:text-primary transition-colors" />
                 </div>

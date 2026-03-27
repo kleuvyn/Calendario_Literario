@@ -6,34 +6,50 @@ export async function GET(request: Request) {
   const email = searchParams.get("email");
   const year = Number(searchParams.get("year"));
   const isRetrospective = searchParams.get("isRetrospective") === "true";
-  const month = Number(searchParams.get("month")) || null;
+  const monthParam = Number(searchParams.get("month"));
+  const hasMonth = Number.isInteger(monthParam) && monthParam >= 1 && monthParam <= 12;
 
   if (!email || !year) return NextResponse.json({ data: [], userGoal: 12 });
 
+  let monthStart = "";
+  let monthEnd = "";
+  if (hasMonth) {
+    const start = new Date(year, monthParam - 1, 1);
+    const end = new Date(year, monthParam, 0);
+    monthStart = start.toISOString().split("T")[0];
+    monthEnd = end.toISOString().split("T")[0];
+  }
+
   try {
-    const query = isRetrospective
-      ? `
-      SELECT rd.*, br.rating, COALESCE(br.cover_url, rd.cover_url) as cover_url, br.genre, br.review,
+    const dateRangeCondition = hasMonth
+      ? `AND ((rd.status IN ('lendo', 'reading', 'planejado', 'planned')) OR (rd.start_date IS NOT NULL AND rd.start_date <= $2 AND (rd.end_date IS NULL OR rd.end_date >= $3)))`
+      : '';
+
+    // Retrospectiva mostra o ano selecionado (e não mistura anos)
+    // Para o calendário normal também usamos ano corrente + leituras em andamento
+    const yearCondition = hasMonth
+      ? ''
+      : isRetrospective
+        ? `AND rd.year = $2`
+        : `AND (rd.year = $2 OR rd.status IN ('lendo', 'reading'))`;
+
+    const query = `
+      SELECT rd.*, br.rating,
+             COALESCE(NULLIF(br.cover_url, ''), NULLIF(rd.cover_url, ''), '') as cover_url,
+             COALESCE(NULLIF(br.genre, ''), NULLIF(rd.genre, ''), '') as genre,
+             COALESCE(NULLIF(br.review, ''), NULLIF(rd.review, ''), '') as review,
              COALESCE(br.total_pages, rd.total_pages, 0) as total_pages
       FROM public.reading_data rd
       LEFT JOIN public.users u ON u.email = rd.email
       LEFT JOIN public.book_reviews br ON (u.id = br.user_id AND rd.book_name = br.title)
-      WHERE rd.email = $1 AND rd.year = $2
-      ${month ? 'AND (rd.month = $3 OR rd.status = \'lendo\')' : ''}
-      ORDER BY rd.month ASC, rd.status DESC
-    `
-      : `
-      SELECT rd.*, br.rating, COALESCE(br.cover_url, rd.cover_url) as cover_url, br.genre, br.review,
-             COALESCE(br.total_pages, rd.total_pages, 0) as total_pages
-      FROM public.reading_data rd
-      LEFT JOIN public.users u ON u.email = rd.email
-      LEFT JOIN public.book_reviews br ON (u.id = br.user_id AND rd.book_name = br.title)
-      WHERE rd.email = $1 AND rd.year = $2
-      ${month ? 'AND (rd.month = $3 OR rd.status = \'lendo\')' : ''}
+      WHERE rd.email = $1 ${yearCondition}
+      ${dateRangeCondition}
       ORDER BY rd.month ASC, rd.status DESC
     `;
 
-    const params = month ? [email, year, month] : [email, year];
+    const params = hasMonth
+      ? [email, monthEnd, monthStart]
+      : [email, year];
     const rows = await executeQuery(query, params);
 
     const userRow = await executeQuery(`SELECT literary_goal, goals_by_year FROM public.users WHERE email = $1`, [email]);
@@ -72,7 +88,7 @@ export async function POST(request: Request) {
     const { 
       email, bookName, oldBookName, action, rating, coverUrl, 
       totalPages, review, genre, year, month, 
-      startDate, endDate, goal, author, pages: bodyPages, notes, cover_url
+      startDate, endDate, goal, author, pages: bodyPages, notes, cover_url, format, owned
     } = body;
     
     if (action === "SET_GOAL") {
@@ -140,6 +156,31 @@ export async function POST(request: Request) {
         params.push(cover_url || null);
       }
 
+      if (format !== undefined) {
+        updates.push(`format = $${paramIndex++}`);
+        params.push(format || null);
+      }
+
+      if (owned !== undefined) {
+        updates.push(`owned = $${paramIndex++}`);
+        params.push(owned === true);
+      }
+
+      if (body.status !== undefined) {
+        updates.push(`status = $${paramIndex++}`);
+        params.push(body.status || null);
+      }
+
+      if (body.startDate !== undefined) {
+        updates.push(`start_date = $${paramIndex++}`);
+        params.push(body.startDate || null);
+      }
+
+      if (body.endDate !== undefined) {
+        updates.push(`end_date = $${paramIndex++}`);
+        params.push(body.endDate || null);
+      }
+
       // Adiciona email e oldBookName no final
       params.push(email, oldBookName);
 
@@ -165,6 +206,33 @@ export async function POST(request: Request) {
       if (userRes.length > 0) {
         await executeQuery(`DELETE FROM public.book_reviews WHERE user_id = $1 AND title = $2`, [userRes[0].id, bookName]);
       }
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === "PLAN_READING") {
+        await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS author_name TEXT`, []);
+        await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS cover_url TEXT`, []);
+        await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS notes TEXT`, []);
+        await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS owned BOOLEAN`, []);
+        await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS format TEXT`, []);
+
+        await executeQuery(`DELETE FROM public.reading_data WHERE email = $1 AND book_name = $2`, [email, bookName]);
+        await executeQuery(`
+          INSERT INTO public.reading_data (email, book_name, author_name, start_date, status, year, month, cover_url, total_pages, format, owned, notes)
+          VALUES ($1, $2, $3, $4, 'planejado', $5, $6, $7, $8, $9, $10, $11)
+        `, [
+          email,
+          bookName,
+          author || null,
+          startDate || null,
+          year,
+          month,
+          coverUrl,
+          numPages,
+          format || null,
+          owned === true,
+          notes || null
+        ]);
       return NextResponse.json({ success: true });
     }
 

@@ -15,6 +15,8 @@ export async function executeQuery(query: string, params: any[] = []) {
     await pool.query('ALTER TABLE reading_data ADD COLUMN IF NOT EXISTS author TEXT;');
     await pool.query('ALTER TABLE reading_data ADD COLUMN IF NOT EXISTS rating INTEGER;');
     await pool.query('ALTER TABLE reading_data ADD COLUMN IF NOT EXISTS cover_url TEXT;');
+    await pool.query('ALTER TABLE reading_data ADD COLUMN IF NOT EXISTS genre TEXT;');
+    await pool.query('ALTER TABLE reading_data ADD COLUMN IF NOT EXISTS review TEXT;');
     await pool.query('ALTER TABLE reading_data ADD COLUMN IF NOT EXISTS email TEXT;');
 
     const result = await pool.query(query, params);
