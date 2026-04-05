@@ -72,7 +72,7 @@ export async function GET(request: Request) {
       rating: Number(b.rating) || 0,
       total_pages: Number(b.total_pages) || 0,
       month: Number(b.month),
-      status: b.status || 'lendo' 
+      status: b.status || '' 
     }));
 
     return NextResponse.json({ data: cleanRows, userGoal });
@@ -215,11 +215,12 @@ export async function POST(request: Request) {
         await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS notes TEXT`, []);
         await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS owned BOOLEAN`, []);
         await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS format TEXT`, []);
+        await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS genre TEXT`, []);
 
         await executeQuery(`DELETE FROM public.reading_data WHERE email = $1 AND book_name = $2`, [email, bookName]);
         await executeQuery(`
-          INSERT INTO public.reading_data (email, book_name, author_name, start_date, status, year, month, cover_url, total_pages, format, owned, notes)
-          VALUES ($1, $2, $3, $4, 'planejado', $5, $6, $7, $8, $9, $10, $11)
+          INSERT INTO public.reading_data (email, book_name, author_name, start_date, status, year, month, cover_url, total_pages, format, owned, notes, genre)
+          VALUES ($1, $2, $3, $4, 'planejado', $5, $6, $7, $8, $9, $10, $11, $12)
         `, [
           email,
           bookName,
@@ -231,7 +232,8 @@ export async function POST(request: Request) {
           numPages,
           format || null,
           owned === true,
-          notes || null
+          notes || null,
+          genre || null
         ]);
       return NextResponse.json({ success: true });
     }
@@ -240,12 +242,13 @@ export async function POST(request: Request) {
       // Garantir que as colunas existam
       await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS author_name TEXT`, []);
       await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS cover_url TEXT`, []);
+      await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS genre TEXT`, []);
       
       await executeQuery(`DELETE FROM public.reading_data WHERE email = $1 AND book_name = $2`, [email, bookName]);
       await executeQuery(`
-        INSERT INTO public.reading_data (email, book_name, author_name, start_date, status, year, month, cover_url, total_pages)
-        VALUES ($1, $2, $3, $4, 'lendo', $5, $6, $7, $8)
-      `, [email, bookName, author || null, startDate, year, month, coverUrl, numPages]);
+        INSERT INTO public.reading_data (email, book_name, author_name, start_date, status, year, month, cover_url, total_pages, genre)
+        VALUES ($1, $2, $3, $4, 'lendo', $5, $6, $7, $8, $9)
+      `, [email, bookName, author || null, startDate, year, month, coverUrl, numPages, genre || null]);
       return NextResponse.json({ success: true });
     }
 

@@ -91,6 +91,7 @@ export async function saveReadingDay(
   action: "START_READING" | "FINISH_READING",
   coverUrl?: string,      
   author?: string,
+  genre?: string,
   totalPages?: number     
 ) {
   const response = await fetch("/api/reading-data", {
@@ -105,6 +106,7 @@ export async function saveReadingDay(
       endDate, 
       bookName,
       author,
+      genre,
       action,
       coverUrl,    
       totalPages: Number(totalPages) || 0 
@@ -186,7 +188,8 @@ export async function planReading(
   totalPages?: number,
   format?: string,
   owned?: boolean,
-  notes?: string
+  notes?: string,
+  genre?: string
 ) {
   const response = await fetch("/api/reading-data", {
     method: "POST",
@@ -203,7 +206,8 @@ export async function planReading(
       action: "PLAN_READING",
       format: format || null,
       owned: owned === true,
-      notes: notes || null
+      notes: notes || null,
+      genre: genre || null
     }),
   });
   if (!response.ok) throw new Error("Erro ao salvar planejado");

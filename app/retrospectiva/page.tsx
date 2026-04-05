@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react"
 import { useSession } from "next-auth/react"
-import { BookOpen, Loader2, Star, ArrowLeft, Instagram, Crown, Calendar, ChevronDown, Zap, Clock, X, FileText, Sparkles, Bookmark } from "lucide-react"
+import { BookOpen, Loader2, Star, ArrowLeft, Instagram, Crown, Calendar, ChevronDown, Zap, Clock, X, FileText, Sparkles, Bookmark, Edit2 } from "lucide-react"
 import { getReadingData } from "@/lib/api-client"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -157,24 +157,41 @@ export default function RetrospectivaPage() {
     return result
   }, [allBooks, filters])
 
+  const normalizeStatus = (status: unknown) => {
+    const value = String(status || '').trim().toLowerCase()
+    return value
+  }
+
+  const isPlannedStatus = (status: string) => {
+    return ['planejado', 'planejados', 'planned', 'planning'].includes(status) || status.includes('planej')
+  }
+
+  const isReadingStatus = (status: string) => {
+    return ['lendo', 'reading', 'in progress', 'em andamento'].includes(status) || status.includes('lendo')
+  }
+
+  const isFinishedStatus = (status: string) => {
+    return ['lido', 'finished', 'concluido', 'concluído', 'read', 'finalizado'].includes(status) || status.includes('lido')
+  }
+
   const filteredPlannedBooks = useMemo(() => {
     return filteredBooks.filter(b => {
-      const status = (b.status || '').toLowerCase()
-      return status === 'planejado' || status === 'planned'
+      const status = normalizeStatus(b.status)
+      return isPlannedStatus(status)
     })
   }, [filteredBooks])
 
   const filteredReadingBooks = useMemo(() => {
     return filteredBooks.filter(b => {
-      const status = (b.status || '').toLowerCase()
-      return status === 'lendo' || status === 'reading'
+      const status = normalizeStatus(b.status)
+      return isReadingStatus(status)
     })
   }, [filteredBooks])
 
   const filteredFinishedBooks = useMemo(() => {
     return filteredBooks.filter(b => {
-      const status = (b.status || '').toLowerCase()
-      return !['lendo', 'reading', 'planejado', 'planned'].includes(status)
+      const status = normalizeStatus(b.status)
+      return isFinishedStatus(status)
     })
   }, [filteredBooks])
 
@@ -372,7 +389,9 @@ export default function RetrospectivaPage() {
     const topBook = [...finishedBooksData].sort((a, b) => (Number(b.total_pages) || 0) - (Number(a.total_pages) || 0))[0]
     const shortestBook = [...finishedBooksData].filter(b => b.total_pages).sort((a, b) => (Number(a.total_pages) || 0) - (Number(b.total_pages) || 0))[0]
     
-    const bestRated = [...finishedBooksData].filter(b => b.rating).sort((a, b) => (b.rating || 0) - (a.rating || 0))[0]
+    const bestRatedFiveStarBooks = [...finishedBooksData].filter(b => Number(b.rating) === 5)
+    const bestRated = bestRatedFiveStarBooks.sort((a, b) => (Number(b.total_pages) || 0) - (Number(a.total_pages) || 0))[0] || null
+    const highlightBook = bestRated || topBook
     
     const booksWithDays = allBooks
       .filter(b => b.start_date && b.end_date)
@@ -405,12 +424,13 @@ export default function RetrospectivaPage() {
     const productiveMonthCount = mostProductiveMonth ? mostProductiveMonth[1] : 0
     
     return { 
-      totalBooks: allBooks.length, 
+      totalBooks: finishedBooksData.length, 
       totalPagesYear, 
       topGenre: genreData[0]?.name || "Nenhum", 
       topBook,
       shortestBook,
       bestRated,
+      highlightBook,
       fastestBook,
       slowestBook,
       productiveMonthName,
@@ -497,7 +517,7 @@ export default function RetrospectivaPage() {
                   <div className="flex items-center gap-2 mb-3">
                     <BookOpen size={14} style={{ color: theme.primary }} />
                     <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: theme.primary }}>
-                      Meta Batida
+                      Livros lidos
                     </span>
                   </div>
                   <div className="flex items-baseline gap-2">
@@ -599,7 +619,7 @@ export default function RetrospectivaPage() {
                       </span>
                     </div>
                     <h4 className="text-sm font-bold line-clamp-2 mb-1" style={{ color: theme.text }}>
-                      {stats.bestRated?.book_name || "Nenhum avaliado"}
+                      {stats.bestRated?.book_name || "Nenhum 5 estrelas"}
                     </h4>
                     {stats.bestRated && (
                       <div className="flex items-center gap-1">
@@ -1263,8 +1283,8 @@ export default function RetrospectivaPage() {
                       <div className="flex items-center gap-3">
                         <div className="w-24 h-36 bg-slate-100 rounded-2xl overflow-hidden shadow-2xl transform -rotate-3 border-4 border-white shrink-0 relative" style={{ boxShadow: '0 12px 40px rgba(251, 191, 36, 0.3)' }}>
                           <OptimizedBookCover
-                            src={getProxyUrl(stats?.topBook?.cover_url)}
-                            alt={stats?.topBook?.book_name || ""}
+                            src={getProxyUrl(stats?.highlightBook?.cover_url)}
+                            alt={stats?.highlightBook?.book_name || ""}
                             fill
                             className=""
                             priority
@@ -1277,11 +1297,11 @@ export default function RetrospectivaPage() {
                             </div>
                             <span className="text-[9px] font-black uppercase tracking-wider" style={{ color: theme.primary }}>Livro Destaque</span>
                           </div>
-                          <p style={{ color: theme.text }} className="text-sm font-black leading-tight line-clamp-2 mb-2">{stats?.topBook?.book_name}</p>
+                          <p style={{ color: theme.text }} className="text-sm font-black leading-tight line-clamp-2 mb-2">{stats?.highlightBook?.book_name}</p>
                           <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full" style={{ backgroundColor: `${theme.primary}50`, boxShadow: `0 4px 12px ${theme.primary}20` }}>
                             <BookOpen size={10} style={{ color: theme.primary }} />
                             <p className="text-[10px] font-black" style={{ color: theme.primary }}>
-                              {Number(stats?.topBook?.total_pages || 0).toLocaleString()} páginas
+                              {Number(stats?.highlightBook?.total_pages || 0).toLocaleString()} páginas
                             </p>
                           </div>
                         </div>
@@ -1417,9 +1437,11 @@ export default function RetrospectivaPage() {
                   {/* Grid de Livros */}
                   <div className={`grid ${getGridCols(chunk.length)} flex-1 content-center items-center px-2 relative z-10`} style={getBookSizeStyles(chunk.length)}>
                     {chunk.map((book, bIdx) => (
-                      <div key={bIdx} className="aspect-3/4.5 w-full rounded-lg overflow-hidden bg-white border-2 border-white relative transform transition-all duration-300 group" style={{
-                        boxShadow: `0 8px 24px ${theme.primary}00`,
-                      }}>
+                      <Link
+                        key={bIdx}
+                        href={`/diario/${encodeURIComponent(book.book_name)}?year=${currentYear}`}
+                        className="aspect-3/4.5 w-full rounded-lg overflow-hidden bg-white border-2 border-white relative transform transition-all duration-300 group hover:-translate-y-1 hover:shadow-xl"
+                      >
                         <OptimizedBookCover
                           src={getProxyUrl(book.cover_url)}
                           alt={book.book_name}
@@ -1441,7 +1463,7 @@ export default function RetrospectivaPage() {
                           background: `linear-gradient(90deg, transparent, ${theme.primary}, transparent)`,
                           pointerEvents: 'none'
                         }}></div>
-                      </div>
+                      </Link>
                     ))}
                   </div>
                   
@@ -1474,15 +1496,18 @@ export default function RetrospectivaPage() {
                       Minha Biblioteca {currentYear}
                     </h2>
                   </div>
-                  <p className="text-2xl font-semibold tracking-tight" style={{ color: theme.text }}>Estante de livros lidos</p>
-                  <p className="text-xs font-light" style={{ color: theme.text, opacity: 0.6 }}>Uma coleção de histórias e conhecimentos</p>
+                  <p className="text-2xl font-semibold tracking-tight" style={{ color: theme.text }}>Estante de leitura</p>
+                  <p className="text-xs font-light" style={{ color: theme.text, opacity: 0.6 }}>Veja livros planejados, em andamento e já lidos</p>
                 </div>
                 <div className="relative z-10">
-                  <div className="px-6 py-3 rounded-xl shadow-md text-white font-semibold text-sm flex items-center gap-2" style={{ backgroundColor: theme.primary }}>
+                  <div className="px-6 py-3 rounded-xl shadow-md text-white font-semibold text-sm flex flex-wrap items-center gap-2" style={{ backgroundColor: theme.primary }}>
                     <BookOpen size={16} strokeWidth={2} />
                     {filteredFinishedBooks.length} {filteredFinishedBooks.length === 1 ? 'livro concluído' : 'livros concluídos'}
                     {filteredReadingBooks.length > 0 && (
                       <span className="text-xs opacity-75 ml-2">+ {filteredReadingBooks.length} em leitura</span>
+                    )}
+                    {filteredPlannedBooks.length > 0 && (
+                      <span className="text-xs opacity-75 ml-2">+ {filteredPlannedBooks.length} planejados</span>
                     )}
                     {allBooks.length !== filteredFinishedBooks.length && (
                       <span className="text-xs opacity-75">({allBooks.length} no total)</span>
@@ -1491,75 +1516,7 @@ export default function RetrospectivaPage() {
                 </div>
               </div>
 
-              {filteredPlannedBooks.length > 0 && (
-                <Card className="p-4 border border-blue-300 bg-blue-50 rounded-2xl">
-                  <h3 className="text-sm font-bold text-blue-700 mb-2">Livros planejados ({filteredPlannedBooks.length})</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {filteredPlannedBooks.map((book) => {
-                      return (
-                        <div key={book.id || book.book_name} className="border border-blue-200 p-3 rounded-lg bg-white">
-                          <p className="text-xs font-bold text-slate-700 truncate">{book.book_name}</p>
-                          <p className="text-[10px] text-slate-500 truncate">{book.author_name || 'Autor não informado'}</p>
-                          <div className="mt-2 flex gap-2">
-                            <Button size="sm" variant="outline" className="font-semibold" onClick={async () => {
-                              setIsUpdating(true)
-                              try {
-                                // se ainda não começou, iniciar leitura hoje
-                                const now = new Date()
-                                const dateFormatted = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}T12:00:00Z`
-                                await fetch('/api/reading-data', {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({
-                                    action: 'START_READING',
-                                    email: session?.user?.email,
-                                    bookName: book.book_name,
-                                    startDate: dateFormatted,
-                                    endDate: dateFormatted,
-                                    year: now.getFullYear(),
-                                    month: now.getMonth()+1,
-                                    day: now.getDate()
-                                  })
-                                })
-                                const userEmail = session?.user?.email
-                              if (!userEmail) return
-                              const data: any = await getReadingData(userEmail, currentYear, true)
-                                setAllBooks(Array.isArray(data) ? data : (data?.data || []))
-                                toast.success('Livro movido para leitura')
-                              } catch (err) {
-                                toast.error('Falha ao iniciar leitura')
-                              } finally {
-                                setIsUpdating(false)
-                              }
-                            }}>
-                              Iniciar leitura
-                            </Button>
-                            <Button size="sm" variant="ghost" className="text-slate-600" onClick={() => { setBookToEdit(book); setEditDialogOpen(true); }}>
-                              Editar
-                            </Button>
-                            <Button size="sm" variant="destructive" className="text-white" onClick={async () => {
-                              if (!window.confirm('Excluir livro planejado?')) return
-                              setIsDeletingBook(true)
-                              try {
-                                await fetch('/api/reading-data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'DELETE_READING', email: session?.user?.email, bookName: book.book_name }) })
-                                const userEmail = session?.user?.email
-                                if (!userEmail) return
-                                const data: any = await getReadingData(userEmail, currentYear, true)
-                                setAllBooks(Array.isArray(data) ? data : (data?.data || []))
-                                toast.success('Livro planejado removido')
-                              } catch (err) {
-                                toast.error('Erro ao remover')
-                              } finally { setIsDeletingBook(false) }
-                            }}>
-                              Apagar
-                            </Button>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </Card>
-              )}
+
 
               {filteredReadingBooks.length > 0 && (
                 <Card className="p-4 border border-primary/20 bg-primary/5 rounded-2xl">
@@ -1569,125 +1526,233 @@ export default function RetrospectivaPage() {
                       const start = book.start_date ? new Date(book.start_date) : null
                       const days = start ? Math.max(1, Math.ceil((Date.now() - start.getTime()) / (1000 * 60 * 60 * 24))) : '-'
                       return (
-                        <div key={book.id || book.book_name} className="border border-primary/30 p-3 rounded-lg bg-white">
+                        <Link
+                          key={book.id || book.book_name}
+                          href={`/diario/${encodeURIComponent(book.book_name)}?year=${currentYear}`}
+                          className="block border border-primary/30 p-3 rounded-lg bg-white transition hover:-translate-y-1 hover:shadow-md"
+                        >
                           <p className="text-xs font-bold text-slate-600">{book.book_name}</p>
                           <p className="text-[10px] text-slate-500 truncate">{book.author_name || 'Autor não informado'}</p>
                           <p className="text-[10px] text-primary mt-1">{book.start_date ? `Iniciado há ${days} ${days === 1 ? 'dia' : 'dias'}` : 'Início pendente'}</p>
-                        </div>
+                        </Link>
                       )
                     })}
                   </div>
                 </Card>
               )}
 
-              {/* Grid de estantes - Visual de biblioteca */}
-              <AnimatePresence mode="wait">
-                <motion.div 
-                  key={`${filters.search}-${filters.genres.join('-')}-${filters.ratingMin}-${filters.sortBy}`}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.3 }}
-                  className="space-y-10"
-                >
-                  {/* Dividir em "estantes" de 6 livros cada */}
-                  {Array.from({ length: Math.ceil(filteredBooks.length / 6) }).map((_, shelfIndex) => {
-                    const shelfBooks = filteredBooks.slice(shelfIndex * 6, (shelfIndex + 1) * 6)
-                    return (
-                      <motion.div 
-                        key={shelfIndex}
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.3, delay: shelfIndex * 0.1 }}
-                        className="rounded-2xl p-6 border-2 shadow-sm relative overflow-hidden transition-all"
-                        style={{
-                          background: isDarkTheme
-                            ? 'linear-gradient(135deg, rgba(45, 58, 82, 0.3) 0%, rgba(26, 31, 53, 0.3) 100%)'
-                            : 'linear-gradient(135deg, rgba(217, 119, 6, 0.1) 0%, rgba(251, 146, 60, 0.05) 100%)',
-                          borderColor: isDarkTheme ? 'rgba(45, 58, 82, 0.4)' : 'rgba(217, 119, 6, 0.2)'
-                        }}
-                      >
-                      {/* Efeito de madeira da estante */}
-                      <div className="absolute bottom-0 left-0 right-0 h-3 bg-linear-to-r from-amber-700/20 via-amber-600/15 to-amber-700/20 rounded-b-2xl border-t-2 border-amber-800/10"></div>
-                      
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-5">
-                          {shelfBooks.map((book, i) => (
-                            <motion.div
-                              key={book.id || book.book_id || i}
-                              initial={{ opacity: 0, y: 20 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ duration: 0.2, delay: i * 0.05 }}
-                              className="group"
-                            >
-                              <div className="relative">
-                                {/* Livro */}
-                                <div className="aspect-2/3 rounded-lg overflow-hidden shadow-md border-[3px] border-white bg-white transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1 relative">
-                                  <OptimizedBookCover
-                                    src={getProxyUrl(book.cover_url)}
-                                    alt={book.book_name}
-                                    fill
-                                    className=""
-                                  />
-                                </div>
-                                
-                                {/* Info do livro */}
-                                <div className="mt-3 px-1 space-y-1.5">
-                                  <p className="text-xs font-semibold line-clamp-2 leading-tight" style={{ color: theme.text }}>
-                                    {book.book_name}
-                                  </p>
-                                  
-                                  {/* Rating - estrelas abaixo do nome */}
-                                  {book.rating && (
-                                    <div className="flex items-center gap-0.5">
-                                      {[...Array(5)].map((_, i) => (
-                                        <Star 
-                                          key={i} 
-                                          size={11} 
-                                          className={i < book.rating ? 'text-amber-400' : 'text-slate-300'}
-                                          fill={i < book.rating ? 'currentColor' : 'none'}
-                                          strokeWidth={1.5}
-                                        />
-                                      ))}
+
+              {filteredFinishedBooks.length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900">Livros lidos</h3>
+                      <p className="text-xs text-slate-500">Estante com os livros que você já concluiu.</p>
+                    </div>
+                    <span className="text-sm font-semibold text-slate-700">{filteredFinishedBooks.length} {filteredFinishedBooks.length === 1 ? 'livro' : 'livros'}</span>
+                  </div>
+
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={`${filters.search}-${filters.genres.join('-')}-${filters.ratingMin}-${filters.sortBy}`}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
+                      className="space-y-10"
+                    >
+                      {/* Dividir em "estantes" de 6 livros cada */}
+                      {Array.from({ length: Math.ceil(filteredFinishedBooks.length / 6) }).map((_, shelfIndex) => {
+                        const shelfBooks = filteredFinishedBooks.slice(shelfIndex * 6, (shelfIndex + 1) * 6)
+                        return (
+                          <motion.div
+                            key={shelfIndex}
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 0.3, delay: shelfIndex * 0.1 }}
+                            className="rounded-2xl p-6 border-2 shadow-sm relative overflow-hidden transition-all"
+                            style={{
+                              background: isDarkTheme
+                                ? 'linear-gradient(135deg, rgba(45, 58, 82, 0.3) 0%, rgba(26, 31, 53, 0.3) 100%)'
+                                : 'linear-gradient(135deg, rgba(217, 119, 6, 0.1) 0%, rgba(251, 146, 60, 0.05) 100%)',
+                              borderColor: isDarkTheme ? 'rgba(45, 58, 82, 0.4)' : 'rgba(217, 119, 6, 0.2)'
+                            }}
+                          >
+                            {/* Efeito de madeira da estante */}
+                            <div className="absolute bottom-0 left-0 right-0 h-3 bg-linear-to-r from-amber-700/20 via-amber-600/15 to-amber-700/20 rounded-b-2xl border-t-2 border-amber-800/10"></div>
+
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-5">
+                              {shelfBooks.map((book, i) => (
+                                <motion.div
+                                  key={book.id || book.book_id || i}
+                                  initial={{ opacity: 0, y: 20 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ duration: 0.2, delay: i * 0.05 }}
+                                  className="group"
+                                >
+                                  <div className="relative">
+                                    {/* Livro */}
+                                    <div className="aspect-2/3 rounded-lg overflow-hidden shadow-md border-[3px] border-white bg-white transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1 relative">
+                                      <OptimizedBookCover
+                                        src={getProxyUrl(book.cover_url)}
+                                        alt={book.book_name}
+                                        fill
+                                        className=""
+                                      />
                                     </div>
-                                  )}
-                                  
-                                  <div className="flex items-center justify-between">
-                                    <p className="text-[10px] font-light uppercase tracking-tight" style={{ color: theme.text, opacity: 0.5 }}>
-                                      {book.genre || 'Sem gênero'}
-                                    </p>
-                                    {book.total_pages && (
-                                      <p className="text-[9px] font-medium" style={{ color: theme.primary }}>
-                                        {book.total_pages}p
+
+                                    {/* Info do livro */}
+                                    <div className="mt-3 px-1 space-y-1.5">
+                                      <p className="text-xs font-semibold line-clamp-2 leading-tight" style={{ color: theme.text }}>
+                                        {book.book_name}
                                       </p>
-                                    )}
-                                  </div>
-                                  
-                                  {/* Dias de leitura */}
-                                  {book.start_date && book.end_date && (
-                                    <div className="flex items-center gap-1 pt-0.5">
-                                      <Calendar size={9} className="text-slate-400" strokeWidth={2} />
-                                      <span className="text-[9px] text-slate-500 font-medium">
-                                        {(() => {
-                                          const start = new Date(book.start_date)
-                                          const end = new Date(book.end_date)
-                                          const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
-                                          return `${days} ${days === 1 ? 'dia' : 'dias'}`
-                                        })()}
-                                      </span>
+
+                                      {book.rating && (
+                                        <div className="flex items-center gap-0.5">
+                                          {[...Array(5)].map((_, i) => (
+                                            <Star
+                                              key={i}
+                                              size={11}
+                                              className={i < book.rating ? 'text-amber-400' : 'text-slate-300'}
+                                              fill={i < book.rating ? 'currentColor' : 'none'}
+                                              strokeWidth={1.5}
+                                            />
+                                          ))}
+                                        </div>
+                                      )}
+
+                                      <div className="flex items-center justify-between">
+                                        <p className="text-[10px] font-light uppercase tracking-tight" style={{ color: theme.text, opacity: 0.5 }}>
+                                          {book.genre || 'Sem gênero'}
+                                        </p>
+                                        {book.total_pages && (
+                                          <p className="text-[9px] font-medium" style={{ color: theme.primary }}>
+                                            {book.total_pages}p
+                                          </p>
+                                        )}
+                                      </div>
+
+                                      {book.start_date && book.end_date && (
+                                        <div className="flex items-center gap-1 pt-0.5">
+                                          <Calendar size={9} className="text-slate-400" strokeWidth={2} />
+                                          <span className="text-[9px] text-slate-500 font-medium">
+                                            {(() => {
+                                              const start = new Date(book.start_date)
+                                              const end = new Date(book.end_date)
+                                              const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+                                              return `${days} ${days === 1 ? 'dia' : 'dias'}`
+                                            })()}
+                                          </span>
+                                        </div>
+                                      )}
                                     </div>
-                                  )}
-                                </div>
-                              </div>
-                            </motion.div>
-                          ))}
-                        </div>
-                      </motion.div>
-                    )
-                  })}
-                </motion.div>
-              </AnimatePresence>
+                                  </div>
+                                </motion.div>
+                              ))}
+                            </div>
+                          </motion.div>
+                        )
+                      })}
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+              )}
+
+              {filteredPlannedBooks.length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900">Livros planejados</h3>
+                      <p className="text-xs text-slate-500">Estante com os livros que você pretende ler.</p>
+                    </div>
+                    <span className="text-sm font-semibold text-slate-700">{filteredPlannedBooks.length} {filteredPlannedBooks.length === 1 ? 'livro' : 'livros'}</span>
+                  </div>
+
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={`planned-${filters.search}-${filters.genres.join('-')}-${filters.ratingMin}-${filters.sortBy}`}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
+                      className="space-y-10"
+                    >
+                      {Array.from({ length: Math.ceil(filteredPlannedBooks.length / 6) }).map((_, shelfIndex) => {
+                        const shelfBooks = filteredPlannedBooks.slice(shelfIndex * 6, (shelfIndex + 1) * 6)
+                        return (
+                          <motion.div
+                            key={shelfIndex}
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 0.3, delay: shelfIndex * 0.1 }}
+                            className="rounded-2xl p-6 border-2 shadow-sm relative overflow-hidden transition-all"
+                            style={{
+                              background: isDarkTheme
+                                ? 'linear-gradient(135deg, rgba(30, 58, 138, 0.3) 0%, rgba(15, 23, 42, 0.3) 100%)'
+                                : 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(191, 219, 254, 0.05) 100%)',
+                              borderColor: isDarkTheme ? 'rgba(30, 58, 138, 0.4)' : 'rgba(59, 130, 246, 0.2)'
+                            }}
+                          >
+                            <div className="absolute bottom-0 left-0 right-0 h-3 bg-linear-to-r from-sky-700/20 via-sky-500/15 to-sky-700/20 rounded-b-2xl border-t-2 border-sky-800/10"></div>
+
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-5">
+                              {shelfBooks.map((book, i) => (
+                                <motion.div
+                                  key={book.id || book.book_id || i}
+                                  initial={{ opacity: 0, y: 20 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ duration: 0.2, delay: i * 0.05 }}
+                                  className="group"
+                                >
+                                  <div className="relative">
+                                    <div className="absolute top-2 right-2 z-10">
+                                      <Button size="icon" variant="outline" className="h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); setBookToEdit(book); setEditDialogOpen(true) }}>
+                                        <Edit2 size={14} />
+                                      </Button>
+                                    </div>
+                                    <div className="absolute top-2 right-2 z-10">
+                                      <Button size="icon" variant="outline" className="h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); setBookToEdit(book); setEditDialogOpen(true) }}>
+                                        <Edit2 size={14} />
+                                      </Button>
+                                    </div>
+                                    <div className="aspect-2/3 rounded-lg overflow-hidden shadow-md border-[3px] border-white bg-white transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1 relative">
+                                      <OptimizedBookCover
+                                        src={getProxyUrl(book.cover_url)}
+                                        alt={book.book_name}
+                                        fill
+                                        className=""
+                                      />
+                                    </div>
+
+                                    <div className="mt-3 px-1 space-y-1.5">
+                                      <p className="text-xs font-semibold line-clamp-2 leading-tight" style={{ color: theme.text }}>
+                                        {book.book_name}
+                                      </p>
+                                      <p className="text-[9px] text-slate-500" style={{ color: theme.text }}>
+                                        {book.author_name || 'Autor não informado'}
+                                      </p>
+                                      <div className="flex items-center justify-between">
+                                        <p className="text-[9px] font-light uppercase tracking-tight" style={{ color: theme.text, opacity: 0.5 }}>
+                                          {book.genre || 'Sem gênero'}
+                                        </p>
+                                        <span className="text-[9px] font-medium" style={{ color: isDarkTheme ? '#93c5fd' : '#2563eb' }}>
+                                          Planejado
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </motion.div>
+                              ))}
+                            </div>
+                          </motion.div>
+                        )
+                      })}
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+              )}
             </div>
-        )}
+          )}
 
         {/* Mensagem quando não há livros */}
         {allBooks.length === 0 && (

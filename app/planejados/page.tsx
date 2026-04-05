@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { motion, AnimatePresence } from "framer-motion"
 import { BookOpen, Loader2, Bookmark, LogOut, Edit3, BarChart3, Sun, Moon, Sparkles, Trash2, Check, Book as BookIcon, Play, Search, X } from "lucide-react"
 import { getReadingData, saveReadingDay, planReading, editReading, deleteReading } from "@/lib/api-client"
+import { searchBooks } from "@/lib/google-books"
 import { toast } from "sonner"
 import Link from "next/link"
 import { EditBookDialog } from "@/components/edit-book-dialog"
@@ -31,6 +32,7 @@ export default function PlanejadosPage() {
   const [newFormat, setNewFormat] = useState('Físico')
   const [newOwned, setNewOwned] = useState(false)
   const [newPages, setNewPages] = useState<number | ''>('')
+  const [newGenre, setNewGenre] = useState('')
   const [isAdding, setIsAdding] = useState(false)
 
   const [isUpdating, setIsUpdating] = useState(false)
@@ -48,15 +50,19 @@ export default function PlanejadosPage() {
   useEffect(() => {
     if (newTitle.length < 3) {
       setSuggestions([])
+      setShowSuggestions(false)
       return
     }
     const delayDebounceFn = setTimeout(async () => {
       try {
-        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(newTitle)}&maxResults=5`)
-        const data = await res.json()
-        setSuggestions(data.items || [])
+        const books = await searchBooks(newTitle)
+        setSuggestions(books)
         setShowSuggestions(true)
-      } catch (err) { console.error("Erro na busca", err) }
+      } catch (err) {
+        console.error("Erro na busca", err)
+        setSuggestions([])
+        setShowSuggestions(false)
+      }
     }, 500)
     return () => clearTimeout(delayDebounceFn)
   }, [newTitle])
@@ -67,6 +73,7 @@ export default function PlanejadosPage() {
     setNewAuthor(info.authors ? info.authors[0] : '')
     setNewCover(info.imageLinks ? info.imageLinks.thumbnail.replace('http:', 'https:') : '')
     setNewPages(info.pageCount || '')
+    setNewGenre(info.categories ? info.categories[0] : '')
     setShowSuggestions(false)
     toast.success("Dados importados do Google Books")
   }
@@ -126,6 +133,7 @@ export default function PlanejadosPage() {
         'START_READING',
         book.cover_url || book.cover || '',
         book.author_name || book.author || '',
+        book.genre || '',
         Number(book.total_pages || book.pages || 0)
       )
       toast.success('Leitura iniciada!')
@@ -198,11 +206,28 @@ export default function PlanejadosPage() {
     if (!newTitle || !session?.user?.email) return toast.error('Título é obrigatório')
     setIsAdding(true)
     try {
-      await planReading(session.user.email, newTitle, newAuthor || undefined, new Date().toISOString(), currentYear, new Date().getMonth() + 1, newCover, Number(newPages) || 0, newFormat, newOwned)
+      await planReading(
+        session.user.email,
+        newTitle,
+        newAuthor || undefined,
+        new Date().toISOString(),
+        currentYear,
+        new Date().getMonth() + 1,
+        newCover,
+        Number(newPages) || 0,
+        newFormat,
+        newOwned,
+        undefined,
+        newGenre || undefined
+      )
       toast.success('Adicionado aos planejados!')
-      setNewTitle(''); setNewAuthor(''); setNewCover(''); setNewPages(''); setNewOwned(false); setNewFormat('Físico')
+      setNewTitle(''); setNewAuthor(''); setNewCover(''); setNewPages(''); setNewOwned(false); setNewFormat('Físico'); setNewGenre('')
       loadData()
-    } catch (err) { toast.error('Erro ao salvar') } finally { setIsAdding(false) }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao salvar'
+      toast.error(message)
+      console.error(err)
+    } finally { setIsAdding(false) }
   }
 
   if (status === 'loading') return <div className="flex min-h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>
@@ -274,6 +299,10 @@ export default function PlanejadosPage() {
             <div className="space-y-1">
               <label className="text-[10px] font-bold uppercase opacity-50 ml-1">Autor</label>
               <input value={newAuthor} onChange={e => setNewAuthor(e.target.value)} className="w-full bg-white border border-slate-200 p-3 rounded-xl outline-none" placeholder="Manual ou Automático" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase opacity-50 ml-1">Gênero</label>
+              <input value={newGenre} onChange={e => setNewGenre(e.target.value)} className="w-full bg-white border border-slate-200 p-3 rounded-xl outline-none" placeholder="Ex: Fantasia" />
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-bold uppercase opacity-50 ml-1">Link da Capa</label>

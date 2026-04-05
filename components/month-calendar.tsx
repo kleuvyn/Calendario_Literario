@@ -17,8 +17,8 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
     if (!url || !url.trim()) return PLACEHOLDER_IMAGE
     const trimmed = url.trim()
     // permite URL padrão de imagem ou data URI para imagens base64
-    if (/^(data:image\/(?:png|jpe?g|webp|avif|gif);base64,[A-Za-z0-9+/=]+)$/i.test(trimmed)) return trimmed
-    if (/^(https?:\/\/.*\.(?:png|jpe?g|webp|avif|gif))(\?.*)?$/i.test(trimmed)) return trimmed
+    if (/^data:image\/(?:png|jpe?g|webp|avif|gif);base64,[A-Za-z0-9+/=]+$/i.test(trimmed)) return trimmed
+    if (/^https?:\/\/[^\s]+$/i.test(trimmed)) return trimmed
     return PLACEHOLDER_IMAGE
   }
 
@@ -80,7 +80,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
   const [bookToEdit, setBookToEdit] = useState<any>(null)
   const [bookToDelete, setBookToDelete] = useState<string>("")
 
-  const summaryFilter = activeSummary || 'planejados' // exibir planejados por padrão quando nenhum resumo estiver ativo
+  const summaryFilter = activeSummary
 
   const now = new Date()
   const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
@@ -118,8 +118,12 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
       startDateValue = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}T12:00:00Z`
     }
 
+    const genre = Array.isArray(book.categories)
+      ? book.categories.join(', ')
+      : book.categories || ''
+
     try {
-      await fetch('/api/reading-data', {
+      const response = await fetch('/api/reading-data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -127,6 +131,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
           email: userEmail,
           bookName: book.title,
           author: book.authors || '',
+          genre,
           coverUrl: book.cover || '',
           startDate: startDateValue,
           year,
@@ -134,12 +139,20 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
           totalPages: book.pages || 0
         })
       })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data?.error || 'Erro ao adicionar planejado')
+      }
+
       await loadData()
       setSearchDialogOpen(false)
       setIsPlanning(false)
       toast.success('Livro adicionado como planejado!')
     } catch (err) {
-      toast.error('Não foi possível adicionar planejado')
+      const message = err instanceof Error ? err.message : 'Não foi possível adicionar planejado'
+      toast.error(message)
+      console.error(err)
     } finally {
       setIsUpdating(false)
     }
@@ -160,15 +173,20 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
       return
     }
 
+    const genre = Array.isArray(book.categories)
+      ? book.categories.join(', ')
+      : book.categories || ''
     const dateFormatted = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}T12:00:00Z`
     try {
-      await saveReadingDay(userEmail, year, monthIndex + 1, selectedDay, dateFormatted, dateFormatted, book.title, 'START_READING', book.cover, book.authors, book.pages)
+      await saveReadingDay(userEmail, year, monthIndex + 1, selectedDay, dateFormatted, dateFormatted, book.title, 'START_READING', book.cover, book.authors, genre, book.pages)
       await loadData()
       setSearchDialogOpen(false)
       setIsPlanning(false)
       toast.success('Leitura iniciada!')
     } catch (err) {
-      toast.error('Erro ao salvar')
+      const message = err instanceof Error ? err.message : 'Erro ao salvar'
+      toast.error(message)
+      console.error(err)
     } finally {
       setIsUpdating(false)
     }
@@ -199,6 +217,10 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
     const monthValue = finalDateObj.getUTCMonth() + 1
     const dayValue = finalDateObj.getUTCDate()
 
+    const genre = Array.isArray(book.categories)
+      ? book.categories.join(', ')
+      : book.genre || book.categories || ''
+
     try {
       await saveReadingDay(
         userEmail,
@@ -211,6 +233,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
         "START_READING",
         book.cover_url || book.cover || "",
         book.author_name || book.author || "",
+        genre,
         book.total_pages || 0
       )
       await loadData()
@@ -257,9 +280,19 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
     }
   }
 
-  async function handleUpdateBook(book: any, data: { newName: string; author: string; pages: number; rating: number; notes: string; cover_url?: string }) {
+  async function handleUpdateBook(book: any, data: { newName: string; author: string; pages: number; rating: number; notes: string; cover_url?: string; startDate?: string; endDate?: string }) {
     setIsUpdating(true)
     try {
+      let targetYear = book.year || year
+      let targetMonth = book.month || (monthIndex + 1)
+      if (data.startDate) {
+        const parsed = new Date(data.startDate)
+        if (!isNaN(parsed.getTime())) {
+          targetYear = parsed.getUTCFullYear()
+          targetMonth = parsed.getUTCMonth() + 1
+        }
+      }
+
       await fetch("/api/reading-data", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -273,8 +306,10 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
           totalPages: data.pages || book.total_pages || 0,
           review: data.notes || "",
           genre: book.genre || "",
-          year: book.year || year,
-          month: book.month || (monthIndex + 1)
+          year: targetYear,
+          month: targetMonth,
+          startDate: data.startDate ?? book.start_date ?? book.startDate ?? null,
+          endDate: data.endDate ?? book.end_date ?? book.endDate ?? null,
         })
       })
       await loadData()
@@ -341,66 +376,68 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
             setActiveSummary('planejados')
             setSearchDialogOpen(true)
           }}
-          className="text-[10px] font-black uppercase rounded border border-blue-400 text-blue-600 px-2 py-1 hover:bg-blue-50"
+          className="inline-flex items-center gap-1 whitespace-nowrap text-xs font-black uppercase rounded border border-blue-400 text-blue-600 px-2 py-1 transition duration-150 active:scale-95 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-300"
         >
           + Adicionar planejado
         </button>
       </div>
 
-      <div className="mb-6 p-3 rounded-xl border border-slate-200 bg-white shadow-sm">
-          <p className="text-xs font-bold mb-2 uppercase text-slate-500">
-            {summaryFilter === 'lendo' && 'Livros em leitura'}
-            {summaryFilter === 'lido' && 'Livros concluídos'}
-            {summaryFilter === 'planejados' && 'Livros planejados'}
-          </p>
-          <div className="space-y-2">
-            {booksThisMonth
-              .filter((r) => {
-                const status = normalizeStatus(r.status)
-                if (summaryFilter === 'lendo') return ['lendo', 'reading'].includes(status)
-                if (summaryFilter === 'lido') return ['lido', 'finished'].includes(status)
-                return !['lido', 'finished', 'lendo', 'reading'].includes(status)
-              })
-              .map((r) => (
-                <div key={`${r.book_name}-${r.id || r.start_date || Math.random()}`} className="flex items-center justify-between gap-2 p-2 rounded-lg border border-slate-100 bg-slate-50">
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold truncate">{r.book_name}</p>
-                    <p className="text-[10px] text-slate-500 truncate">{r.author_name || r.author || 'Autor não informado'}</p>
-                  </div>
-                  {summaryFilter === 'planejados' && (
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => handleStartPlanned(r)}
-                        disabled={isUpdating}
-                        className="text-[10px] font-black uppercase rounded bg-indigo-600 text-white px-2 py-1 hover:bg-indigo-700 disabled:opacity-50"
-                      >
-                        Iniciar
-                      </button>
-                      <button
-                        onClick={() => handleConcludePlanned(r)}
-                        disabled={isUpdating}
-                        className="text-[10px] font-black uppercase rounded bg-emerald-600 text-white px-2 py-1 hover:bg-emerald-700 disabled:opacity-50"
-                      >
-                        Concluir
-                      </button>
-                      <button
-                        onClick={() => handleEdit(r)}
-                        className="text-[10px] font-black uppercase rounded border border-slate-300 px-2 py-1 hover:bg-slate-100"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        onClick={() => { setBookToDelete(r.book_name); setDeleteDialogOpen(true) }}
-                        className="text-[10px] font-black uppercase rounded border border-red-200 text-red-600 px-2 py-1 hover:bg-red-50"
-                      >
-                        Excluir
-                      </button>
+      {summaryFilter && (
+        <div className="mb-6 p-3 rounded-xl border border-slate-200 bg-white shadow-sm">
+            <p className="text-xs font-bold mb-2 uppercase text-slate-500">
+              {summaryFilter === 'lendo' && 'Livros em leitura'}
+              {summaryFilter === 'lido' && 'Livros concluídos'}
+              {summaryFilter === 'planejados' && 'Livros planejados'}
+            </p>
+            <div className="space-y-2">
+              {booksThisMonth
+                .filter((r) => {
+                  const status = normalizeStatus(r.status)
+                  if (summaryFilter === 'lendo') return ['lendo', 'reading'].includes(status)
+                  if (summaryFilter === 'lido') return ['lido', 'finished'].includes(status)
+                  return !['lido', 'finished', 'lendo', 'reading'].includes(status)
+                })
+                .map((r) => (
+                  <div key={`${r.book_name}-${r.id || r.start_date || Math.random()}`} className="flex items-center justify-between gap-2 p-2 rounded-lg border border-slate-100 bg-slate-50">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold truncate">{r.book_name}</p>
+                      <p className="text-[10px] text-slate-500 truncate">{r.author_name || r.author || 'Autor não informado'}</p>
                     </div>
-                  )}
-                </div>
-              ))}
+                    {summaryFilter === 'planejados' && (
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => handleStartPlanned(r)}
+                          disabled={isUpdating}
+                          className="text-[10px] font-black uppercase rounded bg-indigo-600 text-white px-2 py-1 hover:bg-indigo-700 disabled:opacity-50"
+                        >
+                          Iniciar
+                        </button>
+                        <button
+                          onClick={() => handleConcludePlanned(r)}
+                          disabled={isUpdating}
+                          className="text-[10px] font-black uppercase rounded bg-emerald-600 text-white px-2 py-1 hover:bg-emerald-700 disabled:opacity-50"
+                        >
+                          Concluir
+                        </button>
+                        <button
+                          onClick={() => handleEdit(r)}
+                          className="text-[10px] font-black uppercase rounded border border-slate-300 px-2 py-1 hover:bg-slate-100"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => { setBookToDelete(r.book_name); setDeleteDialogOpen(true) }}
+                          className="text-[10px] font-black uppercase rounded border border-red-200 text-red-600 px-2 py-1 hover:bg-red-50"
+                        >
+                          Excluir
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+            </div>
           </div>
-        </div>
+      )}
 
       {/* Dias da Semana (Desktop) */}
       <div className="hidden lg:grid grid-cols-7 gap-4 mb-2 px-4">
@@ -451,15 +488,15 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
               onClick={() => !isFuture && dayReadings.length > 0 && setExpandedDays(prev => {
                 const next = new Set(prev); isExpanded ? next.delete(day) : next.add(day); return next;
               })}
-              className={`relative flex flex-col p-1 sm:p-3 rounded-xl sm:rounded-[2rem] border-2 transition-all 
-                ${isToday ? 'border-primary bg-primary/[0.02] shadow-lg' : 'border-slate-100 bg-white'}
+              className={`relative flex flex-col p-1 sm:p-3 rounded-xl sm:rounded-4xl border-2 transition-all 
+                ${isToday ? 'border-primary bg-primary/2 shadow-lg' : 'border-slate-100 bg-white'}
                 ${isFuture ? 'opacity-30 grayscale' : 'hover:border-primary/40'}
-                ${isExpanded ? 'col-span-2 row-span-2 min-h-[280px] z-10 shadow-2xl' : 'aspect-square h-auto'}
+                ${isExpanded ? 'col-span-2 row-span-2 min-h-70 z-10 shadow-2xl' : 'aspect-square h-auto'}
               `}
 
             >
               {/* Número do Dia */}
-              <div className="absolute inset-0 p-1 sm:p-3">
+              <div className="absolute inset-0 p-1 sm:p-3 pointer-events-none">
               <div className="flex justify-between items-start mb-1 sm:mb-2">
                 <span className={`text-xs sm:text-lg font-black px-1.5 sm:px-3 sm:py-1 rounded-lg ${isToday ? 'bg-primary text-white' : 'text-slate-400'}`}>
                   {day}
@@ -535,10 +572,10 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
               </div>
               {!isFuture && (
                 <button 
-                  onClick={(e) => { e.stopPropagation(); setSelectedDay(day); setSearchDialogOpen(true); }}
+                  onClick={(e) => { e.stopPropagation(); setIsPlanning(true); setSelectedDay(day); setSearchDialogOpen(true); }}
                   className="mt-auto w-full py-1 text-[8px] sm:text-[10px] font-black uppercase text-slate-400 hover:text-primary transition-colors flex items-center justify-center gap-1 border-t border-dashed border-slate-200 pt-1"
                 >
-                  <Plus size={10} /> <span className="hidden sm:inline">Adicionar</span>
+                  <Plus size={10} /> <span className="hidden sm:inline">Planejar</span>
                 </button>
               )}
             </motion.div>

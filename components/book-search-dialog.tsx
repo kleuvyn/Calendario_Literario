@@ -22,7 +22,12 @@ export function BookSearchDialog({ open, onClose, onSelectBook }: BookSearchDial
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    if (!query || query.length < 3) {
+    if (!query) {
+      setResults([])
+      return
+    }
+
+    if (query.length < 3) {
       setResults([])
       return
     }
@@ -164,7 +169,7 @@ export function BookSearchDialog({ open, onClose, onSelectBook }: BookSearchDial
 
           {/* Resultados */}
           <ScrollArea className="h-100 pr-4">
-            {results.length === 0 && query.length >= 3 && !isLoading && (
+            {results.length === 0 && query && !isLoading && (
               <div className="text-center py-12 space-y-4">
                 <p className="text-muted-foreground">Nenhum livro encontrado</p>
                 <Button

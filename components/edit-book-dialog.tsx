@@ -15,9 +15,14 @@ interface EditBookDialogProps {
   bookData?: {
     author?: string
     pages?: number
+    total_pages?: number
     rating?: number
     notes?: string
     cover_url?: string
+    startDate?: string
+    start_date?: string
+    endDate?: string
+    end_date?: string
   }
   onSave: (data: {
     newName: string
@@ -26,17 +31,21 @@ interface EditBookDialogProps {
     rating: number
     notes: string
     cover_url?: string
+    startDate?: string
+    endDate?: string
   }) => void
 }
 
 export function EditBookDialog({ open, onClose, bookName, bookData, onSave }: EditBookDialogProps) {
   const [newName, setNewName] = useState(bookName)
   const [author, setAuthor] = useState(bookData?.author || "")
-  const [pages, setPages] = useState(bookData?.pages?.toString() || "")
+  const [pages, setPages] = useState((bookData?.pages ?? bookData?.total_pages)?.toString() || "")
   const [rating, setRating] = useState(bookData?.rating || 0)
   const [notes, setNotes] = useState(bookData?.notes || "")
   const [coverUrl, setCoverUrl] = useState(bookData?.cover_url || "")
   const [previewCover, setPreviewCover] = useState(bookData?.cover_url || "")
+  const [startDate, setStartDate] = useState("")
+  const [endDate, setEndDate] = useState("")
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -44,11 +53,13 @@ export function EditBookDialog({ open, onClose, bookName, bookData, onSave }: Ed
 
     setNewName(bookName)
     setAuthor(bookData?.author || "")
-    setPages(bookData?.pages?.toString() || "")
+    setPages((bookData?.pages ?? bookData?.total_pages)?.toString() || "")
     setRating(bookData?.rating ?? 0)
     setNotes(bookData?.notes || "")
     setCoverUrl(bookData?.cover_url || "")
     setPreviewCover(bookData?.cover_url || "")
+    setStartDate((bookData?.startDate || bookData?.start_date || "").split('T')[0])
+    setEndDate((bookData?.endDate || bookData?.end_date || "").split('T')[0])
   }, [open, bookName, bookData])
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,6 +73,11 @@ export function EditBookDialog({ open, onClose, bookName, bookData, onSave }: Ed
       }
       reader.readAsDataURL(file)
     }
+  }
+
+  const handleCoverUrlChange = (value: string) => {
+    setCoverUrl(value)
+    setPreviewCover(value)
   }
 
   const handleRemoveCover = () => {
@@ -81,6 +97,8 @@ export function EditBookDialog({ open, onClose, bookName, bookData, onSave }: Ed
       rating,
       notes,
       cover_url: coverUrl || undefined,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
     })
     onClose()
   }
@@ -183,6 +201,22 @@ export function EditBookDialog({ open, onClose, bookName, bookData, onSave }: Ed
             )}
           </div>
 
+          {/* Link da Capa */}
+          <div className="space-y-2">
+            <Label htmlFor="coverUrl" className="flex items-center gap-2">
+              <ImageIcon size={16} />
+              Link da Capa
+            </Label>
+            <Input
+              id="coverUrl"
+              type="text"
+              value={coverUrl}
+              onChange={(e) => handleCoverUrlChange(e.target.value)}
+              placeholder="https://..."
+              className="h-11"
+            />
+          </div>
+
           {/* Título */}
           <div className="space-y-2">
             <Label htmlFor="title" className="flex items-center gap-2">
@@ -229,6 +263,30 @@ export function EditBookDialog({ open, onClose, bookName, bookData, onSave }: Ed
               className="h-11"
               min="0"
             />
+          </div>
+
+          {/* Datas */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="startDate">Data de Início</Label>
+              <Input
+                id="startDate"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="h-11"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="endDate">Data de Conclusão</Label>
+              <Input
+                id="endDate"
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="h-11"
+              />
+            </div>
           </div>
 
           {/* Avaliação */}
