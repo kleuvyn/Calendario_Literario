@@ -20,6 +20,7 @@ interface EditBookDialogProps {
     notes?: string
     cover_url?: string
     genre?: string
+    categories?: string[] | string
     format?: string
     owned?: boolean
     startDate?: string
@@ -43,12 +44,18 @@ interface EditBookDialogProps {
 }
 
 export function EditBookDialog({ open, onClose, bookName, bookData, onSave }: EditBookDialogProps) {
+  const formatCategories = (categories?: string[] | string) => {
+    if (!categories) return ""
+    if (Array.isArray(categories)) return categories.filter(Boolean).join(', ')
+    return categories
+  }
+
   const [newName, setNewName] = useState(bookName)
   const [author, setAuthor] = useState(bookData?.author || "")
   const [pages, setPages] = useState((bookData?.pages ?? bookData?.total_pages)?.toString() || "")
   const [rating, setRating] = useState(bookData?.rating || 0)
   const [notes, setNotes] = useState(bookData?.notes || "")
-  const [genre, setGenre] = useState(bookData?.genre || "")
+  const [genre, setGenre] = useState(bookData?.genre || formatCategories(bookData?.categories) || "")
   const [format, setFormat] = useState(bookData?.format || "Físico")
   const [owned, setOwned] = useState(bookData?.owned ?? false)
   const [coverUrl, setCoverUrl] = useState(bookData?.cover_url || "")
@@ -65,7 +72,7 @@ export function EditBookDialog({ open, onClose, bookName, bookData, onSave }: Ed
     setPages((bookData?.pages ?? bookData?.total_pages)?.toString() || "")
     setRating(bookData?.rating ?? 0)
     setNotes(bookData?.notes || "")
-    setGenre(bookData?.genre || "")
+    setGenre(bookData?.genre || formatCategories(bookData?.categories) || "")
     setFormat(bookData?.format || "Físico")
     setOwned(bookData?.owned ?? false)
     setCoverUrl(bookData?.cover_url || "")
@@ -276,6 +283,7 @@ export function EditBookDialog({ open, onClose, bookName, bookData, onSave }: Ed
               placeholder="Ex: Fantasia"
               className="h-11"
             />
+            <p className="text-[11px] text-slate-500">Se disponível, usamos a categoria do livro para preencher o gênero.</p>
           </div>
 
           {/* Tipo */}
