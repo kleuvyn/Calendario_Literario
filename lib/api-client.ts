@@ -51,9 +51,10 @@ export async function getReadingData(
   year: number,
   isRetrospective: boolean = false,
   signal?: AbortSignal,
-  month?: number
+  month?: number,
+  includeAllYears: boolean = false
 ): Promise<any> {
-  let url = `/api/reading-data?email=${encodeURIComponent(email.toLowerCase())}&year=${year}&isRetrospective=${isRetrospective}`;
+  let url = `/api/reading-data?email=${encodeURIComponent(email.toLowerCase())}&year=${year}&isRetrospective=${isRetrospective}&includeAllYears=${includeAllYears}`;
   if (month) url += `&month=${month}`;
   url += `&t=${Date.now()}`;
 
@@ -143,6 +144,7 @@ export async function editReading(
     rating?: number | null,
     notes?: string | null,
     coverUrl?: string | null,
+    genre?: string | null,
     format?: string | null,
     owned?: boolean | null,
     status?: string | null,
@@ -160,10 +162,10 @@ export async function editReading(
     rating: updates.rating,
     notes: updates.notes,
     cover_url: updates.coverUrl,
+    genre: updates.genre || null,
     format: updates.format || null,
-    owned: updates.owned === true
-    ,
-    status: updates.status || null,
+    owned: updates.owned === true,
+    status: updates.status,
     startDate: updates.startDate || null,
     endDate: updates.endDate || null
   };

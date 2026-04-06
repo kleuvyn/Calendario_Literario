@@ -147,7 +147,7 @@ export function BookSearchDialog({ open, onClose, onSelectBook }: BookSearchDial
                     size="sm"
                     variant="ghost"
                     onClick={() => setSelectedCover("")}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="text-rose-700 hover:text-rose-800 hover:bg-rose-50"
                   >
                     ✕
                   </Button>

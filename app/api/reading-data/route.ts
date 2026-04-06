@@ -6,6 +6,7 @@ export async function GET(request: Request) {
   const email = searchParams.get("email");
   const year = Number(searchParams.get("year"));
   const isRetrospective = searchParams.get("isRetrospective") === "true";
+  const includeAllYears = searchParams.get("includeAllYears") === "true";
   const monthParam = Number(searchParams.get("month"));
   const hasMonth = Number.isInteger(monthParam) && monthParam >= 1 && monthParam <= 12;
 
@@ -30,7 +31,9 @@ export async function GET(request: Request) {
     const yearCondition = hasMonth
       ? ''
       : isRetrospective
-        ? `AND rd.year = $2`
+        ? includeAllYears
+          ? ''
+          : `AND rd.year = $2`
         : `AND (rd.year = $2 OR rd.status IN ('lendo', 'reading'))`;
 
     const query = `
@@ -49,7 +52,9 @@ export async function GET(request: Request) {
 
     const params = hasMonth
       ? [email, monthEnd, monthStart]
-      : [email, year];
+      : includeAllYears
+        ? [email]
+        : [email, year];
     const rows = await executeQuery(query, params);
 
     const userRow = await executeQuery(`SELECT literary_goal, goals_by_year FROM public.users WHERE email = $1`, [email]);
@@ -120,6 +125,9 @@ export async function POST(request: Request) {
       await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS author_name TEXT`, []);
       await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS rating INTEGER`, []);
       await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS notes TEXT`, []);
+      await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS owned BOOLEAN`, []);
+      await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS format TEXT`, []);
+      await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS genre TEXT`, []);
       
       // Construir query de atualização
       const updates: string[] = [];
@@ -154,6 +162,11 @@ export async function POST(request: Request) {
       if (cover_url !== undefined) {
         updates.push(`cover_url = $${paramIndex++}`);
         params.push(cover_url || null);
+      }
+
+      if (genre !== undefined) {
+        updates.push(`genre = $${paramIndex++}`);
+        params.push(genre || null);
       }
 
       if (format !== undefined) {

@@ -80,7 +80,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-sm font-medium mb-4">
               <Sparkles className="h-4 w-4" />
-              Seu Diário de Leituras
+              Seu Diário Literário e Calendário Literário
             </div>
             <h1 className="text-5xl font-bold bg-gradient-to-br from-slate-900 to-slate-700 dark:from-white dark:to-slate-200 bg-clip-text text-transparent mb-4 leading-tight">
               Organize suas Leituras

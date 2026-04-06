@@ -1,10 +1,13 @@
-const CACHE_NAME = 'calendario-lit-v3'; 
+const CACHE_NAME = 'calendario-lit-v6';
+const RUNTIME_CACHE = 'calendario-lit-runtime-v1';
 const ASSETS = [
   '/',
+  '/offline.html',
   '/manifest.json',
+  '/logo.png',
   '/icon-192.png',
   '/icon-512.png',
-  '/screenshot-mobile.png', 
+  '/screenshot-mobile.png',
   '/screenshot-desktop.png'
 ];
 
@@ -36,16 +39,34 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    fetch(event.request).catch(() => {
-      return caches.match(event.request).then((response) => {
-        if (response) return response;
-        if (event.request.mode === 'navigate') {
-          return caches.match('/');
-        }
-      });
-    })
-  );
+  if (event.request.method !== 'GET') return;
+
+  event.respondWith((async () => {
+    const requestURL = new URL(event.request.url);
+    const isNavigation = event.request.mode === 'navigate';
+
+    if (isNavigation) {
+      try {
+        const networkResponse = await fetch(event.request);
+        return networkResponse;
+      } catch (error) {
+        const cached = await caches.match('/offline.html');
+        return cached;
+      }
+    }
+
+    const cachedResponse = await caches.match(event.request);
+    if (cachedResponse) return cachedResponse;
+
+    try {
+      const networkResponse = await fetch(event.request);
+      const cache = await caches.open(RUNTIME_CACHE);
+      cache.put(event.request, networkResponse.clone());
+      return networkResponse;
+    } catch (error) {
+      return cachedResponse;
+    }
+  })());
 });
 
 self.addEventListener('sync', (event) => {
@@ -59,8 +80,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
-      icon: '/icon-192.png',
-      badge: '/icon-192.png'
+      icon: '/logo.png',
+      badge: '/logo.png'
     })
   );
 });

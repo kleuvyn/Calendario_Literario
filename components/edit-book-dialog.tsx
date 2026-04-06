@@ -19,6 +19,9 @@ interface EditBookDialogProps {
     rating?: number
     notes?: string
     cover_url?: string
+    genre?: string
+    format?: string
+    owned?: boolean
     startDate?: string
     start_date?: string
     endDate?: string
@@ -31,6 +34,9 @@ interface EditBookDialogProps {
     rating: number
     notes: string
     cover_url?: string
+    genre?: string
+    format?: string
+    owned?: boolean
     startDate?: string
     endDate?: string
   }) => void
@@ -42,6 +48,9 @@ export function EditBookDialog({ open, onClose, bookName, bookData, onSave }: Ed
   const [pages, setPages] = useState((bookData?.pages ?? bookData?.total_pages)?.toString() || "")
   const [rating, setRating] = useState(bookData?.rating || 0)
   const [notes, setNotes] = useState(bookData?.notes || "")
+  const [genre, setGenre] = useState(bookData?.genre || "")
+  const [format, setFormat] = useState(bookData?.format || "Físico")
+  const [owned, setOwned] = useState(bookData?.owned ?? false)
   const [coverUrl, setCoverUrl] = useState(bookData?.cover_url || "")
   const [previewCover, setPreviewCover] = useState(bookData?.cover_url || "")
   const [startDate, setStartDate] = useState("")
@@ -56,6 +65,9 @@ export function EditBookDialog({ open, onClose, bookName, bookData, onSave }: Ed
     setPages((bookData?.pages ?? bookData?.total_pages)?.toString() || "")
     setRating(bookData?.rating ?? 0)
     setNotes(bookData?.notes || "")
+    setGenre(bookData?.genre || "")
+    setFormat(bookData?.format || "Físico")
+    setOwned(bookData?.owned ?? false)
     setCoverUrl(bookData?.cover_url || "")
     setPreviewCover(bookData?.cover_url || "")
     setStartDate((bookData?.startDate || bookData?.start_date || "").split('T')[0])
@@ -96,6 +108,9 @@ export function EditBookDialog({ open, onClose, bookName, bookData, onSave }: Ed
       pages: parseInt(pages) || 0,
       rating,
       notes,
+      genre: genre || undefined,
+      format,
+      owned,
       cover_url: coverUrl || undefined,
       startDate: startDate || undefined,
       endDate: endDate || undefined,
@@ -194,7 +209,7 @@ export function EditBookDialog({ open, onClose, bookName, bookData, onSave }: Ed
                 variant="ghost"
                 size="sm"
                 onClick={handleRemoveCover}
-                className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                className="w-full text-rose-700 hover:text-rose-800 hover:bg-rose-50"
               >
                 ✕ Remover foto
               </Button>
@@ -246,6 +261,66 @@ export function EditBookDialog({ open, onClose, bookName, bookData, onSave }: Ed
               placeholder="Nome do autor"
               className="h-11"
             />
+          </div>
+
+          {/* Gênero */}
+          <div className="space-y-2">
+            <Label htmlFor="genre" className="flex items-center gap-2">
+              <BookOpen size={16} />
+              Gênero
+            </Label>
+            <Input
+              id="genre"
+              value={genre}
+              onChange={(e) => setGenre(e.target.value)}
+              placeholder="Ex: Fantasia"
+              className="h-11"
+            />
+          </div>
+
+          {/* Tipo */}
+          <div className="space-y-2">
+            <Label htmlFor="format" className="flex items-center gap-2">
+              <BookOpen size={16} />
+              Tipo
+            </Label>
+            <select
+              id="format"
+              value={format}
+              onChange={(e) => setFormat(e.target.value)}
+              className="w-full border border-dashed p-3 rounded-full outline-none text-sm font-serif italic"
+              style={{ backgroundColor: '#ffffff' }}
+            >
+              <option>Físico</option>
+              <option>E-book</option>
+              <option>Audiobook</option>
+            </select>
+          </div>
+
+          {/* Tenho / Não tenho */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <BookOpen size={16} />
+              Tenho
+            </Label>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant={owned ? 'default' : 'outline'}
+                onClick={() => setOwned(true)}
+                className="flex-1"
+              >
+                Tenho
+              </Button>
+              <Button
+                type="button"
+                variant={!owned ? 'default' : 'outline'}
+                onClick={() => setOwned(false)}
+                className="flex-1"
+              >
+                Não tenho
+              </Button>
+            </div>
           </div>
 
           {/* Páginas */}

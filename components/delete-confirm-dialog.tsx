@@ -32,8 +32,8 @@ export function DeleteConfirmDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-3 rounded-full bg-red-100">
-              <AlertTriangle className="h-6 w-6 text-red-600" />
+            <div className="p-3 rounded-full bg-rose-100">
+              <AlertTriangle className="h-6 w-6 text-rose-700" />
             </div>
             <AlertDialogTitle className="text-xl">Excluir Livro</AlertDialogTitle>
           </div>
@@ -54,7 +54,7 @@ export function DeleteConfirmDialog({
               onConfirm()
             }}
             disabled={isLoading}
-            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            className="bg-rose-200 text-rose-900 border border-rose-300 hover:bg-rose-300 focus:ring-rose-300"
           >
             {isLoading ? "Excluindo..." : "Sim, excluir"}
           </AlertDialogAction>

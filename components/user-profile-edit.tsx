@@ -261,12 +261,12 @@ export function UserProfileEdit({ open, onCloseAction, user, onUpdateAction }: U
 
           <div>
             <Separator className="mb-4" />
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="bg-rose-50 border border-rose-200 rounded-lg p-4">
               <div className="flex items-start gap-3">
-                <AlertTriangle size={18} className="text-red-600 mt-0.5 shrink-0" />
+                <AlertTriangle size={18} className="text-rose-700 mt-0.5 shrink-0" />
                 <div className="flex-1">
-                  <h4 className="text-sm font-semibold text-red-900">Zona de Perigo</h4>
-                  <p className="text-xs text-red-700 mt-1 mb-3">
+                  <h4 className="text-sm font-semibold text-rose-900">Zona de Perigo</h4>
+                  <p className="text-xs text-rose-700 mt-1 mb-3">
                     Excluir sua conta removerá permanentemente todos os seus dados e livros
                   </p>
                   <Button
@@ -274,7 +274,7 @@ export function UserProfileEdit({ open, onCloseAction, user, onUpdateAction }: U
                     disabled={isDeleting || isUploading}
                     variant="destructive"
                     size="sm"
-                    className="bg-red-600 hover:bg-red-700 text-white text-xs font-medium"
+                    className="bg-rose-200 hover:bg-rose-300 text-rose-900 border border-rose-300 text-xs font-medium"
                   >
                     {isDeleting ? (
                       <>

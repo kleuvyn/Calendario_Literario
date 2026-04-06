@@ -44,8 +44,10 @@ export function OptimizedBookCover({
 }: OptimizedBookCoverProps) {
   const [error, setError] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const normalizedSrc = (typeof src === 'string' ? src : '').trim()
+  const isDataImage = normalizedSrc.startsWith('data:image/')
 
-  if (!src || error) {
+  if (!normalizedSrc || error) {
     return (
       <div className={`flex items-center justify-center bg-linear-to-br from-slate-100 to-slate-200 ${className}`}>
         <BookOpen className="w-1/3 h-1/3 text-slate-400 opacity-50" strokeWidth={1.5} />
@@ -53,10 +55,10 @@ export function OptimizedBookCover({
     )
   }
 
-  if (typeof src === 'string' && src.startsWith('data:image/')) {
+  if (isDataImage) {
     return (
       <img
-        src={src}
+        src={normalizedSrc}
         alt={alt}
         className={`${className} transition-all duration-300`}
         onError={() => setError(true)}
@@ -72,7 +74,7 @@ export function OptimizedBookCover({
     <>
       <Image
         {...imageProps}
-        src={src}
+        src={normalizedSrc}
         alt={alt}
         className={`${className} transition-all duration-300`}
         onError={() => setError(true)}

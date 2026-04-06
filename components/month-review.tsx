@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -30,7 +31,14 @@ const GENRE_CATEGORIES = {
 
 const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?q=80&w=300&auto=format&fit=crop";
 
+const THEMES = {
+  light: { primary: '#8C7B6E', bg: '#FAFAF5', text: '#4A443F', name: 'Algodão' },
+  dark: { primary: '#D1C7BD', bg: '#1A1918', text: '#F5F5F5', name: 'Noite' },
+  purple: { primary: '#9B89B3', bg: '#F8F7FA', text: '#3D3547', name: 'Brisa' },
+}
+
 export function MonthReview({ month, userEmail, monthIndex, year }: any) {
+  const [activeTheme, setActiveTheme] = useState<keyof typeof THEMES>('light')
   const [allBooks, setAllBooks] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [bookEdits, setBookEdits] = useState<Record<string, { name: string, cover: string, rating: number, pages: number, review: string, genre: string }>>({})
@@ -68,6 +76,11 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
     }
   }, [userEmail, year])
 
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("app-theme") as keyof typeof THEMES
+    if (savedTheme && THEMES[savedTheme]) setActiveTheme(savedTheme)
+  }, [])
+
   useEffect(() => { loadData() }, [loadData])
 
   function getBookMonth(b: any) {
@@ -82,16 +95,30 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
     return Number(b.month) || 0
   }
 
+  const normalizeStatus = (status?: string) => (status || '').toLowerCase().trim()
+  const isPlannedStatus = (status?: string) => {
+    const normalized = normalizeStatus(status)
+    return ['planejado', 'planejados', 'planned', 'planning', 'quero-ler', 'quero ler', 'wishlist', 'desejado'].includes(normalized)
+  }
+
+  const visibleBooks = useMemo(() => {
+    return allBooks.filter(b => getBookMonth(b) === (monthIndex + 1) && !isPlannedStatus(b.status))
+  }, [allBooks, monthIndex])
+
+  const booksThisMonth = useMemo(() => visibleBooks.length, [visibleBooks])
+  const pagesThisMonth = useMemo(
+    () => visibleBooks.reduce((sum, book) => sum + (Number(book.total_pages) || 0), 0),
+    [visibleBooks]
+  )
+
   const monthGenres = useMemo(() => {
     const genres = new Set<string>()
-    allBooks
-      .filter(b => getBookMonth(b) === (monthIndex + 1))
-      .forEach(b => {
-        const genre = (bookEdits[b.id]?.genre || b.genre || "").toString().trim()
-        if (genre) genres.add(genre)
-      })
+    visibleBooks.forEach(b => {
+      const genre = (bookEdits[b.id]?.genre || b.genre || "").toString().trim()
+      if (genre) genres.add(genre)
+    })
     return Array.from(genres)
-  }, [allBooks, monthIndex, bookEdits])
+  }, [visibleBooks, bookEdits])
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, bookId: string) => {
     const file = e.target.files?.[0]
@@ -160,26 +187,46 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
     return Math.max(1, Math.ceil(Math.abs(e.getTime() - s.getTime()) / 86400000) + 1)
   }
 
-  if (loading) return <div className="flex justify-center p-10"><Loader2 className="animate-spin text-primary" /></div>
+  const theme = THEMES[activeTheme] || THEMES.light;
+
+  if (loading) return <div className="flex justify-center p-10"><Loader2 className="animate-spin" style={{ color: theme.primary }} /></div>
 
   return (
-    <div className="space-y-8 pb-20 max-w-6xl mx-auto px-4 font-sans">
-      <div className="text-center">
-        <h2 className="text-4xl font-black text-slate-800 uppercase tracking-tight">{month} {year}</h2>
-        <p className="text-sm text-slate-500">Resumo do mês atual, incluindo lendo e finalizados</p>
+    <div className="space-y-8 pb-20 max-w-6xl mx-auto px-4 font-serif">
+      <div className="text-center flex flex-col items-center mb-10">
+        <span className="h-[1px] w-12 border-t border-dashed mb-4" style={{ borderColor: theme.primary }} />
+        <h2 className="text-5xl sm:text-6xl font-serif italic text-slate-800 capitalize flex items-baseline justify-center gap-3 font-serif">
+          Resumo <span className="text-2xl font-serif opacity-60 font-light" style={{ color: theme.primary }}>{month}</span>
+        </h2>
+        <p className="text-[10px] uppercase tracking-[0.3em] font-bold mt-5 font-serif border border-dashed py-2 px-8 shadow-sm rounded-full bg-white/40" style={{ color: theme.primary, borderColor: `${theme.primary}30` }}>
+          páginas viradas com carinho
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 px-4">
+        <div className="rounded-[2.5rem] border border-dashed bg-white/40 backdrop-blur-md p-8 text-center shadow-sm hover:shadow-md transition-all relative overflow-hidden" style={{ borderColor: `${theme.primary}30` }}>
+          <div className="absolute top-0 right-0 w-24 h-24 rounded-bl-full pointer-events-none" style={{ backgroundColor: `${theme.primary}10` }} />
+          <p className="text-[10px] uppercase tracking-[0.3em] mb-3 font-serif italic text-slate-400">Livros lidos neste mês</p>
+          <p className="text-6xl font-serif italic text-slate-700">{booksThisMonth}</p>
+        </div>
+        <div className="rounded-[2.5rem] border border-dashed bg-white/40 backdrop-blur-md p-8 text-center shadow-sm hover:shadow-md transition-all relative overflow-hidden" style={{ borderColor: `${theme.primary}30` }}>
+          <div className="absolute top-0 left-0 w-24 h-24 rounded-br-full pointer-events-none" style={{ backgroundColor: `${theme.primary}10` }} />
+          <p className="text-[10px] uppercase tracking-[0.3em] mb-3 font-serif italic text-slate-400">Páginas viradas</p>
+          <p className="text-5xl font-playfair font-black text-slate-900 mt-2" style={{ color: theme.primary }}>{pagesThisMonth.toLocaleString()}</p>
+        </div>
       </div>
       {/* CATEGORIAS DO MÊS */}
       {monthGenres.length > 0 && (
         <div className="flex flex-wrap gap-2 px-4">
           <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Categorias do mês:</span>
           {monthGenres.map((g) => (
-            <span key={g} className="text-[9px] font-bold bg-primary/10 text-primary px-2 py-1 rounded-full uppercase">{g}</span>
+            <span key={g} className="text-[9px] font-bold px-2 py-1 rounded-full uppercase" style={{ backgroundColor: `${theme.primary}15`, color: theme.primary }}>{g}</span>
           ))}
         </div>
       )}
 
       <div className="grid grid-cols-1 gap-8">
-        {allBooks.filter(b => getBookMonth(b) === (monthIndex + 1)).map((book) => {
+        {visibleBooks.map((book) => {
           const isBeingEdited = editingId === book.id
           const currentCover = bookEdits[book.id]?.cover || book.cover_url || PLACEHOLDER_IMAGE
           const daysRead = calculateDays(book.start_date, book.end_date)
@@ -188,21 +235,26 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
             <Card key={book.id} className="overflow-hidden border-none shadow-xl rounded-[40px] bg-white">
               
               {!isBeingEdited && (
-                <div onClick={() => setEditingId(book.id)} className="group relative cursor-pointer flex items-center p-6 gap-8 hover:bg-slate-50 transition-all">
+                <div className="group relative flex flex-col md:flex-row items-start p-6 gap-8 hover:bg-slate-50 transition-all">
                   <div className="w-24 h-36 shrink-0 relative">
                     <img src={currentCover} className="w-full h-full object-cover rounded-lg shadow-md border-l-4 border-black/20" alt="capa" />
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center rounded-lg">
-                       <Edit3 className="text-white mb-1" size={20} />
-                       <span className="text-[8px] text-white font-black uppercase">Editar Registro</span>
+                  </div>
+                  <div className="flex-1 space-y-4">
+                    <div>
+                      <p className="text-[9px] font-black uppercase tracking-[0.2em] mb-1" style={{ color: theme.primary }}>Registro de Leitura</p>
+                      <h3 className="text-2xl font-black text-slate-800 italic uppercase leading-tight">{bookEdits[book.id]?.name || book.book_name}</h3>
+                      <p className="text-xs text-slate-400 font-bold mt-1 uppercase tracking-tighter">{bookEdits[book.id]?.genre || "Sem gênero definido"}</p>
+                      {daysRead && <p className="text-[10px] text-slate-500 font-black mt-2 uppercase">⏱ {daysRead} dias de imersão</p>}
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      <Link href={`/diario/${encodeURIComponent(book.book_name || '')}`} className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-slate-100 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-700 hover:bg-slate-200 transition-all">
+                        Abrir Diário
+                      </Link>
+                      <Button size="sm" variant="secondary" className="text-[11px] font-black uppercase tracking-[0.2em]" onClick={() => setEditingId(book.id)}>
+                        Editar Registro
+                      </Button>
                     </div>
                   </div>
-                  <div>
-                    <p className="text-[9px] font-black text-primary uppercase tracking-[0.2em] mb-1">Registro de Leitura</p>
-                    <h3 className="text-2xl font-black text-slate-800 italic uppercase leading-tight">{bookEdits[book.id]?.name || book.book_name}</h3>
-                    <p className="text-xs text-slate-400 font-bold mt-1 uppercase tracking-tighter">{bookEdits[book.id]?.genre || "Sem gênero definido"}</p>
-                    {daysRead && <p className="text-[10px] text-slate-500 font-black mt-2 uppercase">⏱ {daysRead} dias de imersão</p>}
-                  </div>
-                  <ChevronDown className="ml-auto text-slate-200 group-hover:text-primary transition-colors" />
                 </div>
               )}
 
@@ -268,7 +320,7 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
                             <Star key={s} size={28} className={`cursor-pointer transition-all ${s <= (bookEdits[book.id]?.rating || 0) ? "fill-amber-400 text-amber-400 scale-110" : "text-slate-200"}`} onClick={() => setBookEdits(p => ({...p, [book.id]: {...p[book.id], rating: s}}))} />
                           ))}
                         </div>
-                        <Button className="w-full lg:w-72 h-14 font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-xl transition-all hover:bg-primary/90" onClick={() => handleSave(book.id, book.book_name)} disabled={isSaving === book.id}>
+                        <Button className="w-full lg:w-72 h-14 font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-xl transition-all" onClick={() => handleSave(book.id, book.book_name)} disabled={isSaving === book.id} style={{ backgroundColor: theme.primary, borderColor: theme.primary, color: '#ffffff' }}>
                           {isSaving === book.id ? <Loader2 className="animate-spin" /> : "Salvar Alterações"}
                         </Button>
                       </div>

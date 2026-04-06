@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react"
 import { useSession } from "next-auth/react"
-import { BookOpen, Loader2, Star, ArrowLeft, Instagram, Crown, Calendar, ChevronDown, Zap, Clock, X, FileText, Sparkles, Bookmark, Edit2 } from "lucide-react"
+import { BookOpen, Loader2, Star, ArrowLeft, Instagram, Crown, Calendar, ChevronDown, Zap, Clock, X, FileText, Sparkles, Bookmark, Edit2, Sun, Moon } from "lucide-react"
 import { getReadingData } from "@/lib/api-client"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -15,26 +15,47 @@ import { RetrospectivaLoadingSkeleton } from "@/components/loading-skeletons"
 import { motion, AnimatePresence } from "framer-motion"
 import { OptimizedBookCover } from "@/components/optimized-book-cover"
 import { EditBookDialog } from "@/components/edit-book-dialog"
+import { SiteHeader } from "@/components/site-header"
 
 const THEMES = {
-  rose: { primary: '#f4a6f0', bg: '#fff5f6', text: '#a64d9c', card: '#ffffff' },
-  dark: { primary: '#38bdf8', bg: '#f0f7ff', text: '#1e293b', card: '#ffffff' },
-  soft: { primary: '#a855f7', bg: '#faf5ff', text: '#5b1c87', card: '#ffffff' },
-  coffee: { primary: '#7c3f17', bg: '#fafaf9', text: '#4b3832', card: '#ffffff' },
-  ocean: { primary: '#0ea5e9', bg: '#f0f9ff', text: '#0369a1', card: '#ffffff' },
-  forest: { primary: '#10b981', bg: '#f0fdf4', text: '#065f46', card: '#ffffff' },
-  sunset: { primary: '#f59e0b', bg: '#fffbeb', text: '#92400e', card: '#ffffff' },
-  midnight: { primary: '#60a5fa', bg: '#0a0f1f', text: '#ffffff', card: '#1e293b' } 
+  light: {
+    primary: '#8C7B6E',
+    bg: '#FAFAF5',
+    text: '#4A443F',
+    card: '#ffffff',
+    name: 'Algodão',
+    icon: Sun
+  },
+  dark: {
+    primary: '#D1C7BD',
+    bg: '#1A1918',
+    text: '#F5F5F5',
+    card: '#262422',
+    name: 'Noite',
+    icon: Moon
+  },
+  purple: {
+    primary: '#9B89B3',
+    bg: '#F8F7FA',
+    text: '#3D3547',
+    card: '#ffffff',
+    name: 'Brisa',
+    icon: Sparkles
+  }
 }
+
+type ThemeKey = keyof typeof THEMES
 
 const GENRE_COLORS = ["#ec4899", "#3b82f6", "#a855f7", "#ef4444", "#10b981", "#f59e0b", "#64748b", "#06b6d4"];
 
 const getProxyUrl = (url: string) => {
-  if (!url) return "";
-  if (url.includes("googleusercontent.com") || url.includes("books.google.com")) {
-    return `https://images.weserv.nl/?url=${encodeURIComponent(url.replace("http://", "https://"))}`;
+  const trimmedUrl = url?.trim() || ""
+  if (!trimmedUrl) return ""
+  if (trimmedUrl.startsWith('data:image/')) return trimmedUrl
+  if (trimmedUrl.includes("googleusercontent.com") || trimmedUrl.includes("books.google.com")) {
+    return `https://images.weserv.nl/?url=${encodeURIComponent(trimmedUrl.replace("http://", "https://"))}`;
   }
-  return url;
+  return trimmedUrl;
 };
 
 export default function RetrospectivaPage() {
@@ -42,7 +63,7 @@ export default function RetrospectivaPage() {
   const [allBooks, setAllBooks] = useState<any[]>([])
   const [loadingData, setLoadingData] = useState(true)
   const [isGenerating, setIsGenerating] = useState(false)
-  const [currentTheme, setCurrentTheme] = useState<keyof typeof THEMES>('rose')
+  const [currentTheme, setCurrentTheme] = useState<ThemeKey>('light')
   const [filters, setFilters] = useState<FilterState>({
     search: '',
     genres: [],
@@ -56,9 +77,9 @@ export default function RetrospectivaPage() {
   const [bookToDelete, setBookToDelete] = useState<string | null>(null)
   
   const [currentYear, setCurrentYear] = useState(() => new Date().getFullYear())
-  const [selectedCardOption, setSelectedCardOption] = useState<'retrospectiva' | 'biblioteca' | 'a' | 'b' | 'c' | null>('retrospectiva')
+  const [selectedCardOption, setSelectedCardOption] = useState<'retrospectiva' | 'biblioteca' | 'a' | 'b' | 'c' | null>(null)
   
-  const isDarkTheme = currentTheme === 'midnight'
+  const isDarkTheme = currentTheme === 'dark'
   
   const getThemeCardStyle = () => isDarkTheme
     ? { backgroundColor: 'rgba(30, 41, 59, 0.95)', borderColor: 'rgba(51, 65, 85, 0.8)' }
@@ -75,6 +96,32 @@ export default function RetrospectivaPage() {
   }, []);
 
   const theme = THEMES[currentTheme]
+  const editorialPalette = {
+    bg: '#FAFAF5',
+    text: '#4A443F',
+    accent: '#8C7B6E',
+    card: '#FFFFFF',
+    border: 'rgba(0, 0, 0, 0.08)',
+    muted: 'rgba(74, 68, 63, 0.65)',
+    subtle: 'rgba(74, 68, 63, 0.4)',
+  }
+
+  const vintageCardStyle = {
+    background: editorialPalette.card,
+    borderColor: editorialPalette.border,
+    boxShadow: '0 8px 24px rgba(74, 68, 63, 0.08)',
+  }
+
+  const vintageShelfStyle = {
+    background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(250, 250, 245, 0.96) 100%)',
+    borderColor: editorialPalette.border,
+  }
+
+  const vintageBookShelfRailStyle = {
+    background: 'linear-gradient(90deg, rgba(140, 123, 110, 0.22), rgba(140, 123, 110, 0.12), rgba(140, 123, 110, 0.22))',
+    borderColor: 'rgba(140, 123, 110, 0.25)',
+  }
+
   const storyResumoRef = useRef<HTMLDivElement>(null)
   const paginasLivrosRef = useRef<(HTMLDivElement | null)[]>([])
   const cardOptionARef = useRef<HTMLDivElement>(null)
@@ -163,15 +210,16 @@ export default function RetrospectivaPage() {
   }
 
   const isPlannedStatus = (status: string) => {
-    return ['planejado', 'planejados', 'planned', 'planning'].includes(status) || status.includes('planej')
+    return ['planejado', 'planejados', 'planned', 'planning', 'quero-ler', 'quero ler', 'wishlist', 'desejado'].includes(status)
   }
 
   const isReadingStatus = (status: string) => {
-    return ['lendo', 'reading', 'in progress', 'em andamento'].includes(status) || status.includes('lendo')
+    return ['lendo', 'reading', 'in progress', 'em andamento', 'andamento'].includes(status)
   }
 
   const isFinishedStatus = (status: string) => {
-    return ['lido', 'finished', 'concluido', 'concluído', 'read', 'finalizado'].includes(status) || status.includes('lido')
+    if (isPlannedStatus(status)) return false
+    return ['lido', 'finished', 'concluido', 'concluído', 'read', 'finalizado'].includes(status)
   }
 
   const filteredPlannedBooks = useMemo(() => {
@@ -411,17 +459,23 @@ export default function RetrospectivaPage() {
       ? [...booksWithDays].sort((a, b) => b.readingDays - a.readingDays)[0]
       : null
     
-    const monthCounts: Record<number, number> = {}
+    const monthStats: Record<number, { count: number; pages: number }> = {}
     allBooks.forEach(b => {
       if (b.end_date) {
         const month = new Date(b.end_date).getMonth()
-        monthCounts[month] = (monthCounts[month] || 0) + 1
+        const pages = Number(b.total_pages) || 0
+        const existing = monthStats[month] || { count: 0, pages: 0 }
+        monthStats[month] = {
+          count: existing.count + 1,
+          pages: existing.pages + pages,
+        }
       }
     })
-    const mostProductiveMonth = Object.entries(monthCounts).sort((a, b) => b[1] - a[1])[0]
+    const productiveMonthEntry = Object.entries(monthStats).sort((a, b) => b[1].count - a[1].count)[0]
     const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
-    const productiveMonthName = mostProductiveMonth ? monthNames[Number(mostProductiveMonth[0])] : "—"
-    const productiveMonthCount = mostProductiveMonth ? mostProductiveMonth[1] : 0
+    const productiveMonthName = productiveMonthEntry ? monthNames[Number(productiveMonthEntry[0])] : "—"
+    const productiveMonthCount = productiveMonthEntry ? productiveMonthEntry[1].count : 0
+    const productiveMonthPages = productiveMonthEntry ? productiveMonthEntry[1].pages : 0
     
     return { 
       totalBooks: finishedBooksData.length, 
@@ -434,77 +488,70 @@ export default function RetrospectivaPage() {
       fastestBook,
       slowestBook,
       productiveMonthName,
-      productiveMonthCount
+      productiveMonthCount,
+      productiveMonthPages,
     }
   }, [allBooks, genreData])
 
   if (loadingData) return <RetrospectivaLoadingSkeleton />
 
   return (
-    <div className="min-h-screen pb-16 transition-all duration-700" style={{ background: `linear-gradient(135deg, ${theme.bg} 0%, ${theme.bg}99 50%, ${theme.bg}cc 100%)` }}>
+    <div className="min-h-screen pb-16 transition-all duration-700" style={{ background: editorialPalette.bg }}>
       <div className="max-w-7xl mx-auto p-3 md:p-6 lg:p-10 space-y-8">
         
-        <header className="flex flex-col lg:flex-row justify-between items-center gap-5 px-3 backdrop-blur-sm p-5 rounded-xl border shadow-sm transition-all no-export" style={getThemeCardStyle()}>
-          <div className="flex items-center gap-3">
-            <Link href="/">
-              <Button variant="ghost" size="sm" className="text-xs font-medium" style={{ color: theme.text }}>
-                <ArrowLeft size={14} className="mr-2"/> Voltar
-              </Button>
-            </Link>
-            
-            <div className="relative flex items-center bg-white/50 backdrop-blur-sm border border-white/40 rounded-lg px-4 py-2 shadow-xs">
-              <Calendar size={14} className="mr-2" style={{ color: theme.primary, opacity: 0.6 }} />
-              <select 
-                value={currentYear} 
-                onChange={(e) => setCurrentYear(Number(e.target.value))}
-                className="appearance-none bg-transparent text-sm font-semibold pr-6 outline-none cursor-pointer"
-                style={{ color: theme.text }}
-              >
-                {yearsAvailable.map(y => <option key={y} value={y}>{y}</option>)}
-              </select>
-              <ChevronDown size={12} className="absolute right-3 pointer-events-none opacity-50" />
+        <SiteHeader 
+          activeTheme={currentTheme} 
+          setActiveTheme={setCurrentTheme as any}
+          title={
+            <div className="flex items-center gap-3">
+              <Link href="/">
+                <Button variant="ghost" size="sm" className="text-xs font-serif italic border border-dashed rounded-full bg-white/50" style={{ color: theme.text }}>
+                  <ArrowLeft size={14} className="mr-2"/> Voltar
+                </Button>
+              </Link>
             </div>
-          </div>
+          }
+          rightContent={
+            <div className="flex items-center gap-2">
+              <div className="relative flex items-center bg-white/50 backdrop-blur-sm border border-dashed rounded-full px-4 py-2 shadow-xs" style={{ borderColor: `${theme.primary}40` }}>
+                <Calendar size={14} className="mr-2" style={{ color: theme.primary, opacity: 0.6 }} />
+                <select 
+                  value={currentYear} 
+                  onChange={(e) => setCurrentYear(Number(e.target.value))}
+                  className="appearance-none bg-transparent text-sm font-serif italic font-semibold pr-6 outline-none cursor-pointer"
+                  style={{ color: theme.text }}
+                >
+                  {yearsAvailable.map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+                <ChevronDown size={12} className="absolute right-3 pointer-events-none opacity-50" />
+              </div>
 
-          <div className="flex backdrop-blur-sm p-1.5 rounded-lg shadow-xs border gap-1 transition-all" style={getThemeCardStyle()}>
-            {Object.keys(THEMES).slice(0, 4).map((t) => (
-              <button key={t} onClick={() => handleThemeChange(t as any)} className={`p-2 transition-all rounded-md ${currentTheme === t ? isDarkTheme ? 'bg-slate-700 shadow-md scale-105' : 'bg-white shadow-xs scale-105' : 'opacity-50 hover:opacity-75'}`}>
-                <BookOpen size={16} color={THEMES[t as keyof typeof THEMES].primary} fill={currentTheme === t ? THEMES[t as keyof typeof THEMES].primary : "transparent"} strokeWidth={1.5} />
-              </button>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button 
-              onClick={() => {
-                if (selectedCardOption === 'retrospectiva') {
-                  handleExportAll()
-                } else if (selectedCardOption === 'biblioteca') {
-                  handleExportAll()
-                } else {
-                  handleExportCardOption()
-                }
-              }} 
-              disabled={isGenerating || (selectedCardOption === 'retrospectiva' && allBooks.length === 0) || (selectedCardOption === 'biblioteca' && allBooks.length === 0)} 
-              className="rounded-lg font-medium text-sm px-6 py-2.5 shadow-sm hover:shadow-md transition-all" 
-              style={{ backgroundColor: theme.primary, color: 'white' }}
-            >
-              {isGenerating ? (
-                <Loader2 className="animate-spin" size={14}/>
-              ) : (
-                <>
-                  <Instagram size={14} className="mr-2"/> 
-                  Exportar {selectedCardOption === 'retrospectiva' ? 'Retrospectiva' : selectedCardOption === 'biblioteca' ? 'Biblioteca' : 'Story'}
-                </>
-              )}
-            </Button>
-            <Link href="/planejados">
-              <Button className="rounded-lg font-medium text-sm px-6 py-2.5 shadow-sm hover:shadow-md transition-all" variant="outline">
-                <Bookmark size={14} className="mr-2" /> Planejados
+              <Button 
+                onClick={() => {
+                  if (selectedCardOption === 'retrospectiva') {
+                    handleExportAll()
+                  } else if (selectedCardOption === 'biblioteca') {
+                    handleExportAll()
+                  } else {
+                    handleExportCardOption()
+                  }
+                }} 
+                disabled={isGenerating || (selectedCardOption === 'retrospectiva' && allBooks.length === 0) || (selectedCardOption === 'biblioteca' && allBooks.length === 0)} 
+                className="rounded-full font-serif italic text-sm px-6 py-2.5 shadow-sm hover:shadow-md transition-all border border-dashed" 
+                style={{ backgroundColor: theme.primary, color: 'white', borderColor: `${theme.primary}50` }}
+              >
+                {isGenerating ? (
+                  <Loader2 className="animate-spin" size={14}/>
+                ) : (
+                  <>
+                    <Instagram size={14} className="mr-2"/> 
+                    Exportar {selectedCardOption === 'retrospectiva' ? 'Retrospectiva' : selectedCardOption === 'biblioteca' ? 'Biblioteca' : 'Story'}
+                  </>
+                )}
               </Button>
-            </Link>
-          </div>
-        </header>
+            </div>
+          }
+        />
 
         {/* Stats Cards - Destaque das métricas principais */}
         {stats && (
@@ -512,16 +559,16 @@ export default function RetrospectivaPage() {
             {/* LINHA 1: Estatísticas de Impacto */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Meta Batida - Total de livros */}
-              <div className="backdrop-blur-sm rounded-xl p-5 border shadow-sm hover:shadow-md transition-all" style={getThemeCardStyle()}>
+              <div className="backdrop-blur-md bg-white/40 rounded-[2rem] p-6 border border-dashed shadow-sm hover:shadow-md transition-all relative overflow-hidden" style={getThemeCardStyle()}>
                 <div className="flex flex-col justify-center h-full">
                   <div className="flex items-center gap-2 mb-3">
                     <BookOpen size={14} style={{ color: theme.primary }} />
-                    <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: theme.primary }}>
+                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] font-serif" style={{ color: theme.primary }}>
                       Livros lidos
                     </span>
                   </div>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-bold" style={{ color: theme.primary }}>
+                    <span className="text-4xl font-serif italic text-slate-700" style={{ color: theme.primary }}>
                       {stats.totalBooks}
                     </span>
                     <span className="text-lg font-light" style={{ color: theme.text, opacity: 0.6 }}>
@@ -535,16 +582,16 @@ export default function RetrospectivaPage() {
               </div>
 
               {/* Páginas de uma Vida - Total de páginas */}
-              <div className="backdrop-blur-sm rounded-xl p-5 border shadow-sm hover:shadow-md transition-all" style={getThemeCardStyle()}>
+              <div className="backdrop-blur-md bg-white/40 rounded-[2rem] p-6 border border-dashed shadow-sm hover:shadow-md transition-all relative overflow-hidden" style={getThemeCardStyle()}>
                 <div className="flex flex-col justify-center h-full">
                   <div className="flex items-center gap-2 mb-3">
                     <BookOpen size={14} style={{ color: theme.primary }} />
-                    <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: theme.primary }}>
+                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] font-serif" style={{ color: theme.primary }}>
                       Páginas de uma Vida
                     </span>
                   </div>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-bold" style={{ color: theme.primary }}>
+                    <span className="text-4xl font-serif italic text-slate-700" style={{ color: theme.primary }}>
                       {stats.totalPagesYear.toLocaleString()}
                     </span>
                   </div>
@@ -555,11 +602,11 @@ export default function RetrospectivaPage() {
               </div>
 
               {/* Meu Ritmo Favorito - Gênero mais lido */}
-              <div className="backdrop-blur-sm rounded-xl p-5 border shadow-sm hover:shadow-md transition-all" style={getThemeCardStyle()}>
+              <div className="backdrop-blur-md bg-white/40 rounded-[2rem] p-6 border border-dashed shadow-sm hover:shadow-md transition-all relative overflow-hidden" style={getThemeCardStyle()}>
                 <div className="flex flex-col justify-center h-full">
                   <div className="flex items-center gap-2 mb-3">
                     <BookOpen size={14} style={{ color: theme.primary }} />
-                    <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: theme.primary }}>
+                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] font-serif" style={{ color: theme.primary }}>
                       Meu Ritmo Favorito
                     </span>
                   </div>
@@ -578,16 +625,16 @@ export default function RetrospectivaPage() {
             {/* LINHA 2: Destaques Principais */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Pico de Leitura */}
-              <div className="backdrop-blur-sm rounded-xl p-5 border shadow-sm hover:shadow-md transition-all" style={getThemeCardStyle()}>
+              <div className="backdrop-blur-md bg-white/40 rounded-[2rem] p-6 border border-dashed shadow-sm hover:shadow-md transition-all relative overflow-hidden" style={getThemeCardStyle()}>
                 <div className="flex flex-col justify-center h-full">
                   <div className="flex items-center gap-2 mb-3">
                     <Calendar size={14} style={{ color: theme.primary }} />
-                    <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: theme.primary }}>
+                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] font-serif" style={{ color: theme.primary }}>
                       Pico de Leitura
                     </span>
                   </div>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-bold" style={{ color: theme.primary }}>
+                    <span className="text-4xl font-serif italic text-slate-700" style={{ color: theme.primary }}>
                       {stats.productiveMonthName}
                     </span>
                     <span className="text-lg font-light" style={{ color: theme.text, opacity: 0.6 }}>
@@ -601,9 +648,9 @@ export default function RetrospectivaPage() {
               </div>
 
               {/* Favorito do Ano */}
-              <div className="backdrop-blur-sm rounded-xl p-5 border shadow-sm hover:shadow-md transition-all" style={getThemeCardStyle()}>
+              <div className="backdrop-blur-md bg-white/40 rounded-[2rem] p-6 border border-dashed shadow-sm hover:shadow-md transition-all relative overflow-hidden" style={getThemeCardStyle()}>
                 <div className="flex items-start gap-4">
-                  <div className="w-16 h-24 rounded-lg overflow-hidden shadow-md border-2 border-white shrink-0 relative">
+                  <div className="w-16 h-24 rounded-lg overflow-hidden shadow-md border border-dashed border-white/50 shrink-0 relative">
                     <OptimizedBookCover
                       src={getProxyUrl(stats.bestRated?.cover_url)}
                       alt={stats.bestRated?.book_name || ""}
@@ -637,9 +684,9 @@ export default function RetrospectivaPage() {
               </div>
 
               {/* O Grande Calhamaço */}
-              <div className="backdrop-blur-sm rounded-xl p-5 border shadow-sm hover:shadow-md transition-all" style={getThemeCardStyle()}>
+              <div className="backdrop-blur-md bg-white/40 rounded-[2rem] p-6 border border-dashed shadow-sm hover:shadow-md transition-all relative overflow-hidden" style={getThemeCardStyle()}>
                 <div className="flex items-start gap-4">
-                  <div className="w-16 h-24 rounded-lg overflow-hidden shadow-md border-2 border-white shrink-0 relative">
+                  <div className="w-16 h-24 rounded-lg overflow-hidden shadow-md border border-dashed border-white/50 shrink-0 relative">
                     <OptimizedBookCover
                       src={getProxyUrl(stats.topBook?.cover_url)}
                       alt={stats.topBook?.book_name || ""}
@@ -650,7 +697,7 @@ export default function RetrospectivaPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
                       <BookOpen size={14} style={{ color: theme.primary }} />
-                      <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: theme.primary }}>
+                      <span className="text-[10px] font-bold uppercase tracking-[0.2em] font-serif" style={{ color: theme.primary }}>
                         O Grande Calhamaço
                       </span>
                     </div>
@@ -669,9 +716,9 @@ export default function RetrospectivaPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Pequena Grande Joia */}
               {stats.shortestBook && (
-                <div className="backdrop-blur-sm rounded-xl p-5 border shadow-sm hover:shadow-md transition-all" style={getThemeCardStyle()}>
+                <div className="backdrop-blur-md bg-white/40 rounded-[2rem] p-6 border border-dashed shadow-sm hover:shadow-md transition-all relative overflow-hidden" style={getThemeCardStyle()}>
                   <div className="flex items-start gap-4">
-                    <div className="w-16 h-24 rounded-lg overflow-hidden shadow-md border-2 border-white shrink-0 relative">
+                    <div className="w-16 h-24 rounded-lg overflow-hidden shadow-md border border-dashed border-white/50 shrink-0 relative">
                       <OptimizedBookCover
                         src={getProxyUrl(stats.shortestBook?.cover_url)}
                         alt={stats.shortestBook?.book_name || ""}
@@ -699,9 +746,9 @@ export default function RetrospectivaPage() {
 
               {/* A Longa Jornada */}
               {stats.slowestBook && (
-                <div className="backdrop-blur-sm rounded-xl p-5 border shadow-sm hover:shadow-md transition-all" style={getThemeCardStyle()}>
+                <div className="backdrop-blur-md bg-white/40 rounded-[2rem] p-6 border border-dashed shadow-sm hover:shadow-md transition-all relative overflow-hidden" style={getThemeCardStyle()}>
                   <div className="flex items-start gap-4">
-                    <div className="w-16 h-24 rounded-lg overflow-hidden shadow-md border-2 border-white shrink-0 relative">
+                    <div className="w-16 h-24 rounded-lg overflow-hidden shadow-md border border-dashed border-white/50 shrink-0 relative">
                       <OptimizedBookCover
                         src={getProxyUrl(stats.slowestBook?.cover_url)}
                         alt={stats.slowestBook?.book_name || ""}
@@ -729,9 +776,9 @@ export default function RetrospectivaPage() {
 
               {/* Em um Piscar de Olhos */}
               {stats.fastestBook && (
-                <div className="backdrop-blur-sm rounded-xl p-5 border shadow-sm hover:shadow-md transition-all" style={getThemeCardStyle()}>
+                <div className="backdrop-blur-md bg-white/40 rounded-[2rem] p-6 border border-dashed shadow-sm hover:shadow-md transition-all relative overflow-hidden" style={getThemeCardStyle()}>
                   <div className="flex items-start gap-4">
-                    <div className="w-16 h-24 rounded-lg overflow-hidden shadow-md border-2 border-white shrink-0 relative">
+                    <div className="w-16 h-24 rounded-lg overflow-hidden shadow-md border border-dashed border-white/50 shrink-0 relative">
                       <OptimizedBookCover
                         src={getProxyUrl(stats.fastestBook?.cover_url)}
                         alt={stats.fastestBook?.book_name || ""}
@@ -762,7 +809,7 @@ export default function RetrospectivaPage() {
 
         {/* Botão inicial para escolher formato - Aparece quando nada está selecionado */}
         {stats && !selectedCardOption && (
-          <div className="backdrop-blur-sm p-8 rounded-3xl border-2 shadow-xl transition-all no-export text-center relative overflow-hidden"
+          <div className="backdrop-blur-md bg-white/40 p-8 rounded-[2.5rem] border border-dashed shadow-sm transition-all no-export text-center relative overflow-hidden"
                style={{
                  ...getThemeCardStyle(),
                  background: isDarkTheme 
@@ -778,7 +825,7 @@ export default function RetrospectivaPage() {
               <div className="inline-block p-4 rounded-2xl mb-2" style={{ backgroundColor: `${theme.primary}15` }}>
                 <Instagram size={32} style={{ color: theme.primary }} />
               </div>
-              <h3 style={{ color: theme.text }} className="text-2xl font-black">
+              <h3 style={{ color: theme.text }} className="text-2xl font-bold font-serif">
                 Escolha como compartilhar
               </h3>
               <p style={{ color: theme.text, opacity: 0.6 }} className="text-sm max-w-md mx-auto mb-6">
@@ -859,7 +906,7 @@ export default function RetrospectivaPage() {
 
         {/* Seletor de Stories para Instagram - Só aparece quando algo está selecionado */}
         {stats && selectedCardOption && (
-          <div className="backdrop-blur-sm p-6 rounded-3xl border-2 shadow-2xl transition-all no-export relative overflow-hidden" 
+          <div className="backdrop-blur-sm p-6 rounded-3xl border border-dashed shadow-2xl transition-all no-export relative overflow-hidden" 
                style={{
                  ...getThemeCardStyle(),
                  background: isDarkTheme 
@@ -881,7 +928,7 @@ export default function RetrospectivaPage() {
               <X size={18} style={{ color: theme.text }} />
             </button>
             
-            <h3 style={{ color: theme.text }} className="text-xl font-black mb-2 text-center flex items-center justify-center gap-2 relative z-10">
+            <h3 style={{ color: theme.text }} className="text-xl font-bold font-serif mb-2 text-center flex items-center justify-center gap-2 relative z-10">
               <span className="text-2xl">📱</span>
               <span>Compartilhe no Instagram</span>
             </h3>
@@ -988,34 +1035,34 @@ export default function RetrospectivaPage() {
           <div 
             ref={cardOptionARef}
             style={{ width: '400px', height: '850px', backgroundColor: theme.bg, margin: '0 auto' }}
-            className="px-8 py-6 flex flex-col rounded-[50px] shadow-2xl relative border-2 shrink-0 overflow-hidden"
+            className="px-8 py-6 flex flex-col rounded-[3rem] shadow-sm relative border border-dashed shrink-0 overflow-hidden"
           >
             {/* Decoração de fundo */}
             <div className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl opacity-10" style={{ backgroundColor: theme.primary }}></div>
             <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full blur-3xl opacity-10" style={{ backgroundColor: '#f59e0b' }}></div>
             
-            <div className="flex flex-col flex-1 relative z-10">
+            <div className="flex flex-col flex-1 relative z-10 font-serif">
               {/* Header */}
               <div className="text-center mb-6">
-                <div className="inline-block px-4 py-2 rounded-full mb-3" style={{ backgroundColor: `${theme.primary}20` }}>
-                  <p style={{ color: theme.primary }} className="text-[10px] font-black uppercase tracking-[0.3em]">🎯 Meu Ano em Livros</p>
+                <div className="inline-block px-4 py-2 rounded-full mb-3" style={{ backgroundColor: `${theme.primary}10`, border: `1px dashed ${theme.primary}50` }}>
+                  <p style={{ color: theme.primary }} className="text-[10px] font-bold font-serif uppercase tracking-[0.2em] italic">🎯 Meu Ano em Livros</p>
                 </div>
-                <h1 style={{ color: theme.text, fontFamily: "'Dancing Script', 'Lucida Handwriting', cursive", fontWeight: 700 }} className="text-5xl tracking-tighter">{currentYear}</h1>
+                <h1 style={{ color: theme.text, fontWeight: 700 }} className="text-5xl tracking-tighter">{currentYear}</h1>
               </div>
 
               {/* Stats Grid */}
               <div className="space-y-4 flex-1">
                 {/* Total de Livros - Destaque */}
-                <div className="relative rounded-2xl p-6 shadow-lg" style={{ 
+                <div className="relative p-6 shadow-sm border border-dashed rounded-[2rem]" style={{ 
                   background: `linear-gradient(135deg, ${theme.primary}20 0%, ${theme.primary}10 100%)`,
                   borderLeft: `4px solid ${theme.primary}`
                 }}>
                   <div className="flex items-center justify-between">
                     <div>
                       <p style={{ color: theme.text }} className="text-xs font-bold uppercase tracking-wider opacity-60 mb-1">Total de Livros</p>
-                      <p style={{ color: theme.primary }} className="text-5xl font-black tracking-tight">{stats.totalBooks}</p>
+                      <p style={{ color: theme.primary }} className="text-5xl font-bold font-serif tracking-tight">{stats.totalBooks}</p>
                     </div>
-                    <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ backgroundColor: `${theme.primary}30` }}>
+                    <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ backgroundColor: `${theme.primary}10` }}>
                       <BookOpen size={28} style={{ color: theme.primary }} strokeWidth={2.5} />
                     </div>
                   </div>
@@ -1027,7 +1074,7 @@ export default function RetrospectivaPage() {
                   borderLeft: '4px solid #3b82f6'
                 }}>
                   <p className="text-xs font-bold uppercase tracking-wider opacity-60 mb-1" style={{ color: theme.text }}>Páginas Lidas</p>
-                  <p className="text-3xl font-black" style={{ color: '#3b82f6' }}>{stats.totalPagesYear.toLocaleString()}</p>
+                  <p className="text-3xl font-bold font-serif" style={{ color: '#3b82f6' }}>{stats.totalPagesYear.toLocaleString()}</p>
                 </div>
 
                 {/* Favorito */}
@@ -1050,13 +1097,16 @@ export default function RetrospectivaPage() {
                   borderLeft: '4px solid #10b981'
                 }}>
                   <p className="text-xs font-bold uppercase tracking-wider opacity-60 mb-1" style={{ color: theme.text }}>Gênero Favorito</p>
-                  <p className="text-xl font-black" style={{ color: '#10b981' }}>{stats.topGenre}</p>
+                  <p className="text-xl font-bold font-serif" style={{ color: '#10b981' }}>{stats.topGenre}</p>
                 </div>
               </div>
               
               {/* Logo/Marca */}
-              <div className="mt-auto pt-3 text-center border-t-2" style={{ borderColor: `${theme.primary}30` }}>
-                <p style={{ color: theme.text, opacity: 0.5 }} className="text-[9px] font-black uppercase tracking-[0.5em]">📚 Calendário Literário</p>
+              <div className="mt-auto pt-3 text-center border-t border-dashed" style={{ borderColor: `${theme.primary}30` }}>
+                <div className="flex items-center justify-center gap-2" style={{ color: theme.text, opacity: 0.5 }}>
+                  <img src="/logo.png" alt="Logo Calendário Literário" className="h-4 w-4 rounded-full object-cover" />
+                  <p className="text-[9px] font-bold font-serif uppercase tracking-[0.2em] italic">Meu Diário Literário e Calendário Literário</p>
+                </div>
               </div>
             </div>
           </div>
@@ -1066,26 +1116,24 @@ export default function RetrospectivaPage() {
           <div 
             ref={cardOptionBRef}
             style={{ width: '400px', height: '850px', backgroundColor: theme.bg, margin: '0 auto' }}
-            className="px-8 py-6 flex flex-col rounded-[50px] shadow-2xl relative border-2 shrink-0 overflow-hidden"
+            className="px-8 py-6 flex flex-col rounded-[3rem] shadow-sm relative border border-dashed shrink-0 overflow-hidden"
           >
             {/* Padrão de fundo */}
-            <div className="absolute inset-0 opacity-5" style={{ 
-              backgroundImage: `repeating-linear-gradient(45deg, ${theme.primary} 0px, ${theme.primary} 2px, transparent 2px, transparent 12px)` 
-            }}></div>
+            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: `radial-gradient(circle, ${theme.primary} 1px, transparent 1px)`, backgroundSize: '20px 20px' }}></div>
             
-            <div className="flex flex-col flex-1 relative z-10">
+            <div className="flex flex-col flex-1 relative z-10 font-serif">
               {/* Header */}
               <div className="text-center mb-6">
-                <div className="inline-block px-4 py-2 rounded-full mb-3" style={{ backgroundColor: `${theme.primary}20` }}>
-                  <p style={{ color: theme.primary }} className="text-[10px] font-black uppercase tracking-[0.3em]">⚡ Os Extremos</p>
+                <div className="inline-block px-4 py-2 rounded-full mb-3" style={{ backgroundColor: `${theme.primary}10`, border: `1px dashed ${theme.primary}50` }}>
+                  <p style={{ color: theme.primary }} className="text-[10px] font-bold font-serif uppercase tracking-[0.2em] italic">⚡ Os Extremos</p>
                 </div>
-                <h1 style={{ color: theme.text }} className="text-5xl font-black tracking-tighter leading-tight">Do Calhamaço<br/>ao Flash</h1>
+                <h1 style={{ color: theme.text }} className="text-5xl font-bold font-serif tracking-tighter leading-tight">Do Calhamaço<br/>ao Flash</h1>
               </div>
 
               <div className="space-y-5 flex-1">
                 {/* Maior livro */}
                 {stats.topBook && (
-                  <div className="relative rounded-3xl p-6 shadow-xl overflow-hidden" style={{ 
+                  <div className="relative p-6 shadow-sm border border-dashed overflow-hidden rounded-[2rem]" style={{ 
                     background: `linear-gradient(135deg, ${theme.primary}25 0%, ${theme.primary}15 100%)` 
                   }}>
                     <div className="absolute top-0 right-0 w-24 h-24 rounded-full blur-2xl opacity-20" style={{ backgroundColor: theme.primary }}></div>
@@ -1094,11 +1142,11 @@ export default function RetrospectivaPage() {
                         <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: theme.primary }}>
                           <BookOpen size={16} className="text-white" strokeWidth={2.5} />
                         </div>
-                        <p style={{ color: theme.primary }} className="text-xs font-black uppercase tracking-wider">O Grande Calhamaço</p>
+                        <p style={{ color: theme.primary }} className="text-xs font-bold font-serif uppercase tracking-wider">O Grande Calhamaço</p>
                       </div>
-                      <p style={{ color: theme.text }} className="text-xl font-black line-clamp-2 mb-2">{stats.topBook.book_name}</p>
-                      <div className="inline-block px-3 py-1.5 rounded-full" style={{ backgroundColor: `${theme.primary}30` }}>
-                        <p style={{ color: theme.primary }} className="text-sm font-black">{Number(stats.topBook.total_pages).toLocaleString()} páginas</p>
+                      <p style={{ color: theme.text }} className="text-xl font-bold font-serif line-clamp-2 mb-2">{stats.topBook.book_name}</p>
+                      <div className="inline-block px-3 py-1.5 rounded-full" style={{ backgroundColor: `${theme.primary}10` }}>
+                        <p style={{ color: theme.primary }} className="text-sm font-bold font-serif">{Number(stats.topBook.total_pages).toLocaleString()} páginas</p>
                       </div>
                     </div>
                   </div>
@@ -1106,7 +1154,7 @@ export default function RetrospectivaPage() {
 
                 {/* Menor livro */}
                 {stats.shortestBook && (
-                  <div className="relative rounded-3xl p-6 shadow-xl overflow-hidden" style={{ 
+                  <div className="relative p-6 shadow-sm border border-dashed overflow-hidden rounded-[2rem]" style={{ 
                     background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.25) 0%, rgba(168, 85, 247, 0.15) 100%)' 
                   }}>
                     <div className="absolute top-0 right-0 w-24 h-24 rounded-full blur-2xl opacity-20" style={{ backgroundColor: '#a855f7' }}></div>
@@ -1115,11 +1163,11 @@ export default function RetrospectivaPage() {
                         <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#a855f7' }}>
                           <BookOpen size={14} className="text-white" strokeWidth={2.5} />
                         </div>
-                        <p className="text-xs font-black uppercase tracking-wider" style={{ color: '#a855f7' }}>Pequena Grande Joia</p>
+                        <p className="text-xs font-bold font-serif uppercase tracking-wider" style={{ color: '#a855f7' }}>Pequena Grande Joia</p>
                       </div>
-                      <p style={{ color: theme.text }} className="text-xl font-black line-clamp-2 mb-2">{stats.shortestBook.book_name}</p>
+                      <p style={{ color: theme.text }} className="text-xl font-bold font-serif line-clamp-2 mb-2">{stats.shortestBook.book_name}</p>
                       <div className="inline-block px-3 py-1.5 rounded-full" style={{ backgroundColor: 'rgba(168, 85, 247, 0.3)' }}>
-                        <p className="text-sm font-black" style={{ color: '#a855f7' }}>{Number(stats.shortestBook.total_pages).toLocaleString()} páginas</p>
+                        <p className="text-sm font-bold font-serif" style={{ color: '#a855f7' }}>{Number(stats.shortestBook.total_pages).toLocaleString()} páginas</p>
                       </div>
                     </div>
                   </div>
@@ -1127,7 +1175,7 @@ export default function RetrospectivaPage() {
 
                 {/* Mais rápido */}
                 {stats.fastestBook && (
-                  <div className="relative rounded-3xl p-6 shadow-xl overflow-hidden" style={{ 
+                  <div className="relative p-6 shadow-sm border border-dashed overflow-hidden rounded-[2rem]" style={{ 
                     background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(16, 185, 129, 0.15) 100%)' 
                   }}>
                     <div className="absolute top-0 right-0 w-24 h-24 rounded-full blur-2xl opacity-20" style={{ backgroundColor: '#10b981' }}></div>
@@ -1136,11 +1184,11 @@ export default function RetrospectivaPage() {
                         <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#10b981' }}>
                           <Zap size={16} className="text-white fill-white" strokeWidth={2} />
                         </div>
-                        <p className="text-xs font-black uppercase tracking-wider" style={{ color: '#10b981' }}>Em um Piscar de Olhos</p>
+                        <p className="text-xs font-bold font-serif uppercase tracking-wider" style={{ color: '#10b981' }}>Em um Piscar de Olhos</p>
                       </div>
-                      <p style={{ color: theme.text }} className="text-xl font-black line-clamp-2 mb-2">{stats.fastestBook.book_name}</p>
+                      <p style={{ color: theme.text }} className="text-xl font-bold font-serif line-clamp-2 mb-2">{stats.fastestBook.book_name}</p>
                       <div className="inline-block px-3 py-1.5 rounded-full" style={{ backgroundColor: 'rgba(16, 185, 129, 0.3)' }}>
-                        <p className="text-sm font-black" style={{ color: '#10b981' }}>{stats.fastestBook.readingDays} {stats.fastestBook.readingDays === 1 ? 'dia' : 'dias'}</p>
+                        <p className="text-sm font-bold font-serif" style={{ color: '#10b981' }}>{stats.fastestBook.readingDays} {stats.fastestBook.readingDays === 1 ? 'dia' : 'dias'}</p>
                       </div>
                     </div>
                   </div>
@@ -1148,8 +1196,11 @@ export default function RetrospectivaPage() {
               </div>
               
               {/* Logo/Marca */}
-              <div className="mt-auto pt-3 text-center border-t-2" style={{ borderColor: `${theme.primary}30` }}>
-                <p style={{ color: theme.text, opacity: 0.5 }} className="text-[9px] font-black uppercase tracking-[0.5em]">📚 Calendário Literário</p>
+              <div className="mt-auto pt-3 text-center border-t border-dashed" style={{ borderColor: `${theme.primary}30` }}>
+                <div className="flex items-center justify-center gap-2" style={{ color: theme.text, opacity: 0.5 }}>
+                  <img src="/logo.png" alt="Logo Calendário Literário" className="h-4 w-4 rounded-full object-cover" />
+                  <p className="text-[9px] font-bold font-serif uppercase tracking-[0.2em] italic">Meu Diário Literário e Calendário Literário</p>
+                </div>
               </div>
             </div>
           </div>
@@ -1159,20 +1210,20 @@ export default function RetrospectivaPage() {
           <div 
             ref={cardOptionCRef}
             style={{ width: '400px', height: '850px', backgroundColor: theme.bg, margin: '0 auto' }}
-            className="px-8 py-6 flex flex-col rounded-[50px] shadow-2xl relative border-2 shrink-0 overflow-hidden"
+            className="px-8 py-6 flex flex-col rounded-[3rem] shadow-sm relative border border-dashed shrink-0 overflow-hidden"
           >
             {/* Decoração de fundo - diamantes */}
             <div className="absolute top-10 right-10 text-6xl opacity-5">💎</div>
             <div className="absolute bottom-20 left-10 text-6xl opacity-5">💎</div>
             <div className="absolute top-1/2 left-1/4 text-4xl opacity-5">✨</div>
             
-            <div className="flex flex-col flex-1 relative z-10">
+            <div className="flex flex-col flex-1 relative z-10 font-serif">
               {/* Header */}
               <div className="text-center mb-6">
                 <div className="inline-block px-4 py-2 rounded-full mb-3" style={{ background: `linear-gradient(135deg, ${theme.primary}30, ${theme.primary}20)` }}>
-                  <p style={{ color: theme.primary }} className="text-[10px] font-black uppercase tracking-[0.3em]">💎 Minhas Verdades</p>
+                  <p style={{ color: theme.primary }} className="text-[10px] font-bold font-serif uppercase tracking-[0.2em] italic">💎 Minhas Verdades</p>
                 </div>
-                <h1 style={{ color: theme.text, fontFamily: "'Dancing Script', 'Lucida Handwriting', cursive", fontWeight: 700 }} className="text-5xl tracking-tighter">{currentYear}</h1>
+                <h1 style={{ color: theme.text, fontWeight: 700 }} className="text-5xl tracking-tighter">{currentYear}</h1>
               </div>
 
               <div className="space-y-5 flex-1">
@@ -1185,16 +1236,16 @@ export default function RetrospectivaPage() {
                     <div className="relative">
                       <div className="flex items-center gap-2 mb-3">
                         <Crown size={20} className="text-white fill-white" />
-                        <p className="text-xs font-black uppercase tracking-wider text-white">Favorito do Ano</p>
+                        <p className="text-xs font-bold font-serif uppercase tracking-wider text-white">Favorito do Ano</p>
                       </div>
-                      <p className="text-2xl font-black text-white line-clamp-2">{stats.bestRated.book_name}</p>
+                      <p className="text-2xl font-bold font-serif text-white line-clamp-2">{stats.bestRated.book_name}</p>
                     </div>
                   </div>
                 )}
 
                 {/* Reading streak */}
                 {stats.slowestBook && (
-                  <div className="relative rounded-3xl p-5 shadow-lg" style={{ 
+                  <div className="relative p-6 shadow-sm border border-dashed rounded-[2rem]" style={{ 
                     background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.25) 0%, rgba(14, 165, 233, 0.15) 100%)',
                     borderLeft: '5px solid #0ea5e9'
                   }}>
@@ -1203,8 +1254,8 @@ export default function RetrospectivaPage() {
                         <Clock size={20} className="text-white" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-xs font-black uppercase tracking-wide mb-2" style={{ color: '#0ea5e9' }}>A Longa Jornada</p>
-                        <p style={{ color: theme.text }} className="text-lg font-black line-clamp-2 mb-1">{stats.slowestBook.book_name}</p>
+                        <p className="text-xs font-bold font-serif uppercase tracking-wide mb-2" style={{ color: '#0ea5e9' }}>A Longa Jornada</p>
+                        <p style={{ color: theme.text }} className="text-lg font-bold font-serif line-clamp-2 mb-1">{stats.slowestBook.book_name}</p>
                         <p style={{ color: theme.text, opacity: 0.6 }} className="text-sm font-bold">{stats.slowestBook.readingDays} {stats.slowestBook.readingDays === 1 ? 'dia' : 'dias'} de leitura</p>
                       </div>
                     </div>
@@ -1212,7 +1263,7 @@ export default function RetrospectivaPage() {
                 )}
 
                 {/* Pico de leitura */}
-                <div className="relative rounded-3xl p-5 shadow-lg" style={{ 
+                <div className="relative p-6 shadow-sm border border-dashed rounded-[2rem]" style={{ 
                   background: `linear-gradient(135deg, ${theme.primary}25 0%, ${theme.primary}15 100%)`,
                   borderLeft: `5px solid ${theme.primary}`
                 }}>
@@ -1221,8 +1272,8 @@ export default function RetrospectivaPage() {
                       <Zap size={20} className="text-white fill-white" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-xs font-black uppercase tracking-wide mb-2" style={{ color: theme.primary }}>Pico de Leitura</p>
-                      <p style={{ color: theme.text }} className="text-2xl font-black">{stats.productiveMonthName}</p>
+                      <p className="text-xs font-bold font-serif uppercase tracking-wide mb-2" style={{ color: theme.primary }}>Pico de Leitura</p>
+                      <p style={{ color: theme.text }} className="text-2xl font-bold font-serif">{stats.productiveMonthName}</p>
                       <p style={{ color: theme.text, opacity: 0.6 }} className="text-sm font-bold mt-1">{stats.productiveMonthCount} {stats.productiveMonthCount === 1 ? 'livro' : 'livros'} neste mês</p>
                     </div>
                   </div>
@@ -1231,21 +1282,24 @@ export default function RetrospectivaPage() {
                 {/* Média de páginas */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-2xl p-4 text-center shadow-md" style={{ background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(236, 72, 153, 0.1))' }}>
-                    <p className="text-xs font-bold uppercase tracking-wide mb-1" style={{ color: '#ec4899' }}>Média</p>
-                    <p className="text-2xl font-black" style={{ color: theme.text }}>{Math.round(stats.totalPagesYear / stats.totalBooks)}</p>
-                    <p className="text-[10px] opacity-60" style={{ color: theme.text }}>págs/livro</p>
+                    <p className="text-xs font-bold uppercase tracking-wide mb-1" style={{ color: '#ec4899' }}>Livros no mês</p>
+                    <p className="text-2xl font-bold font-serif" style={{ color: theme.text }}>{stats.productiveMonthCount}</p>
+                    <p className="text-[10px] opacity-60" style={{ color: theme.text }}>lidos</p>
                   </div>
                   <div className="rounded-2xl p-4 text-center shadow-md" style={{ background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(139, 92, 246, 0.1))' }}>
-                    <p className="text-xs font-bold uppercase tracking-wide mb-1" style={{ color: '#8b5cf6' }}>Total</p>
-                    <p className="text-2xl font-black" style={{ color: theme.text }}>{stats.totalBooks}</p>
-                    <p className="text-[10px] opacity-60" style={{ color: theme.text }}>livros</p>
+                    <p className="text-xs font-bold uppercase tracking-wide mb-1" style={{ color: '#8b5cf6' }}>Páginas lidas</p>
+                    <p className="text-2xl font-bold font-serif" style={{ color: theme.text }}>{stats.productiveMonthPages.toLocaleString()}</p>
+                    <p className="text-[10px] opacity-60" style={{ color: theme.text }}>no mês</p>
                   </div>
                 </div>
               </div>
               
               {/* Logo/Marca */}
-              <div className="mt-auto pt-3 text-center border-t-2" style={{ borderColor: `${theme.primary}30` }}>
-                <p style={{ color: theme.text, opacity: 0.5 }} className="text-[9px] font-black uppercase tracking-[0.5em]">📚 Calendário Literário</p>
+              <div className="mt-auto pt-3 text-center border-t border-dashed" style={{ borderColor: `${theme.primary}30` }}>
+                <div className="flex items-center justify-center gap-2" style={{ color: theme.text, opacity: 0.5 }}>
+                  <img src="/logo.png" alt="Logo Calendário Literário" className="h-4 w-4 rounded-full object-cover" />
+                  <p className="text-[9px] font-bold font-serif uppercase tracking-[0.2em] italic">Meu Diário Literário e Calendário Literário</p>
+                </div>
               </div>
             </div>
           </div>
@@ -1254,7 +1308,7 @@ export default function RetrospectivaPage() {
         {/* Stories - Retrospectiva (apenas resumo) */}
           {allBooks.length > 0 && selectedCardOption === 'retrospectiva' && (
             <div className="flex flex-wrap gap-12 justify-center">
-              <div ref={storyResumoRef} style={{ width: '400px', height: '850px', backgroundColor: theme.bg, borderImage: `linear-gradient(135deg, ${theme.primary}40, transparent) 1` }} className="px-8 py-6 flex flex-col rounded-[50px] shadow-2xl relative border-2 shrink-0 overflow-hidden">
+              <div ref={storyResumoRef} style={{ width: '400px', height: '850px', backgroundColor: theme.bg, borderImage: `linear-gradient(135deg, ${theme.primary}40, transparent) 1` }} className="px-8 py-6 flex flex-col rounded-[3rem] shadow-sm relative border border-dashed shrink-0 overflow-hidden">
                 {/* Decoração de fundo */}
                 <div className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl opacity-10" style={{ backgroundColor: theme.primary }}></div>
                 <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full blur-3xl opacity-10" style={{ backgroundColor: '#ec4899' }}></div>
@@ -1263,16 +1317,16 @@ export default function RetrospectivaPage() {
                 <div className="relative z-10">
                   {/* Header */}
                   <div className="text-center mb-6">
-                    <div className="inline-block px-4 py-2 rounded-full mb-3" style={{ backgroundColor: `${theme.primary}20` }}>
-                      <p style={{ color: theme.primary }} className="text-[10px] font-black uppercase tracking-[0.4em]">📊 Retrospectiva Literária</p>
+                    <div className="inline-block px-4 py-2 rounded-full mb-3" style={{ backgroundColor: `${theme.primary}10`, border: `1px dashed ${theme.primary}50` }}>
+                      <p style={{ color: theme.primary }} className="text-[10px] font-bold font-serif uppercase tracking-[0.4em]">📊 Retrospectiva Literária</p>
                     </div>
-                    <h1 style={{ color: theme.text, fontFamily: "'Dancing Script', 'Lucida Handwriting', cursive", fontWeight: 700 }} className="text-4xl tracking-tighter">{currentYear}</h1>
+                    <h1 style={{ color: theme.text, fontWeight: 700 }} className="text-4xl tracking-tighter">{currentYear}</h1>
                   </div>
 
                   {/* Livro Destaque */}
                   <div className="mb-4 relative">
                     {/* Badge TOP 1 */}
-                    <div className="absolute -top-3 -right-3 bg-linear-to-br from-amber-400 to-amber-600 text-white text-[11px] font-black px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1 z-20">
+                    <div className="absolute -top-3 -right-3 bg-linear-to-br from-amber-400 to-amber-600 text-white text-[11px] font-bold font-serif px-3 py-1.5 rounded-full shadow-sm border border-dashed flex items-center gap-1 z-20">
                       <Crown size={11} className="fill-white" />
                       TOP 1
                     </div>
@@ -1295,12 +1349,12 @@ export default function RetrospectivaPage() {
                             <div className="p-1 rounded-lg bg-amber-500/20">
                               <Crown size={12} className="fill-amber-500 text-amber-500" />
                             </div>
-                            <span className="text-[9px] font-black uppercase tracking-wider" style={{ color: theme.primary }}>Livro Destaque</span>
+                            <span className="text-[9px] font-bold font-serif uppercase tracking-wider" style={{ color: theme.primary }}>Livro Destaque</span>
                           </div>
-                          <p style={{ color: theme.text }} className="text-sm font-black leading-tight line-clamp-2 mb-2">{stats?.highlightBook?.book_name}</p>
+                          <p style={{ color: theme.text }} className="text-sm font-bold font-serif leading-tight line-clamp-2 mb-2">{stats?.highlightBook?.book_name}</p>
                           <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full" style={{ backgroundColor: `${theme.primary}50`, boxShadow: `0 4px 12px ${theme.primary}20` }}>
                             <BookOpen size={10} style={{ color: theme.primary }} />
-                            <p className="text-[10px] font-black" style={{ color: theme.primary }}>
+                            <p className="text-[10px] font-bold font-serif" style={{ color: theme.primary }}>
                               {Number(stats?.highlightBook?.total_pages || 0).toLocaleString()} páginas
                             </p>
                           </div>
@@ -1311,34 +1365,34 @@ export default function RetrospectivaPage() {
 
                   {/* Stats em Cards */}
                   <div className="grid grid-cols-3 gap-2 mb-4">
-                    <div className="rounded-2xl p-3 text-center shadow-lg relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${theme.primary}30, ${theme.primary}15)` }}>
+                    <div className="p-3 text-center shadow-sm border border-dashed rounded-[2rem] relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${theme.primary}30, ${theme.primary}15)` }}>
                       <div className="absolute top-0 right-0 w-16 h-16 rounded-full blur-2xl opacity-20" style={{ backgroundColor: theme.primary }}></div>
                       <div className="flex items-center justify-center mb-1">
-                        <div className="p-1.5 rounded-lg" style={{ backgroundColor: `${theme.primary}20` }}>
+                        <div className="p-1.5 rounded-lg" style={{ backgroundColor: `${theme.primary}10`, border: `1px dashed ${theme.primary}50` }}>
                           <BookOpen size={12} style={{ color: theme.primary }} />
                         </div>
                       </div>
-                      <p style={{ color: theme.text }} className="text-3xl font-black relative z-10">{stats?.totalBooks}</p>
+                      <p style={{ color: theme.text }} className="text-3xl font-bold font-serif relative z-10">{stats?.totalBooks}</p>
                       <p className="text-[8px] font-bold uppercase opacity-60 mt-0.5" style={{ color: theme.text }}>Livros</p>
                     </div>
-                    <div className="rounded-2xl p-3 text-center shadow-lg relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(59, 130, 246, 0.15))' }}>
+                    <div className="p-3 text-center shadow-sm border border-dashed rounded-[2rem] relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(59, 130, 246, 0.15))' }}>
                       <div className="absolute top-0 right-0 w-16 h-16 rounded-full blur-2xl opacity-20 bg-blue-400"></div>
                       <div className="flex items-center justify-center mb-1">
                         <div className="p-1.5 rounded-lg bg-blue-500/20">
                           <FileText size={12} className="text-blue-500" />
                         </div>
                       </div>
-                      <p style={{ color: theme.text }} className="text-2xl font-black leading-tight relative z-10">{stats?.totalPagesYear.toLocaleString()}</p>
+                      <p style={{ color: theme.text }} className="text-2xl font-bold font-serif leading-tight relative z-10">{stats?.totalPagesYear.toLocaleString()}</p>
                       <p className="text-[8px] font-bold uppercase opacity-60 mt-0.5" style={{ color: theme.text }}>Páginas</p>
                     </div>
-                    <div className="rounded-2xl p-3 text-center shadow-lg relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${theme.primary}, ${theme.primary}CC)` }}>
+                    <div className="p-3 text-center shadow-sm border border-dashed rounded-[2rem] relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${theme.primary}, ${theme.primary}CC)` }}>
                       <div className="absolute top-0 right-0 w-16 h-16 rounded-full blur-2xl opacity-30 bg-white"></div>
                       <div className="flex items-center justify-center mb-1">
                         <div className="p-1.5 rounded-lg bg-white/20">
                           <Sparkles size={12} className="text-white" />
                         </div>
                       </div>
-                      <p className="text-white text-sm font-black line-clamp-1 relative z-10">{stats?.topGenre}</p>
+                      <p className="text-white text-sm font-bold font-serif line-clamp-1 relative z-10">{stats?.topGenre}</p>
                       <p className="text-[8px] font-bold uppercase text-white/70 mt-0.5">Gênero</p>
                     </div>
                   </div>
@@ -1362,15 +1416,18 @@ export default function RetrospectivaPage() {
                             backgroundColor: GENRE_COLORS[index % GENRE_COLORS.length],
                             boxShadow: `0 0 8px ${GENRE_COLORS[index % GENRE_COLORS.length]}80`
                           }} />
-                          <span style={{ color: theme.text }} className="text-[7.5px] font-black uppercase tracking-tight truncate">{item.name}</span>
+                          <span style={{ color: theme.text }} className="text-[7.5px] font-bold font-serif uppercase tracking-tight truncate">{item.name}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                   
                   {/* Footer */}
-                  <div className="text-center mt-auto pt-3 border-t-2" style={{ borderColor: `${theme.primary}30` }}>
-                    <p style={{ color: theme.text, opacity: 0.5 }} className="text-[9px] font-black uppercase tracking-[0.5em]">📚 Calendário Literário</p>
+                  <div className="text-center mt-auto pt-3 border-t border-dashed" style={{ borderColor: `${theme.primary}30` }}>
+                    <div className="flex items-center justify-center gap-2" style={{ color: theme.text, opacity: 0.5 }}>
+                      <img src="/logo.png" alt="Logo Calendário Literário" className="h-4 w-4 rounded-full object-cover" />
+                      <p className="text-[9px] font-bold font-serif uppercase tracking-[0.2em] italic">Meu Diário Literário e Calendário Literário</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1381,7 +1438,7 @@ export default function RetrospectivaPage() {
           {allBooks.length > 0 && selectedCardOption === 'biblioteca' && (
             <div className="flex flex-wrap gap-12 justify-center">
               {bookChunks.map((chunk, index) => (
-                <div key={index} ref={el => { paginasLivrosRef.current[index] = el }} style={{ width: '400px', height: '850px', backgroundColor: theme.bg, borderImage: `linear-gradient(135deg, ${theme.primary}40, transparent) 1` }} className="px-6 py-6 flex flex-col rounded-[50px] shadow-2xl relative border-2 overflow-hidden shrink-0">
+                <div key={index} ref={el => { paginasLivrosRef.current[index] = el }} style={{ width: '400px', height: '850px', backgroundColor: theme.bg, borderImage: `linear-gradient(135deg, ${theme.primary}40, transparent) 1` }} className="px-6 py-6 flex flex-col rounded-[50px] shadow-2xl relative border border-dashed overflow-hidden shrink-0">
                   {/* Decoração de fundo */}
                   <div className="absolute top-0 left-0 w-48 h-48 rounded-full blur-3xl opacity-10" style={{ backgroundColor: theme.primary }}></div>
                   <div className="absolute bottom-0 right-0 w-48 h-48 rounded-full blur-3xl opacity-10" style={{ backgroundColor: '#10b981' }}></div>
@@ -1389,14 +1446,14 @@ export default function RetrospectivaPage() {
                   
                   {/* Header */}
                   <div className="text-center mb-4 relative z-10">
-                    <div className="inline-block px-4 py-1.5 rounded-full mb-2" style={{ backgroundColor: `${theme.primary}20` }}>
-                      <p style={{ color: theme.primary }} className="text-[10px] font-black uppercase tracking-[0.4em]">📚 Minha Biblioteca</p>
+                    <div className="inline-block px-4 py-1.5 rounded-full mb-2" style={{ backgroundColor: `${theme.primary}10`, border: `1px dashed ${theme.primary}50` }}>
+                      <p style={{ color: theme.primary }} className="text-[10px] font-bold font-serif uppercase tracking-[0.4em]">📚 Minha Biblioteca</p>
                     </div>
                     <div className="flex items-center justify-center gap-3">
-                      <h1 style={{ color: theme.text, fontFamily: "'Dancing Script', 'Lucida Handwriting', cursive", fontWeight: 700 }} className="text-4xl tracking-tighter">{currentYear}</h1>
+                      <h1 style={{ color: theme.text, fontWeight: 700 }} className="text-4xl tracking-tighter">{currentYear}</h1>
                       {bookChunks.length > 1 && (
                         <div className="px-3 py-1.5 rounded-full shadow-md" style={{ backgroundColor: `${theme.primary}40`, boxShadow: `0 4px 12px ${theme.primary}20` }}>
-                          <p className="text-sm font-black" style={{ color: theme.primary }}>{index + 1}/{bookChunks.length}</p>
+                          <p className="text-sm font-bold font-serif" style={{ color: theme.primary }}>{index + 1}/{bookChunks.length}</p>
                         </div>
                       )}
                     </div>
@@ -1415,11 +1472,11 @@ export default function RetrospectivaPage() {
                   {index === 0 && (
                     <div className="grid grid-cols-2 gap-2 mb-3 relative z-10">
                       <div className="rounded-xl p-2 text-center shadow-md" style={{ background: `linear-gradient(135deg, ${theme.primary}25, ${theme.primary}15)` }}>
-                        <p style={{ color: theme.text }} className="text-lg font-black">{allBooks.length}</p>
+                        <p style={{ color: theme.text }} className="text-lg font-bold font-serif">{allBooks.length}</p>
                         <p className="text-[7px] font-bold uppercase opacity-60" style={{ color: theme.text }}>Livros</p>
                       </div>
                       <div className="rounded-xl p-2 text-center shadow-md" style={{ background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.25), rgba(34, 197, 94, 0.15))' }}>
-                        <p style={{ color: theme.text }} className="text-lg font-black">{stats?.totalPagesYear.toLocaleString()}</p>
+                        <p style={{ color: theme.text }} className="text-lg font-bold font-serif">{stats?.totalPagesYear.toLocaleString()}</p>
                         <p className="text-[7px] font-bold uppercase opacity-60" style={{ color: theme.text }}>Páginas</p>
                       </div>
                     </div>
@@ -1430,7 +1487,7 @@ export default function RetrospectivaPage() {
                   <div className="flex justify-center mb-3 relative z-10">
                     <div className="px-4 py-1.5 rounded-xl shadow-md flex items-center gap-2" style={{ backgroundColor: `${theme.primary}30`, border: `1px solid ${theme.primary}50` }}>
                       <BookOpen size={12} style={{ color: theme.primary }} />
-                      <p className="text-[8px] font-black uppercase" style={{ color: theme.primary }}>{chunk.length} livros nesta página</p>
+                      <p className="text-[8px] font-bold font-serif uppercase" style={{ color: theme.primary }}>{chunk.length} livros nesta página</p>
                     </div>
                   </div>
                   
@@ -1440,7 +1497,7 @@ export default function RetrospectivaPage() {
                       <Link
                         key={bIdx}
                         href={`/diario/${encodeURIComponent(book.book_name)}?year=${currentYear}`}
-                        className="aspect-3/4.5 w-full rounded-lg overflow-hidden bg-white border-2 border-white relative transform transition-all duration-300 group hover:-translate-y-1 hover:shadow-xl"
+                        className="aspect-3/4.5 w-full rounded-lg overflow-hidden bg-white border border-dashed border-white/50 relative transform transition-all duration-300 group hover:-translate-y-1 hover:shadow-xl"
                       >
                         <OptimizedBookCover
                           src={getProxyUrl(book.cover_url)}
@@ -1452,7 +1509,7 @@ export default function RetrospectivaPage() {
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors duration-300 flex flex-col items-center justify-center p-3 rounded-lg">
                           {/* Título do livro - sempre visível com melhor contraste */}
                           <div className="w-full text-center">
-                            <p className="text-white text-[8.5px] font-black line-clamp-3 leading-tight drop-shadow-lg" style={{
+                            <p className="text-white text-[8.5px] font-bold font-serif line-clamp-3 leading-tight drop-shadow-sm border border-dashed rounded-[2rem]" style={{
                               textShadow: '0 3px 6px rgba(0,0,0,0.9)',
                               WebkitTextStroke: '0.5px rgba(0,0,0,0.3)'
                             }}>{book.book_name}</p>
@@ -1468,8 +1525,11 @@ export default function RetrospectivaPage() {
                   </div>
                   
                   {/* Footer */}
-                  <div className="text-center mt-auto pt-3 border-t-2 relative z-10" style={{ borderColor: `${theme.primary}30` }}>
-                    <p style={{ color: theme.text, opacity: 0.5 }} className="text-[9px] font-black uppercase tracking-[0.5em]">📚 Calendário Literário</p>
+                  <div className="text-center mt-auto pt-3 border-t border-dashed relative z-10" style={{ borderColor: `${theme.primary}30` }}>
+                    <div className="flex items-center justify-center gap-2" style={{ color: theme.text, opacity: 0.5 }}>
+                      <img src="/logo.png" alt="Logo Calendário Literário" className="h-4 w-4 rounded-full object-cover" />
+                      <p className="text-[9px] font-bold font-serif uppercase tracking-[0.2em] italic">Meu Diário Literário e Calendário Literário</p>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -1480,37 +1540,32 @@ export default function RetrospectivaPage() {
         {allBooks.length > 0 && (
           <div className="space-y-8 pt-12 px-3 max-w-6xl mx-auto">
             {/* Header da biblioteca */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 backdrop-blur-md p-6 rounded-2xl border-2 shadow-lg relative overflow-hidden transition-all" style={{
-                background: isDarkTheme 
-                  ? 'linear-gradient(135deg, rgba(26, 31, 53, 0.6) 0%, rgba(26, 31, 53, 0.4) 100%)'
-                  : 'linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.4) 100%)',
-                borderColor: isDarkTheme ? 'rgba(45, 58, 82, 0.5)' : 'rgba(255, 255, 255, 0.6)'
-              }}>
-                <div className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl opacity-5" style={{ backgroundColor: theme.primary }}></div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 backdrop-blur-md p-6 border border-dashed rounded-[2.5rem] relative overflow-hidden transition-all" style={vintageCardStyle}>
+                <div className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl opacity-10" style={{ backgroundColor: editorialPalette.accent }}></div>
                 <div className="space-y-2 relative z-10">
                   <div className="flex items-center gap-2.5">
-                    <div className="p-2.5 rounded-xl shadow-sm" style={{ backgroundColor: `${theme.primary}15` }}>
-                      <BookOpen size={18} style={{ color: theme.primary }} strokeWidth={2} />
+                    <div className="p-2.5 rounded-xl shadow-sm border border-dashed" style={{ backgroundColor: 'rgba(140, 123, 110, 0.12)', borderColor: editorialPalette.border }}>
+                      <BookOpen size={18} style={{ color: editorialPalette.accent, opacity: 0.4 }} strokeWidth={1.8} />
                     </div>
-                    <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: theme.primary }}>
-                      Minha Biblioteca {currentYear}
+                    <h2 className="text-[10px] font-serif font-bold tracking-widest italic uppercase" style={{ color: editorialPalette.accent }}>
+                      Minha biblioteca {currentYear}
                     </h2>
                   </div>
-                  <p className="text-2xl font-semibold tracking-tight" style={{ color: theme.text }}>Estante de leitura</p>
-                  <p className="text-xs font-light" style={{ color: theme.text, opacity: 0.6 }}>Veja livros planejados, em andamento e já lidos</p>
+                  <p className="text-3xl font-black italic tracking-tighter" style={{ color: editorialPalette.text }}>Estante de leitura</p>
+                  <p className="text-xs font-serif italic" style={{ color: editorialPalette.muted }}>Veja livros desejados, em andamento e já lidos</p>
                 </div>
                 <div className="relative z-10">
-                  <div className="px-6 py-3 rounded-xl shadow-md text-white font-semibold text-sm flex flex-wrap items-center gap-2" style={{ backgroundColor: theme.primary }}>
-                    <BookOpen size={16} strokeWidth={2} />
-                    {filteredFinishedBooks.length} {filteredFinishedBooks.length === 1 ? 'livro concluído' : 'livros concluídos'}
+                  <div className="px-6 py-3 rounded-[2rem] shadow-sm border border-dashed font-serif italic text-sm flex flex-wrap items-center gap-2" style={{ backgroundColor: editorialPalette.card, color: editorialPalette.text, borderColor: editorialPalette.border }}>
+                    <BookOpen size={16} strokeWidth={1.8} style={{ color: editorialPalette.accent, opacity: 0.4 }} />
+                    {filteredFinishedBooks.length} {filteredFinishedBooks.length === 1 ? 'Livro concluído' : 'Livros concluídos'}
                     {filteredReadingBooks.length > 0 && (
-                      <span className="text-xs opacity-75 ml-2">+ {filteredReadingBooks.length} em leitura</span>
+                      <span className="text-xs opacity-70 ml-2">+ {filteredReadingBooks.length} em leitura</span>
                     )}
                     {filteredPlannedBooks.length > 0 && (
-                      <span className="text-xs opacity-75 ml-2">+ {filteredPlannedBooks.length} planejados</span>
+                      <span className="text-xs opacity-70 ml-2">+ {filteredPlannedBooks.length} Desejados</span>
                     )}
                     {allBooks.length !== filteredFinishedBooks.length && (
-                      <span className="text-xs opacity-75">({allBooks.length} no total)</span>
+                      <span className="text-xs opacity-70">({allBooks.length} no total)</span>
                     )}
                   </div>
                 </div>
@@ -1519,8 +1574,8 @@ export default function RetrospectivaPage() {
 
 
               {filteredReadingBooks.length > 0 && (
-                <Card className="p-4 border border-primary/20 bg-primary/5 rounded-2xl">
-                  <h3 className="text-sm font-bold text-primary mb-2">Livros em andamento ({filteredReadingBooks.length})</h3>
+                <Card className="p-4 border border-dashed rounded-[2.5rem] shadow-sm" style={vintageCardStyle}>
+                  <h3 className="text-sm font-serif italic font-black tracking-tighter mb-3" style={{ color: editorialPalette.text }}>Livros em andamento ({filteredReadingBooks.length})</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {filteredReadingBooks.map((book) => {
                       const start = book.start_date ? new Date(book.start_date) : null
@@ -1529,11 +1584,12 @@ export default function RetrospectivaPage() {
                         <Link
                           key={book.id || book.book_name}
                           href={`/diario/${encodeURIComponent(book.book_name)}?year=${currentYear}`}
-                          className="block border border-primary/30 p-3 rounded-lg bg-white transition hover:-translate-y-1 hover:shadow-md"
+                          className="block border border-dashed p-3 rounded-2xl transition hover:-translate-y-1 hover:shadow-md"
+                          style={{ backgroundColor: editorialPalette.card, borderColor: editorialPalette.border }}
                         >
-                          <p className="text-xs font-bold text-slate-600">{book.book_name}</p>
-                          <p className="text-[10px] text-slate-500 truncate">{book.author_name || 'Autor não informado'}</p>
-                          <p className="text-[10px] text-primary mt-1">{book.start_date ? `Iniciado há ${days} ${days === 1 ? 'dia' : 'dias'}` : 'Início pendente'}</p>
+                          <p className="text-xs font-serif font-black italic tracking-tight" style={{ color: editorialPalette.text }}>{book.book_name}</p>
+                          <p className="text-[10px] font-semibold tracking-widest uppercase truncate" style={{ color: editorialPalette.subtle }}>{book.author_name || 'Autor não informado'}</p>
+                          <p className="text-[10px] mt-1" style={{ color: editorialPalette.accent }}>{book.start_date ? `Iniciado há ${days} ${days === 1 ? 'dia' : 'dias'}` : 'Início pendente'}</p>
                         </Link>
                       )
                     })}
@@ -1546,10 +1602,10 @@ export default function RetrospectivaPage() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between gap-4">
                     <div>
-                      <h3 className="text-sm font-bold text-slate-900">Livros lidos</h3>
-                      <p className="text-xs text-slate-500">Estante com os livros que você já concluiu.</p>
+                      <h3 className="text-sm font-serif italic font-black tracking-tighter" style={{ color: editorialPalette.text }}>Livros lidos</h3>
+                      <p className="text-xs" style={{ color: editorialPalette.muted }}>Estante com os livros que você já concluiu.</p>
                     </div>
-                    <span className="text-sm font-semibold text-slate-700">{filteredFinishedBooks.length} {filteredFinishedBooks.length === 1 ? 'livro' : 'livros'}</span>
+                    <span className="text-sm font-serif font-bold italic" style={{ color: editorialPalette.text }}>{filteredFinishedBooks.length} {filteredFinishedBooks.length === 1 ? 'livro' : 'livros'}</span>
                   </div>
 
                   <AnimatePresence mode="wait">
@@ -1570,16 +1626,11 @@ export default function RetrospectivaPage() {
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ duration: 0.3, delay: shelfIndex * 0.1 }}
-                            className="rounded-2xl p-6 border-2 shadow-sm relative overflow-hidden transition-all"
-                            style={{
-                              background: isDarkTheme
-                                ? 'linear-gradient(135deg, rgba(45, 58, 82, 0.3) 0%, rgba(26, 31, 53, 0.3) 100%)'
-                                : 'linear-gradient(135deg, rgba(217, 119, 6, 0.1) 0%, rgba(251, 146, 60, 0.05) 100%)',
-                              borderColor: isDarkTheme ? 'rgba(45, 58, 82, 0.4)' : 'rgba(217, 119, 6, 0.2)'
-                            }}
+                            className="rounded-[2rem] p-6 border border-dashed shadow-sm relative overflow-hidden transition-all"
+                            style={vintageShelfStyle}
                           >
                             {/* Efeito de madeira da estante */}
-                            <div className="absolute bottom-0 left-0 right-0 h-3 bg-linear-to-r from-amber-700/20 via-amber-600/15 to-amber-700/20 rounded-b-2xl border-t-2 border-amber-800/10"></div>
+                            <div className="absolute bottom-0 left-0 right-0 h-3 rounded-b-[2rem] border-t border-dashed" style={vintageBookShelfRailStyle}></div>
 
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-5">
                               {shelfBooks.map((book, i) => (
@@ -1590,63 +1641,71 @@ export default function RetrospectivaPage() {
                                   transition={{ duration: 0.2, delay: i * 0.05 }}
                                   className="group"
                                 >
-                                  <div className="relative">
-                                    {/* Livro */}
-                                    <div className="aspect-2/3 rounded-lg overflow-hidden shadow-md border-[3px] border-white bg-white transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1 relative">
-                                      <OptimizedBookCover
-                                        src={getProxyUrl(book.cover_url)}
-                                        alt={book.book_name}
-                                        fill
-                                        className=""
-                                      />
-                                    </div>
-
-                                    {/* Info do livro */}
-                                    <div className="mt-3 px-1 space-y-1.5">
-                                      <p className="text-xs font-semibold line-clamp-2 leading-tight" style={{ color: theme.text }}>
-                                        {book.book_name}
-                                      </p>
-
-                                      {book.rating && (
-                                        <div className="flex items-center gap-0.5">
-                                          {[...Array(5)].map((_, i) => (
-                                            <Star
-                                              key={i}
-                                              size={11}
-                                              className={i < book.rating ? 'text-amber-400' : 'text-slate-300'}
-                                              fill={i < book.rating ? 'currentColor' : 'none'}
-                                              strokeWidth={1.5}
-                                            />
-                                          ))}
-                                        </div>
-                                      )}
-
-                                      <div className="flex items-center justify-between">
-                                        <p className="text-[10px] font-light uppercase tracking-tight" style={{ color: theme.text, opacity: 0.5 }}>
-                                          {book.genre || 'Sem gênero'}
-                                        </p>
-                                        {book.total_pages && (
-                                          <p className="text-[9px] font-medium" style={{ color: theme.primary }}>
-                                            {book.total_pages}p
-                                          </p>
-                                        )}
+                                      <Link
+                                    href={`/diario/${encodeURIComponent(book.book_name)}?year=${currentYear}`}
+                                    className="group block"
+                                  >
+                                    <div className="relative">
+                                      {/* Livro */}
+                                      <div className="aspect-2/3 rounded-xl overflow-hidden shadow-md border border-dashed transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1 relative" style={{ borderColor: editorialPalette.border, backgroundColor: editorialPalette.card }}>
+                                        <OptimizedBookCover
+                                          src={getProxyUrl(book.cover_url)}
+                                          alt={book.book_name}
+                                          fill
+                                          className=""
+                                        />
                                       </div>
 
-                                      {book.start_date && book.end_date && (
-                                        <div className="flex items-center gap-1 pt-0.5">
-                                          <Calendar size={9} className="text-slate-400" strokeWidth={2} />
-                                          <span className="text-[9px] text-slate-500 font-medium">
-                                            {(() => {
-                                              const start = new Date(book.start_date)
-                                              const end = new Date(book.end_date)
-                                              const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
-                                              return `${days} ${days === 1 ? 'dia' : 'dias'}`
-                                            })()}
-                                          </span>
+                                      {/* Info do livro */}
+                                      <div className="mt-3 px-1 space-y-1.5">
+                                        <p className="text-xs font-serif italic font-black tracking-tight line-clamp-2 leading-tight" style={{ color: editorialPalette.text }}>
+                                          {book.book_name}
+                                        </p>
+                                        <p className="text-[10px] font-semibold tracking-widest uppercase line-clamp-1" style={{ color: editorialPalette.subtle }}>
+                                          {book.author_name || book.author || 'Autor não informado'}
+                                        </p>
+
+                                        {book.rating && (
+                                          <div className="flex items-center gap-0.5">
+                                            {[...Array(5)].map((_, i) => (
+                                              <Star
+                                                key={i}
+                                                size={11}
+                                                className={i < book.rating ? 'text-amber-400' : 'text-slate-300'}
+                                                fill={i < book.rating ? 'currentColor' : 'none'}
+                                                strokeWidth={1.5}
+                                              />
+                                            ))}
+                                          </div>
+                                        )}
+
+                                        <div className="flex items-center justify-between">
+                                          <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: editorialPalette.subtle }}>
+                                            {book.genre || 'Sem gênero'}
+                                          </p>
+                                          {book.total_pages && (
+                                            <p className="text-[9px] font-semibold" style={{ color: editorialPalette.accent }}>
+                                              {book.total_pages}p
+                                            </p>
+                                          )}
                                         </div>
-                                      )}
+
+                                        {book.start_date && book.end_date && (
+                                          <div className="flex items-center gap-1 pt-0.5">
+                                            <Calendar size={9} strokeWidth={1.8} style={{ color: editorialPalette.subtle, opacity: 0.4 }} />
+                                            <span className="text-[9px] font-semibold" style={{ color: editorialPalette.subtle }}>
+                                              {(() => {
+                                                const start = new Date(book.start_date)
+                                                const end = new Date(book.end_date)
+                                                const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+                                                return `${days} ${days === 1 ? 'dia' : 'dias'}`
+                                              })()}
+                                            </span>
+                                          </div>
+                                        )}
+                                      </div>
                                     </div>
-                                  </div>
+                                  </Link>
                                 </motion.div>
                               ))}
                             </div>
@@ -1662,10 +1721,10 @@ export default function RetrospectivaPage() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between gap-4">
                     <div>
-                      <h3 className="text-sm font-bold text-slate-900">Livros planejados</h3>
-                      <p className="text-xs text-slate-500">Estante com os livros que você pretende ler.</p>
+                      <h3 className="text-sm font-serif italic font-black tracking-tighter" style={{ color: editorialPalette.text }}>Lista de desejos</h3>
+                      <p className="text-xs" style={{ color: editorialPalette.muted }}>Estante com os livros que você pretende ler.</p>
                     </div>
-                    <span className="text-sm font-semibold text-slate-700">{filteredPlannedBooks.length} {filteredPlannedBooks.length === 1 ? 'livro' : 'livros'}</span>
+                    <span className="text-sm font-serif font-bold italic" style={{ color: editorialPalette.text }}>{filteredPlannedBooks.length} {filteredPlannedBooks.length === 1 ? 'livro' : 'livros'}</span>
                   </div>
 
                   <AnimatePresence mode="wait">
@@ -1685,15 +1744,10 @@ export default function RetrospectivaPage() {
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ duration: 0.3, delay: shelfIndex * 0.1 }}
-                            className="rounded-2xl p-6 border-2 shadow-sm relative overflow-hidden transition-all"
-                            style={{
-                              background: isDarkTheme
-                                ? 'linear-gradient(135deg, rgba(30, 58, 138, 0.3) 0%, rgba(15, 23, 42, 0.3) 100%)'
-                                : 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(191, 219, 254, 0.05) 100%)',
-                              borderColor: isDarkTheme ? 'rgba(30, 58, 138, 0.4)' : 'rgba(59, 130, 246, 0.2)'
-                            }}
+                            className="rounded-[2rem] p-6 border border-dashed shadow-sm relative overflow-hidden transition-all"
+                            style={vintageShelfStyle}
                           >
-                            <div className="absolute bottom-0 left-0 right-0 h-3 bg-linear-to-r from-sky-700/20 via-sky-500/15 to-sky-700/20 rounded-b-2xl border-t-2 border-sky-800/10"></div>
+                            <div className="absolute bottom-0 left-0 right-0 h-3 rounded-b-[2rem] border-t border-dashed" style={vintageBookShelfRailStyle}></div>
 
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-5">
                               {shelfBooks.map((book, i) => (
@@ -1706,40 +1760,41 @@ export default function RetrospectivaPage() {
                                 >
                                   <div className="relative">
                                     <div className="absolute top-2 right-2 z-10">
-                                      <Button size="icon" variant="outline" className="h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); setBookToEdit(book); setEditDialogOpen(true) }}>
+                                      <Button size="icon" variant="outline" className="h-8 w-8 p-0 border-dashed" style={{ borderColor: editorialPalette.border, backgroundColor: `${editorialPalette.card}F2` }} onClick={(e) => { e.stopPropagation(); setBookToEdit(book); setEditDialogOpen(true) }}>
                                         <Edit2 size={14} />
                                       </Button>
                                     </div>
-                                    <div className="absolute top-2 right-2 z-10">
-                                      <Button size="icon" variant="outline" className="h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); setBookToEdit(book); setEditDialogOpen(true) }}>
-                                        <Edit2 size={14} />
-                                      </Button>
-                                    </div>
-                                    <div className="aspect-2/3 rounded-lg overflow-hidden shadow-md border-[3px] border-white bg-white transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1 relative">
-                                      <OptimizedBookCover
-                                        src={getProxyUrl(book.cover_url)}
-                                        alt={book.book_name}
-                                        fill
-                                        className=""
-                                      />
-                                    </div>
-
-                                    <div className="mt-3 px-1 space-y-1.5">
-                                      <p className="text-xs font-semibold line-clamp-2 leading-tight" style={{ color: theme.text }}>
-                                        {book.book_name}
-                                      </p>
-                                      <p className="text-[9px] text-slate-500" style={{ color: theme.text }}>
-                                        {book.author_name || 'Autor não informado'}
-                                      </p>
-                                      <div className="flex items-center justify-between">
-                                        <p className="text-[9px] font-light uppercase tracking-tight" style={{ color: theme.text, opacity: 0.5 }}>
-                                          {book.genre || 'Sem gênero'}
-                                        </p>
-                                        <span className="text-[9px] font-medium" style={{ color: isDarkTheme ? '#93c5fd' : '#2563eb' }}>
-                                          Planejado
-                                        </span>
+                                    <Link
+                                      href={`/diario/${encodeURIComponent(book.book_name)}?year=${currentYear}`}
+                                      className="group block"
+                                      title={`Abrir diário de ${book.book_name}`}
+                                    >
+                                      <div className="aspect-2/3 rounded-xl overflow-hidden shadow-md border border-dashed transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1 relative" style={{ borderColor: editorialPalette.border, backgroundColor: editorialPalette.card }}>
+                                        <OptimizedBookCover
+                                          src={getProxyUrl(book.cover_url)}
+                                          alt={book.book_name}
+                                          fill
+                                          className=""
+                                        />
                                       </div>
-                                    </div>
+
+                                      <div className="mt-3 px-1 space-y-1.5">
+                                        <p className="text-xs font-serif italic font-black tracking-tight line-clamp-2 leading-tight" style={{ color: editorialPalette.text }}>
+                                          {book.book_name}
+                                        </p>
+                                        <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: editorialPalette.subtle }}>
+                                          {book.author_name || 'Autor não informado'}
+                                        </p>
+                                        <div className="flex items-center justify-between">
+                                          <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: editorialPalette.subtle }}>
+                                            {book.genre || 'Sem gênero'}
+                                          </p>
+                                          <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: editorialPalette.accent }}>
+                                            Desejado
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </Link>
                                   </div>
                                 </motion.div>
                               ))}
@@ -1756,9 +1811,9 @@ export default function RetrospectivaPage() {
 
         {/* Mensagem quando não há livros */}
         {allBooks.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-32 border-2 border-dashed rounded-2xl text-center space-y-4" style={{ borderColor: `${theme.primary}30`, color: theme.text, opacity: 0.4 }}>
+           <div className="flex flex-col items-center justify-center py-32 border border-dashed rounded-[2.5rem] text-center space-y-4" style={{ borderColor: editorialPalette.border, color: editorialPalette.text, opacity: 0.5, backgroundColor: editorialPalette.card }}>
              <BookOpen size={40} strokeWidth={1.5} />
-             <p className="font-light text-sm">Nenhum livro lido em {currentYear}</p>
+             <p className="font-serif italic text-sm">Nenhum livro lido em {currentYear}</p>
           </div>
         )}
 

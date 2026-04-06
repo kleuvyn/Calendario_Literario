@@ -61,14 +61,21 @@ export function BookFilters({ onFilterChangeAction, availableGenres }: BookFilte
   }
 
   const hasActiveFilters = search || selectedGenres.length > 0 || ratingMin !== null || sortBy !== 'date'
+  const editorial = {
+    bg: '#FAFAF5',
+    text: '#4A443F',
+    accent: '#8C7B6E',
+    border: 'rgba(0, 0, 0, 0.08)',
+    subtle: 'rgba(74, 68, 63, 0.45)',
+  }
 
   return (
     <div className="flex gap-2 items-center">
       <div className="relative flex-1 max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: editorial.accent, opacity: 0.4 }} />
         <Input
           type="text"
-          placeholder="Buscar por título ou autor..."
+          placeholder="buscar por titulo ou autor..."
           value={search}
           onChange={(e) => {
             setSearch(e.target.value)
@@ -79,32 +86,34 @@ export function BookFilters({ onFilterChangeAction, availableGenres }: BookFilte
               sortBy
             })
           }}
-          className="pl-10 pr-4 h-10"
+          className="pl-10 pr-4 h-10 rounded-[2rem] border border-dashed font-serif italic"
+          style={{ backgroundColor: '#FFFFFF', borderColor: editorial.border, color: editorial.text }}
         />
       </div>
 
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
-          <Button variant="outline" className="gap-2 relative">
-            <Filter className="h-4 w-4" />
+          <Button variant="outline" className="gap-2 relative rounded-[2rem] border-dashed font-serif italic" style={{ borderColor: editorial.border, color: editorial.text, backgroundColor: '#FFFFFF' }}>
+            <Filter className="h-4 w-4" style={{ opacity: 0.4 }} />
             Filtros
             {hasActiveFilters && (
-              <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center bg-pink-500 text-white text-[10px]">
+              <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px]" style={{ backgroundColor: editorial.accent, color: '#FFFFFF' }}>
                 {(selectedGenres.length > 0 ? 1 : 0) + (ratingMin !== null ? 1 : 0) + (sortBy !== 'date' ? 1 : 0)}
               </Badge>
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-80 bg-white border border-slate-200 shadow-xl" align="end">
+        <PopoverContent className="w-80 border border-dashed shadow-xl rounded-[2rem]" align="end" style={{ backgroundColor: editorial.bg, borderColor: editorial.border }}>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h4 className="font-semibold text-sm">Filtros Avançados</h4>
+              <h4 className="font-serif italic font-black tracking-tighter text-sm" style={{ color: editorial.text }}>Filtros avançados</h4>
               {hasActiveFilters && (
                 <Button 
                   variant="ghost" 
                   size="sm" 
                   onClick={clearFilters}
-                  className="h-7 text-xs"
+                  className="h-7 text-xs rounded-[2rem] font-serif italic"
+                  style={{ color: editorial.accent }}
                 >
                   <X className="h-3 w-3 mr-1" />
                   Limpar
@@ -113,8 +122,8 @@ export function BookFilters({ onFilterChangeAction, availableGenres }: BookFilte
             </div>
 
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-2 block">
-                Ordenar por
+              <label className="text-[10px] font-bold tracking-widest uppercase mb-2 block" style={{ color: editorial.subtle }}>
+                ordenar por
               </label>
               <div className="grid grid-cols-2 gap-2">
                 <Button
@@ -124,7 +133,8 @@ export function BookFilters({ onFilterChangeAction, availableGenres }: BookFilte
                     setSortBy('date')
                     onFilterChangeAction({ search, genres: selectedGenres, ratingMin, sortBy: 'date' })
                   }}
-                  className="text-xs"
+                  className="text-xs rounded-[2rem] border-dashed font-serif italic"
+                  style={sortBy === 'date' ? { backgroundColor: editorial.accent, color: '#FFFFFF', borderColor: editorial.accent } : { borderColor: editorial.border, color: editorial.text, backgroundColor: '#FFFFFF' }}
                 >
                   Data
                 </Button>
@@ -135,7 +145,8 @@ export function BookFilters({ onFilterChangeAction, availableGenres }: BookFilte
                     setSortBy('rating')
                     onFilterChangeAction({ search, genres: selectedGenres, ratingMin, sortBy: 'rating' })
                   }}
-                  className="text-xs"
+                  className="text-xs rounded-[2rem] border-dashed font-serif italic"
+                  style={sortBy === 'rating' ? { backgroundColor: editorial.accent, color: '#FFFFFF', borderColor: editorial.accent } : { borderColor: editorial.border, color: editorial.text, backgroundColor: '#FFFFFF' }}
                 >
                   Avaliação
                 </Button>
@@ -146,7 +157,8 @@ export function BookFilters({ onFilterChangeAction, availableGenres }: BookFilte
                     setSortBy('pages')
                     onFilterChangeAction({ search, genres: selectedGenres, ratingMin, sortBy: 'pages' })
                   }}
-                  className="text-xs"
+                  className="text-xs rounded-[2rem] border-dashed font-serif italic"
+                  style={sortBy === 'pages' ? { backgroundColor: editorial.accent, color: '#FFFFFF', borderColor: editorial.accent } : { borderColor: editorial.border, color: editorial.text, backgroundColor: '#FFFFFF' }}
                 >
                   Páginas
                 </Button>
@@ -157,7 +169,8 @@ export function BookFilters({ onFilterChangeAction, availableGenres }: BookFilte
                     setSortBy('title')
                     onFilterChangeAction({ search, genres: selectedGenres, ratingMin, sortBy: 'title' })
                   }}
-                  className="text-xs"
+                  className="text-xs rounded-[2rem] border-dashed font-serif italic"
+                  style={sortBy === 'title' ? { backgroundColor: editorial.accent, color: '#FFFFFF', borderColor: editorial.accent } : { borderColor: editorial.border, color: editorial.text, backgroundColor: '#FFFFFF' }}
                 >
                   Título
                 </Button>
@@ -165,7 +178,7 @@ export function BookFilters({ onFilterChangeAction, availableGenres }: BookFilte
             </div>
 
             <div>
-              <label className="text-xs font-medium text-slate-600 mb-2 block">
+              <label className="text-[10px] font-bold tracking-widest uppercase mb-2 block" style={{ color: editorial.subtle }}>
                 Avaliação mínima
               </label>
               <div className="flex gap-2">
@@ -179,7 +192,8 @@ export function BookFilters({ onFilterChangeAction, availableGenres }: BookFilte
                       setRatingMin(newRating)
                       onFilterChangeAction({ search, genres: selectedGenres, ratingMin: newRating, sortBy })
                     }}
-                    className="h-8 w-8 p-0"
+                    className="h-8 w-8 p-0 rounded-full border-dashed"
+                    style={ratingMin === rating ? { backgroundColor: editorial.accent, color: '#FFFFFF', borderColor: editorial.accent } : { borderColor: editorial.border, color: editorial.text, backgroundColor: '#FFFFFF' }}
                   >
                     {rating}⭐
                   </Button>
@@ -189,7 +203,7 @@ export function BookFilters({ onFilterChangeAction, availableGenres }: BookFilte
 
             {availableGenres.length > 0 && (
               <div>
-                <label className="text-xs font-medium text-slate-600 mb-2 block">
+                <label className="text-[10px] font-bold tracking-widest uppercase mb-2 block" style={{ color: editorial.subtle }}>
                   Gêneros
                 </label>
                 <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
@@ -197,7 +211,10 @@ export function BookFilters({ onFilterChangeAction, availableGenres }: BookFilte
                     <Badge
                       key={genre}
                       variant={selectedGenres.includes(genre) ? 'default' : 'outline'}
-                      className="cursor-pointer hover:bg-slate-100"
+                      className="cursor-pointer border border-dashed rounded-[2rem] font-serif italic"
+                      style={selectedGenres.includes(genre)
+                        ? { backgroundColor: editorial.accent, color: '#FFFFFF', borderColor: editorial.accent }
+                        : { backgroundColor: '#FFFFFF', color: editorial.text, borderColor: editorial.border }}
                       onClick={() => {
                         toggleGenre(genre)
                         const newGenres = selectedGenres.includes(genre)
@@ -213,8 +230,8 @@ export function BookFilters({ onFilterChangeAction, availableGenres }: BookFilte
               </div>
             )}
 
-            <Button onClick={() => setIsOpen(false)} className="w-full" size="sm">
-              Aplicar Filtros
+            <Button onClick={() => setIsOpen(false)} className="w-full rounded-[2rem] border border-dashed font-serif italic" size="sm" style={{ backgroundColor: editorial.accent, borderColor: editorial.accent, color: '#FFFFFF' }}>
+              Aplicar filtros
             </Button>
           </div>
         </PopoverContent>
@@ -225,7 +242,8 @@ export function BookFilters({ onFilterChangeAction, availableGenres }: BookFilte
           variant="ghost" 
           size="sm" 
           onClick={clearFilters}
-          className="gap-1"
+          className="gap-1 rounded-[2rem] font-serif italic"
+          style={{ color: editorial.accent }}
         >
           <X className="h-4 w-4" />
           Limpar
