@@ -181,12 +181,30 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
       ? book.categories.join(', ')
       : book.categories || ''
     const dateFormatted = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}T12:00:00Z`
+    const dateOnly = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`
+    const shouldFinishReading = dateOnly <= todayStr
+    const action = shouldFinishReading ? 'FINISH_READING' : 'START_READING'
+
     try {
-      await saveReadingDay(userEmail, year, monthIndex + 1, selectedDay, dateFormatted, dateFormatted, book.title, 'START_READING', book.cover, book.authors, genre, book.pages)
+      await saveReadingDay(
+        userEmail,
+        year,
+        monthIndex + 1,
+        selectedDay,
+        dateFormatted,
+        dateFormatted,
+        book.title,
+        action,
+        book.cover,
+        book.authors,
+        genre,
+        book.pages
+      )
       await loadData()
       setSearchDialogOpen(false)
       setIsPlanning(false)
-      toast.success('Leitura iniciada!')
+      toast.success(shouldFinishReading ? 'Livro registrado como lido!' : 'Leitura iniciada!')
+      if (shouldFinishReading) setActiveSummary('lido')
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erro ao salvar'
       toast.error(message)
