@@ -44,6 +44,9 @@ export const authOptions: NextAuthOptions = {
         if (user) {
           token.id = user.id;
           token.email = user.email;
+          token.name = user.name;
+          token.image = user.image ?? token.image;
+          token.picture = user.image ?? token.picture;
         }
         return token;
       } catch (error) {
@@ -56,6 +59,8 @@ export const authOptions: NextAuthOptions = {
         if (session.user) {
           (session.user as any).id = token.id;
           session.user.email = token.email as string;
+          session.user.name = (token.name as string) ?? session.user.name;
+          session.user.image = (token.image as string) ?? (token.picture as string) ?? session.user.image;
         }
         return session;
       } catch (error) {

@@ -9,7 +9,7 @@ import { UserProfileEdit } from "@/components/user-profile-edit"
 import { 
   ChevronLeft, ChevronRight, LogOut, BarChart3, 
   Quote, Target, Sun, Moon, Sparkles,
-  Edit3, RefreshCw, Bookmark, Flower2, Heart 
+  Edit3, RefreshCw, Bookmark, Flower2, Heart, Coffee
 } from "lucide-react"
 import { getReadingData, updateUserGoal } from "@/lib/api-client" 
 import Link from "next/link"
@@ -59,6 +59,7 @@ export default function Home() {
   const [showBack, setShowBack] = useState(false)
   const [quote, setQuote] = useState("")
   const [activeTheme, setActiveTheme] = useState<keyof typeof THEMES>('light')
+  const [isThemeLoading, setIsThemeLoading] = useState(true)
   const [goalsByYear, setGoalsByYear] = useState<Record<number, number>>({})
   const [totalReadThisYear, setTotalReadThisYear] = useState(0)
   const [direction, setDirection] = useState(0)
@@ -78,7 +79,10 @@ export default function Home() {
     const savedGoals = localStorage.getItem("metas_por_ano")
     if (savedGoals) setGoalsByYear(JSON.parse(savedGoals))
     const savedTheme = localStorage.getItem("app-theme") as keyof typeof THEMES
-    if (savedTheme && THEMES[savedTheme]) setActiveTheme(savedTheme)
+    if (savedTheme && THEMES[savedTheme]) {
+      setActiveTheme(savedTheme)
+    }
+    setIsThemeLoading(false)
     setQuote(LITERARY_QUOTES[Math.floor(Math.random() * LITERARY_QUOTES.length)])
   }, [])
 
@@ -140,7 +144,28 @@ export default function Home() {
     ]
   }, [currentYear])
 
-  if (status === "loading") return <div className="h-screen flex items-center justify-center bg-[#FAFAF5] text-[#8C7B6E] italic font-serif opacity-50">Preparando o café...</div>
+  if (status === "loading" || isThemeLoading) {
+    const loadingTheme = THEMES[activeTheme] || THEMES.light
+    return (
+      <div 
+        className="h-screen flex flex-col items-center justify-center transition-colors duration-500" 
+        style={{ backgroundColor: loadingTheme.bg, color: loadingTheme.primary }}
+      >
+        <motion.div
+          animate={{ 
+            rotate: [0, 10, -10, 0],
+            scale: [1, 1.1, 1]
+          }}
+          transition={{ duration: 2, repeat: Infinity }}
+          className="mb-4"
+        >
+          <Coffee className="h-12 w-12" />
+        </motion.div>
+        <p className="italic font-serif opacity-70 animate-pulse">Preparando o café...</p>
+      </div>
+    )
+  }
+
   if (!session) return <LoginScreen onLogin={async () => signIn("google")} />
 
   return (

@@ -1,5 +1,5 @@
-const CACHE_NAME = 'calendario-lit-v7';
-const RUNTIME_CACHE = 'calendario-lit-runtime-v2';
+const CACHE_NAME = 'calendario-lit-v8';
+const RUNTIME_CACHE = 'calendario-lit-runtime-v3';
 const ASSETS = [
   '/',
   '/offline.html',
@@ -43,10 +43,12 @@ self.addEventListener('fetch', (event) => {
 
   const requestURL = new URL(event.request.url);
   const isApiRequest = requestURL.pathname.startsWith('/api/');
+  const isDevHMR = requestURL.pathname.startsWith('/_next/webpack');
 
   // Never cache or intercept API calls (including next-auth),
   // to avoid stale CSRF/session responses that break logout/login flows.
-  if (isApiRequest) return;
+  // Also never cache webpack HMR in development to avoid stale JS bundles.
+  if (isApiRequest || isDevHMR) return;
 
   event.respondWith((async () => {
     const isNavigation = event.request.mode === 'navigate';

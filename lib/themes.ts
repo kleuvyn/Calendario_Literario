@@ -10,7 +10,7 @@ export const THEMES = {
     icon: Sun,
   },
   dark: {
-    primary: '#D1C7BD',
+    primary: '#8C7B6E', // Mudando de #D1C7BD para equilibrar o visual vintage no modo escuro
     bg: '#1A1918',
     text: '#F5F5F5',
     card: '#262422',
