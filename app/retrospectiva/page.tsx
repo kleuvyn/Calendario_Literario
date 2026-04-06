@@ -96,14 +96,15 @@ export default function RetrospectivaPage() {
   }, []);
 
   const theme = THEMES[currentTheme]
+  const isDark = currentTheme === 'dark'
   const editorialPalette = {
-    bg: '#FAFAF5',
-    text: '#4A443F',
-    accent: '#8C7B6E',
-    card: '#FFFFFF',
-    border: 'rgba(0, 0, 0, 0.08)',
-    muted: 'rgba(74, 68, 63, 0.65)',
-    subtle: 'rgba(74, 68, 63, 0.4)',
+    bg: theme.bg,
+    text: theme.text,
+    accent: theme.primary,
+    card: theme.card,
+    border: isDark ? `${theme.primary}35` : `${theme.primary}22`,
+    muted: isDark ? 'rgba(245, 245, 245, 0.72)' : 'rgba(74, 68, 63, 0.65)',
+    subtle: isDark ? 'rgba(245, 245, 245, 0.45)' : 'rgba(74, 68, 63, 0.4)',
   }
 
   const vintageCardStyle = {

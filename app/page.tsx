@@ -99,6 +99,14 @@ export default function Home() {
   const myBooksGoal = goalsByYear[currentYear] || 12
   const progressPercent = Math.min(Math.round((totalReadThisYear / myBooksGoal) * 100), 100) || 0
 
+  const handleLogout = async () => {
+    try {
+      await signOut({ redirect: false, callbackUrl: '/' })
+    } finally {
+      window.location.href = '/'
+    }
+  }
+
   const handlePrevMonth = () => { 
     setDirection(-1); 
     if (currentMonth === 0) { setCurrentYear(p => p - 1); setCurrentMonth(11); } 
@@ -169,6 +177,7 @@ export default function Home() {
               {Object.entries(THEMES).map(([key, val]) => (
                 <button 
                   key={key} 
+                  type="button"
                   onClick={() => { setActiveTheme(key as keyof typeof THEMES); localStorage.setItem("app-theme", key); }}
                   className={`p-2 rounded-full transition-all ${activeTheme === key ? 'bg-white shadow-sm' : 'opacity-40'}`}
                   style={{ color: activeTheme === key ? (key === 'dark' ? '#1A1918' : val.primary) : 'inherit' }}
@@ -176,7 +185,7 @@ export default function Home() {
                   <val.icon size={16} />
                 </button>
               ))}
-              <button onClick={() => signOut()} className="p-2 text-rose-300 opacity-40 hover:opacity-100 hover:text-rose-500"><LogOut size={16}/></button>
+              <button type="button" onClick={handleLogout} className="p-2 text-rose-300 opacity-40 hover:opacity-100 hover:text-rose-500"><LogOut size={16}/></button>
             </div>
           </motion.div>
 

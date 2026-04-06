@@ -34,10 +34,17 @@ export function UserProfile() {
       </div>
 
       <Button 
+        type="button"
         variant="ghost" 
         size="sm" 
         className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-2 text-xs"
-        onClick={() => signOut()}
+        onClick={async () => {
+          try {
+            await signOut({ redirect: false, callbackUrl: '/' })
+          } finally {
+            window.location.href = '/'
+          }
+        }}
       >
         <LogOut size={14} />
         Sair

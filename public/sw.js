@@ -1,5 +1,5 @@
-const CACHE_NAME = 'calendario-lit-v6';
-const RUNTIME_CACHE = 'calendario-lit-runtime-v1';
+const CACHE_NAME = 'calendario-lit-v7';
+const RUNTIME_CACHE = 'calendario-lit-runtime-v2';
 const ASSETS = [
   '/',
   '/offline.html',
@@ -30,7 +30,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
-          .filter((name) => name !== CACHE_NAME)
+          .filter((name) => name !== CACHE_NAME && name !== RUNTIME_CACHE)
           .map((name) => caches.delete(name))
       );
     })
@@ -41,8 +41,14 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
+  const requestURL = new URL(event.request.url);
+  const isApiRequest = requestURL.pathname.startsWith('/api/');
+
+  // Never cache or intercept API calls (including next-auth),
+  // to avoid stale CSRF/session responses that break logout/login flows.
+  if (isApiRequest) return;
+
   event.respondWith((async () => {
-    const requestURL = new URL(event.request.url);
     const isNavigation = event.request.mode === 'navigate';
 
     if (isNavigation) {

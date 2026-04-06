@@ -85,13 +85,14 @@ export default function BookDiaryPage() {
   const readBooks = allBooks.filter(b => isFinishedStatus(b.status))
 
   const theme = THEMES[activeTheme] || THEMES.light
+  const isDark = activeTheme === 'dark'
   const editorial = {
-    bg: '#FAFAF5',
-    text: '#4A443F',
-    accent: '#8C7B6E',
-    card: '#FFFFFF',
-    border: 'rgba(0, 0, 0, 0.08)',
-    subtle: 'rgba(74, 68, 63, 0.5)',
+    bg: theme.bg,
+    text: theme.text,
+    accent: theme.primary,
+    card: theme.card,
+    border: isDark ? `${theme.primary}35` : `${theme.primary}22`,
+    subtle: isDark ? 'rgba(245, 245, 245, 0.6)' : 'rgba(74, 68, 63, 0.5)',
   }
 
   const readBooksByYear = useMemo(() => {
@@ -119,11 +120,11 @@ export default function BookDiaryPage() {
             title={
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
-                   <span className="h-[1px] w-8 border-t border-dashed" style={{ borderColor: editorial.accent }} />
-                   <span className="text-[10px] uppercase tracking-[0.5em] font-bold" style={{ color: editorial.accent }}>Memorial de afeto</span>
+                   <span className="h-[1px] w-8 border-t border-dashed" style={{ borderColor: theme.primary }} />
+                   <span className="text-[10px] uppercase tracking-[0.5em] font-bold" style={{ color: theme.primary }}>Memorial de afeto</span>
                 </div>
-                <h1 className="text-5xl md:text-6xl font-serif italic font-black tracking-tighter" style={{ color: editorial.text }}>
-                  Meu diário <span className="italic font-normal opacity-70" style={{ color: editorial.accent }}>literário</span>
+                <h1 className="text-5xl md:text-6xl font-serif italic font-black tracking-tighter" style={{ color: theme.text }}>
+                  Meu diário <span className="italic font-normal opacity-70" style={{ color: theme.primary }}>literário</span>
                 </h1>
               </div>
             }

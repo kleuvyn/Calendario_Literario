@@ -71,12 +71,12 @@ export default function PlanejadosPage() {
   const theme = THEMES[activeTheme] || THEMES.light
   const isDark = activeTheme === 'dark'
   const editorial = {
-    bg: '#FAFAF5',
-    text: '#4A443F',
-    accent: '#8C7B6E',
-    card: '#FFFFFF',
-    border: 'rgba(0, 0, 0, 0.08)',
-    subtle: 'rgba(74, 68, 63, 0.45)',
+    bg: theme.bg,
+    text: theme.text,
+    accent: theme.primary,
+    card: theme.card,
+    border: isDark ? `${theme.primary}35` : `${theme.primary}22`,
+    subtle: isDark ? 'rgba(245, 245, 245, 0.55)' : 'rgba(74, 68, 63, 0.45)',
   }
 
   // Busca no Google Books conforme digita
@@ -290,16 +290,16 @@ export default function PlanejadosPage() {
         <SiteHeader 
           activeTheme={activeTheme} 
           setActiveTheme={setActiveTheme as any} 
-          title={<h1 className="text-3xl font-serif italic font-black tracking-tighter" style={{ color: editorial.text }}>Meus planejados</h1>}
+          title={<h1 className="text-3xl font-serif italic font-black tracking-tighter" style={{ color: theme.text }}>Meus planejados</h1>}
         />
         <div className="flex flex-col sm:flex-row gap-4">
           <Link href="/" className="flex-1">
-            <Button asChild className="w-full h-14 rounded-full text-white font-serif italic shadow-sm text-lg border border-dashed transition-all hover:opacity-90" style={{ backgroundColor: editorial.accent, borderColor: `${editorial.accent}40` }}>
+            <Button asChild className="w-full h-14 rounded-full text-white font-serif italic shadow-sm text-lg border border-dashed transition-all hover:opacity-90" style={{ backgroundColor: theme.primary, borderColor: `${theme.primary}40` }}>
               <a>Meus livros lidos →</a>
             </Button>
           </Link>
           <Link href="/retrospectiva" className="flex-1">
-            <Button asChild variant="outline" className="w-full h-14 rounded-full font-serif italic border border-dashed text-lg shadow-sm transition-all hover:bg-white" style={{ borderColor: editorial.border, color: editorial.text, backgroundColor: editorial.card }}>
+            <Button asChild variant="outline" className="w-full h-14 rounded-full font-serif italic border border-dashed text-lg shadow-sm transition-all hover:bg-white" style={{ borderColor: `${theme.primary}20`, color: theme.text, backgroundColor: theme.card }}>
               <a><BarChart3 size={18} className="mr-2" style={{ opacity: 0.4 }} /> Retrospectiva</a>
             </Button>
           </Link>

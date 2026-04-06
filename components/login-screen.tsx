@@ -1,13 +1,14 @@
 "use client"
 
 import { signIn } from "next-auth/react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card" 
 import { Button } from "@/components/ui/button" 
 import { Input } from "@/components/ui/input" 
 import { BookOpen, Loader2, Sparkles, Book, Users, TrendingUp } from "lucide-react" 
 import { type UserData } from "@/lib/storage"
+import { THEMES, ThemeKey } from "@/lib/themes"
 
 interface LoginScreenProps {
   onLogin: (userData: UserData) => void
@@ -28,7 +29,18 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
   const [password, setPassword] = useState("")
   const [isRegistering, setIsRegistering] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [activeTheme, setActiveTheme] = useState<ThemeKey>("light")
   const router = useRouter()
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("app-theme") as ThemeKey
+    if (savedTheme && THEMES[savedTheme]) {
+      setActiveTheme(savedTheme)
+    }
+  }, [])
+
+  const theme = THEMES[activeTheme] || THEMES.light
+  const isDark = activeTheme === "dark"
 
   const handleEmailAction = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -69,72 +81,80 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center p-4">
+    <div
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{
+        background: isDark
+          ? `linear-gradient(135deg, ${theme.bg} 0%, #151413 100%)`
+          : `linear-gradient(135deg, ${theme.bg} 0%, #FCFAF7 45%, #F1EAE2 100%)`,
+        color: theme.text,
+      }}
+    >
       {/* Decorative elements */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-200/20 dark:bg-indigo-900/20 rounded-full blur-3xl -z-10" />
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-200/20 dark:bg-purple-900/20 rounded-full blur-3xl -z-10" />
+      <div className="absolute top-0 right-0 w-96 h-96 rounded-full blur-3xl -z-10" style={{ backgroundColor: `${theme.primary}33` }} />
+      <div className="absolute bottom-0 left-0 w-96 h-96 rounded-full blur-3xl -z-10" style={{ backgroundColor: `${theme.primary}22` }} />
 
       <div className="w-full max-w-5xl grid md:grid-cols-2 gap-8 items-center">
         {/* Left side - Hero */}
         <div className="hidden md:flex flex-col justify-center space-y-8">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-sm font-medium mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium mb-4" style={{ backgroundColor: `${theme.primary}20`, color: theme.primary }}>
               <Sparkles className="h-4 w-4" />
               Seu Diário Literário e Calendário Literário
             </div>
-            <h1 className="text-5xl font-bold bg-gradient-to-br from-slate-900 to-slate-700 dark:from-white dark:to-slate-200 bg-clip-text text-transparent mb-4 leading-tight">
+            <h1 className="text-5xl font-bold mb-4 leading-tight" style={{ color: theme.text }}>
               Organize suas Leituras
             </h1>
-            <p className="text-xl text-slate-600 dark:text-slate-400">
+            <p className="text-xl" style={{ color: isDark ? "rgba(245,245,245,0.75)" : "rgba(74,68,63,0.8)" }}>
               Acompanhe cada livro que você lê, defina metas anuais e revise suas leituras com estilo.
             </p>
           </div>
 
           <div className="space-y-4">
             <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center">
-                <BookOpen className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+              <div className="flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${theme.primary}20` }}>
+                <BookOpen className="h-6 w-6" style={{ color: theme.primary }} />
               </div>
               <div>
-                <h3 className="font-semibold text-slate-900 dark:text-white">Calendário Interativo</h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400">Visualize seus livros lidos ao longo do ano</p>
+                <h3 className="font-semibold" style={{ color: theme.text }}>Calendário Interativo</h3>
+                <p className="text-sm" style={{ color: isDark ? "rgba(245,245,245,0.7)" : "rgba(74,68,63,0.75)" }}>Visualize seus livros lidos ao longo do ano</p>
               </div>
             </div>
 
             <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center">
-                <TrendingUp className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+              <div className="flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${theme.primary}18` }}>
+                <TrendingUp className="h-6 w-6" style={{ color: theme.primary }} />
               </div>
               <div>
-                <h3 className="font-semibold text-slate-900 dark:text-white">Acompanhe Metas</h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400">Defina objetivos e monitore seu progresso</p>
+                <h3 className="font-semibold" style={{ color: theme.text }}>Acompanhe Metas</h3>
+                <p className="text-sm" style={{ color: isDark ? "rgba(245,245,245,0.7)" : "rgba(74,68,63,0.75)" }}>Defina objetivos e monitore seu progresso</p>
               </div>
             </div>
 
             <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-pink-100 dark:bg-pink-900/40 flex items-center justify-center">
-                <Book className="h-6 w-6 text-pink-600 dark:text-pink-400" />
+              <div className="flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${theme.primary}16` }}>
+                <Book className="h-6 w-6" style={{ color: theme.primary }} />
               </div>
               <div>
-                <h3 className="font-semibold text-slate-900 dark:text-white">Resenhas e Notas</h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400">Registre suas impressões sobre cada leitura</p>
+                <h3 className="font-semibold" style={{ color: theme.text }}>Resenhas e Notas</h3>
+                <p className="text-sm" style={{ color: isDark ? "rgba(245,245,245,0.7)" : "rgba(74,68,63,0.75)" }}>Registre suas impressões sobre cada leitura</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Right side - Form */}
-        <Card className="w-full border-none bg-white dark:bg-slate-900 shadow-2xl rounded-2xl p-8">
+        <Card className="w-full shadow-2xl rounded-2xl p-8" style={{ backgroundColor: theme.card, borderColor: `${theme.primary}28`, borderWidth: 1 }}>
           <div className="mb-8">
             <div className="mb-4 flex justify-center">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg" style={{ background: `linear-gradient(135deg, ${theme.primary}, ${isDark ? "#D1C7BD" : "#B09A88"})` }}>
                 <BookOpen className="h-8 w-8 text-white" />
               </div>
             </div>
-            <h2 className="text-center text-3xl font-bold text-slate-900 dark:text-white mb-2">
+            <h2 className="text-center text-3xl font-bold mb-2" style={{ color: theme.text }}>
               Literário
             </h2>
-            <p className="text-center text-slate-600 dark:text-slate-400">
+            <p className="text-center" style={{ color: isDark ? "rgba(245,245,245,0.75)" : "rgba(74,68,63,0.8)" }}>
               {isRegistering ? "Crie sua conta para começar" : "Bem-vindo de volta!"}
             </p>
           </div>
@@ -142,45 +162,49 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
           <form onSubmit={handleEmailAction} className="space-y-4">
             {isRegistering && (
               <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">Nome Completo</label>
+                <label className="mb-2 block text-sm font-semibold" style={{ color: theme.text }}>Nome Completo</label>
                 <Input
                   type="text"
                   placeholder="João Silva"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
-                  className="h-11 rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  className="h-11 rounded-lg"
+                  style={{ borderColor: `${theme.primary}30`, backgroundColor: isDark ? "rgba(38,36,34,0.65)" : "#FFFFFF", color: theme.text }}
                 />
               </div>
             )}
 
             <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">Email</label>
+              <label className="mb-2 block text-sm font-semibold" style={{ color: theme.text }}>Email</label>
               <Input
                 type="email"
                 placeholder="você@exemplo.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="h-11 rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                className="h-11 rounded-lg"
+                style={{ borderColor: `${theme.primary}30`, backgroundColor: isDark ? "rgba(38,36,34,0.65)" : "#FFFFFF", color: theme.text }}
               />
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">Senha</label>
+              <label className="mb-2 block text-sm font-semibold" style={{ color: theme.text }}>Senha</label>
               <Input
                 type="password"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="h-11 rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                className="h-11 rounded-lg"
+                style={{ borderColor: `${theme.primary}30`, backgroundColor: isDark ? "rgba(38,36,34,0.65)" : "#FFFFFF", color: theme.text }}
               />
             </div>
 
             <Button 
               type="submit" 
-              className="w-full h-11 gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold rounded-lg mt-6" 
+              className="w-full h-11 gap-2 text-white font-semibold rounded-lg mt-6" 
+              style={{ background: `linear-gradient(90deg, ${theme.primary}, ${isDark ? "#B8A99D" : "#9E8A7A"})` }}
               size="lg" 
               disabled={isLoading}
             >
@@ -199,23 +223,30 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
             <button 
               type="button"
               onClick={() => setIsRegistering(!isRegistering)}
-              className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium transition"
+              className="text-sm font-medium transition"
+              style={{ color: theme.primary }}
             >
               {isRegistering ? "Já tem conta? Entre aqui" : "Não tem conta? Cadastre-se"}
             </button>
           </div>
 
           <div className="my-6 flex items-center gap-3">
-            <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">OU</span>
-            <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+            <div className="h-px flex-1" style={{ backgroundColor: `${theme.primary}28` }} />
+            <span className="text-xs font-medium" style={{ color: isDark ? "rgba(245,245,245,0.7)" : "rgba(74,68,63,0.65)" }}>OU</span>
+            <div className="h-px flex-1" style={{ backgroundColor: `${theme.primary}28` }} />
           </div>
 
           <Button
             type="button"
             onClick={handleGoogleLogin}
             disabled={isLoading}
-            className="w-full h-11 gap-3 bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm rounded-lg font-medium transition"
+            className="w-full h-11 gap-3 shadow-sm rounded-lg font-medium transition"
+            style={{
+              backgroundColor: isDark ? "rgba(38,36,34,0.85)" : "#FFFFFF",
+              color: theme.text,
+              borderColor: `${theme.primary}32`,
+              borderWidth: 1,
+            }}
             size="lg"
           >
             <GoogleIcon />

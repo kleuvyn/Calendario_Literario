@@ -19,12 +19,13 @@ export function SiteHeader({ activeTheme, setActiveTheme, leftContent, rightCont
   const { data: session } = useSession()
   const theme = THEMES[activeTheme] || THEMES.light
   const isDark = activeTheme === 'dark'
-  const editorial = {
-    bg: '#FAFAF5',
-    text: '#4A443F',
-    accent: '#8C7B6E',
-    border: 'rgba(0, 0, 0, 0.08)',
-    soft: 'rgba(74, 68, 63, 0.45)',
+
+  const handleLogout = async () => {
+    try {
+      await signOut({ redirect: false, callbackUrl: '/' })
+    } finally {
+      window.location.href = '/'
+    }
   }
 
   return (
@@ -33,25 +34,25 @@ export function SiteHeader({ activeTheme, setActiveTheme, leftContent, rightCont
       animate={{ opacity: 1, y: 0 }}
       className="mb-8 flex flex-col lg:flex-row items-center justify-between backdrop-blur-md p-6 rounded-[2.5rem] shadow-sm gap-6 border border-dashed transition-all duration-300 relative overflow-hidden"
       style={{
-        borderColor: editorial.border,
-        backgroundColor: editorial.bg,
-        boxShadow: '0 10px 28px rgba(74, 68, 63, 0.08)'
+        borderColor: `${theme.primary}40`,
+        backgroundColor: theme.card,
+        boxShadow: '0 10px 28px rgba(0, 0, 0, 0.08)'
       }}
     >
       {/* Decorative dashed inner border */}
-      <div className="absolute top-4 left-4 right-4 bottom-4 border border-dashed rounded-[2rem] pointer-events-none" style={{ borderColor: 'rgba(140, 123, 110, 0.22)' }} />
+      <div className="absolute top-4 left-4 right-4 bottom-4 border border-dashed rounded-[2rem] pointer-events-none" style={{ borderColor: `${theme.primary}20` }} />
 
       <div className="flex items-center gap-4 w-full lg:w-auto relative z-10 min-w-0">
         <motion.div whileHover={{ scale: 1.05 }} className="relative shrink-0">
           <div className="h-16 w-16 rounded-full border border-dashed flex items-center justify-center overflow-hidden shadow-sm" style={{ 
-            borderColor: editorial.border,
-            backgroundColor: '#FFFFFF',
+            borderColor: `${theme.primary}40`,
+            backgroundColor: theme.card,
             backgroundImage: session?.user?.image ? `url('${session.user.image}')` : 'none',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
           }}>
             {!session?.user?.image && (
-              <span className="text-xl font-serif italic" style={{ color: editorial.accent }}>
+              <span className="text-xl font-serif italic" style={{ color: theme.primary }}>
                 {session?.user?.name?.charAt(0)?.toUpperCase() || 'U'}
               </span>
             )}
@@ -63,7 +64,7 @@ export function SiteHeader({ activeTheme, setActiveTheme, leftContent, rightCont
             <div className="truncate">{title}</div>
           ) : (
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-3xl font-serif font-black italic tracking-tighter lowercase truncate" style={{ color: editorial.text }}>
+              <h1 className="text-3xl font-serif font-black italic tracking-tighter lowercase truncate" style={{ color: theme.text }}>
                 minha estante
               </h1>
             </div>
@@ -74,7 +75,7 @@ export function SiteHeader({ activeTheme, setActiveTheme, leftContent, rightCont
 
       <div className="flex backdrop-blur-sm p-1.5 rounded-full border border-dashed gap-1 transition-all duration-300 flex-wrap justify-center relative z-10" style={{
         backgroundColor: '#FFFFFF',
-        borderColor: editorial.border
+        borderColor: `${theme.primary}20`
       }}>
         {Object.entries(THEMES).slice(0, 4).map(([key, value]) => {
           const ThemeIcon = value.icon || BookOpen
@@ -111,14 +112,15 @@ export function SiteHeader({ activeTheme, setActiveTheme, leftContent, rightCont
         
         {showLogout && (
           <motion.button 
+            type="button"
             whileHover={{ scale: 1.08, rotate: -5 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => signOut({ callbackUrl: "/" })} 
+            onClick={handleLogout} 
             className="h-10 w-10 ml-2 rounded-full border border-dashed transition-all flex items-center justify-center"
             style={{
-              borderColor: editorial.border,
-              color: editorial.accent,
-              backgroundColor: '#FFFFFF'
+              borderColor: `${theme.primary}40`,
+              color: theme.primary,
+              backgroundColor: theme.card
             }}
             title="Sair"
           >

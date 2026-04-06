@@ -453,10 +453,10 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
       <div className="bg-white/60 backdrop-blur-sm rounded-[3rem] p-4 sm:p-8 shadow-[0_10px_40px_rgba(0,0,0,0.03)] border border-slate-100 relative">
         <div className="absolute top-8 left-0 right-0 h-[1px] bg-slate-100 pointer-events-none" />
         
-        {/* Dias da Semana (Desktop) */}
-        <div className="hidden lg:grid grid-cols-7 gap-4 mb-6 px-4">
+        {/* Dias da Semana */}
+        <div className="grid grid-cols-7 gap-2 mb-6 px-2 sm:px-4">
           {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(d => (
-            <span key={d} className="text-[9px] font-black uppercase text-slate-400 tracking-[0.3em] text-center bg-white py-1 relative z-10 w-max mx-auto px-2">{d}</span>
+            <span key={d} className="text-[9px] sm:text-[10px] font-black uppercase text-slate-400 tracking-[0.3em] text-center bg-white py-1 relative z-10 w-full rounded-full">{d}</span>
           ))}
         </div>
 
