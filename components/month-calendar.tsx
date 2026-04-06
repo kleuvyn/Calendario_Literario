@@ -11,7 +11,7 @@ import { EditBookDialog } from "@/components/edit-book-dialog"
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog"
 import type { BookSearchResult } from "@/lib/google-books"
 
-export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any) {
+export function MonthCalendar({ month, days, year, userEmail, monthIndex, themePrimary }: any) {
   const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?q=80&w=300&auto=format&fit=crop"
   const safeCoverUrl = (url?: string) => {
     if (!url || !url.trim()) return PLACEHOLDER_IMAGE
@@ -302,7 +302,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
     }
   }
 
-  async function handleUpdateBook(book: any, data: { newName: string; author: string; pages: number; rating: number; notes: string; cover_url?: string; startDate?: string; endDate?: string }) {
+  async function handleUpdateBook(book: any, data: { newName: string; author: string; pages: number; rating: number; notes: string; cover_url?: string; genre?: string; format?: string; owned?: boolean; startDate?: string; endDate?: string }) {
     setIsUpdating(true)
     try {
       let targetYear = book.year || year
@@ -323,11 +323,14 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
           email: userEmail,
           oldBookName: book.book_name,
           bookName: data.newName,
+          author: data.author || book.author_name || book.author || null,
           rating: data.rating,
           coverUrl: data.cover_url || book.cover_url || "",
           totalPages: data.pages || book.total_pages || 0,
           review: data.notes || "",
-          genre: book.genre || "",
+          genre: data.genre || book.genre || "",
+          format: data.format || book.format || null,
+          owned: data.owned !== undefined ? data.owned : book.owned || false,
           year: targetYear,
           month: targetMonth,
           startDate: data.startDate ?? book.start_date ?? book.startDate ?? null,
@@ -369,7 +372,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex }: any)
         <div className="flex items-center justify-center gap-2 sm:gap-3">
             <Star size={14} className="text-slate-300" />
             <h2 className="text-2xl sm:text-5xl font-serif italic capitalize flex items-baseline justify-center">
-              <span className="text-[#8B4513]">Páginas Selecionadas</span> <span className="text-xl font-serif ml-3"></span>
+              <span style={{ color: themePrimary || '#8B4513' }}>Páginas Selecionadas</span> <span className="text-xl font-serif ml-3"></span>
             </h2>
             <Star size={14} className="text-slate-300" />
         </div>

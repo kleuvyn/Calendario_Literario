@@ -8,6 +8,24 @@ import { Textarea } from "@/components/ui/textarea"
 import { Star, BookOpen, User, Hash, Upload, Image as ImageIcon } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 
+const GENRE_CATEGORIES = {
+  "Ficção e Narrativa": [
+    "Romance", "Dark Romance", "Romance de Época", "Chick-Lit",
+    "Fantasia", "Ficção Científica", "Distopia", "Realismo Mágico",
+    "Terror / Horror", "Suspense / Thriller", "Policial / Noir",
+    "Aventura", "Young Adult (YA)", "Conto / Novela", "Fábula / Apólogo", "Ficção Infantojuvenil"
+  ],
+  "Não-Ficção": [
+    "Biografia / Memórias", "Matemática", "Autoajuda", "Ensaio / Crônica",
+    "Filosofia / Sociologia", "Didático / Técnico", "Religioso / Espiritual",
+    "Reportagem / Jornalístico", "Gastronomia"
+  ],
+  "Clássicos e Formatos": [
+    "Poesia / Lírico", "Dramático (Teatro)", "Conto / Fantástico", "Graphic Novel",
+    "Cordel / Fanfic", "Outro"
+  ]
+}
+
 interface EditBookDialogProps {
   open: boolean
   onClose: () => void
@@ -50,12 +68,20 @@ export function EditBookDialog({ open, onClose, bookName, bookData, onSave }: Ed
     return categories
   }
 
+  const formatCategoriesArray = (categories?: string[] | string): string[] => {
+    if (!categories) return []
+    if (Array.isArray(categories)) return categories.filter(Boolean)
+    return categories.split(',').map(item => item.trim()).filter(Boolean)
+  }
+
   const [newName, setNewName] = useState(bookName)
   const [author, setAuthor] = useState(bookData?.author || "")
   const [pages, setPages] = useState((bookData?.pages ?? bookData?.total_pages)?.toString() || "")
   const [rating, setRating] = useState(bookData?.rating || 0)
   const [notes, setNotes] = useState(bookData?.notes || "")
   const [genre, setGenre] = useState(bookData?.genre || formatCategories(bookData?.categories) || "")
+  const [categories, setCategories] = useState<string[]>(formatCategoriesArray(bookData?.categories))
+  const [showCategorySuggestions, setShowCategorySuggestions] = useState(false)
   const [format, setFormat] = useState(bookData?.format || "Físico")
   const [owned, setOwned] = useState(bookData?.owned ?? false)
   const [coverUrl, setCoverUrl] = useState(bookData?.cover_url || "")
@@ -73,6 +99,7 @@ export function EditBookDialog({ open, onClose, bookName, bookData, onSave }: Ed
     setRating(bookData?.rating ?? 0)
     setNotes(bookData?.notes || "")
     setGenre(bookData?.genre || formatCategories(bookData?.categories) || "")
+    setCategories(formatCategoriesArray(bookData?.categories))
     setFormat(bookData?.format || "Físico")
     setOwned(bookData?.owned ?? false)
     setCoverUrl(bookData?.cover_url || "")
@@ -279,11 +306,65 @@ export function EditBookDialog({ open, onClose, bookName, bookData, onSave }: Ed
             <Input
               id="genre"
               value={genre}
+              onFocus={() => setShowCategorySuggestions(true)}
+              onBlur={() => setTimeout(() => setShowCategorySuggestions(false), 150)}
               onChange={(e) => setGenre(e.target.value)}
               placeholder="Ex: Fantasia"
               className="h-11"
             />
-            <p className="text-[11px] text-slate-500">Se disponível, usamos a categoria do livro para preencher o gênero.</p>
+            {showCategorySuggestions && (
+              <div className="space-y-3 mt-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                {categories.length > 0 && (
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500 mb-2">Categorias do livro</p>
+                    <div className="flex flex-wrap gap-2">
+                      {categories.map((item) => (
+                        <button
+                          key={`cat-${item}`}
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            setGenre(item)
+                            setShowCategorySuggestions(false)
+                          }}
+                          className="rounded-full border border-slate-300 bg-white px-3 py-1 text-[11px] text-slate-700 transition hover:bg-slate-200"
+                        >
+                          {item}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500 mb-2">Gêneros literários</p>
+                  <div className="grid gap-2">
+                    {Object.entries(GENRE_CATEGORIES).map(([group, options]) => (
+                      <div key={group} className="space-y-2">
+                        <p className="text-[11px] font-semibold text-slate-600">{group}</p>
+                        <div className="flex flex-wrap gap-2">
+                          {options.map((item) => (
+                            <button
+                              key={`genre-${group}-${item}`}
+                              type="button"
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => {
+                                setGenre(item)
+                                setShowCategorySuggestions(false)
+                              }}
+                              className="rounded-full border border-slate-300 bg-slate-100 px-3 py-1 text-[11px] text-slate-700 transition hover:bg-slate-200"
+                            >
+                              {item}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+            <p className="text-[11px] text-slate-500">Toque em uma categoria abaixo para preencher como gênero.</p>
           </div>
 
           {/* Tipo */}

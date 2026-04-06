@@ -468,9 +468,12 @@ export default function PlanejadosPage() {
             author: bookToEdit?.author_name || bookToEdit?.author || '',
             pages: bookToEdit?.total_pages || bookToEdit?.pages || 0,
             rating: bookToEdit?.rating || 0,
-            notes: bookToEdit?.notes || '',            genre: bookToEdit?.genre || '',
+            notes: bookToEdit?.notes || '',
+            genre: bookToEdit?.genre || '',
+            categories: bookToEdit?.categories,
             format: bookToEdit?.format || 'Físico',
-            owned: bookToEdit?.owned || false,            cover_url: bookToEdit?.cover_url || bookToEdit?.cover || ''
+            owned: bookToEdit?.owned || false,
+            cover_url: bookToEdit?.cover_url || bookToEdit?.cover || ''
           }}
           onSave={handleUpdateBook}
         />

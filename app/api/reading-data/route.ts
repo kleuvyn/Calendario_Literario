@@ -278,6 +278,16 @@ export async function POST(request: Request) {
     }
 
     if (action === "UPDATE_REVIEW") {
+      // Garante compatibilidade de schema antes de atualizar reviews/metadata
+      await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS author_name TEXT`, []);
+      await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS format TEXT`, []);
+      await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS owned BOOLEAN`, []);
+      await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS genre TEXT`, []);
+      await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS review TEXT`, []);
+      await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS rating INTEGER`, []);
+      await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS cover_url TEXT`, []);
+      await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS total_pages INTEGER`, []);
+
       const userRes = await executeQuery(`SELECT id FROM public.users WHERE email = $1`, [email]);
       if (userRes.length === 0) return NextResponse.json({ error: "Usuário não encontrado" });
       const userId = userRes[0].id;
@@ -285,9 +295,9 @@ export async function POST(request: Request) {
 
       await executeQuery(
         `UPDATE public.reading_data 
-         SET book_name = $1, total_pages = $2, cover_url = $3, genre = $4, review = $5, rating = $6
-         WHERE email = $7 AND book_name = $8`,
-        [bookName, numPages, coverUrl, genre, review, rating || null, email, targetName]
+         SET book_name = $1, author_name = $2, total_pages = $3, cover_url = $4, genre = $5, review = $6, rating = $7, format = $8, owned = $9
+         WHERE email = $10 AND book_name = $11`,
+        [bookName, author || null, numPages, coverUrl, genre, review, rating || null, format || null, owned === true, email, targetName]
       );
 
       await executeQuery(

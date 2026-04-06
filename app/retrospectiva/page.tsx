@@ -268,7 +268,7 @@ export default function RetrospectivaPage() {
     }
   }
 
-  const handleSaveBook = async (data: { newName: string; author: string; pages: number; rating: number; notes: string; cover_url?: string }) => {
+  const handleSaveBook = async (data: { newName: string; author: string; pages: number; rating: number; notes: string; cover_url?: string; genre?: string; format?: string; owned?: boolean; startDate?: string; endDate?: string }) => {
     if (!session?.user?.email || !bookToEdit) return
     setIsUpdating(true)
     try {
@@ -280,11 +280,16 @@ export default function RetrospectivaPage() {
           email: session.user.email,
           oldBookName: bookToEdit.book_name,
           bookName: data.newName,
+          author: data.author || bookToEdit.author_name || bookToEdit.author || null,
           rating: data.rating,
           coverUrl: data.cover_url || bookToEdit.cover_url || '',
           totalPages: data.pages || bookToEdit.total_pages || 0,
           review: data.notes,
-          genre: bookToEdit.genre || '',
+          genre: data.genre || bookToEdit.genre || '',
+          format: data.format || bookToEdit.format || 'Físico',
+          owned: data.owned !== undefined ? data.owned : bookToEdit.owned || false,
+          startDate: data.startDate ?? bookToEdit.start_date ?? bookToEdit.startDate ?? null,
+          endDate: data.endDate ?? bookToEdit.end_date ?? bookToEdit.endDate ?? null,
           year: bookToEdit.year || currentYear,
           month: bookToEdit.month || (new Date(bookToEdit.start_date || Date.now()).getMonth() + 1)
         })
@@ -1827,6 +1832,8 @@ export default function RetrospectivaPage() {
             pages: Number(bookToEdit?.total_pages || 0),
             rating: Number(bookToEdit?.rating || 0),
             notes: bookToEdit?.review || '',
+            genre: bookToEdit?.genre || '',
+            categories: bookToEdit?.categories,
             cover_url: bookToEdit?.cover_url || ''
           }}
           onSave={handleSaveBook}
