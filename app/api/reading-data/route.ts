@@ -63,11 +63,11 @@ export async function GET(request: Request) {
 
     if (userRow && userRow.length > 0) {
       const goalsJson = userRow[0].goals_by_year;
-      const globalGoal = userRow[0].literary_goal || 12;
+      const globalGoal = Number(userRow[0].literary_goal) || 12;
       
       if (goalsJson) {
         const goals = typeof goalsJson === 'string' ? JSON.parse(goalsJson) : goalsJson;
-        userGoal = goals[year.toString()] || globalGoal;
+        userGoal = Number(goals?.[year.toString()] ?? globalGoal) || globalGoal;
       } else {
         userGoal = globalGoal;
       }
@@ -92,6 +92,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { 
+      id,
       email, bookName, oldBookName, action, rating, coverUrl, 
       totalPages, review, genre, year, month, 
       startDate, endDate, goal, author, pages: bodyPages, notes, cover_url, format, owned
@@ -316,27 +317,36 @@ export async function POST(request: Request) {
         effectiveMonth = new Date().getUTCMonth() + 1;
       }
 
+      const updateParams: any[] = [
+        bookName,
+        author || null,
+        numPages,
+        coverUrl,
+        genre,
+        review,
+        rating || null,
+        format || null,
+        owned === true,
+        startDate || null,
+        endDate || null,
+        effectiveYear,
+        effectiveMonth,
+      ];
+
+      let whereClause: string;
+      if (id) {
+        whereClause = `id = $${updateParams.length + 1}`;
+        updateParams.push(id);
+      } else {
+        whereClause = `email = $${updateParams.length + 1} AND book_name = $${updateParams.length + 2}`;
+        updateParams.push(email, targetName);
+      }
+
       await executeQuery(
         `UPDATE public.reading_data 
          SET book_name = $1, author_name = $2, total_pages = $3, cover_url = $4, genre = $5, review = $6, rating = $7, format = $8, owned = $9, start_date = $10, end_date = $11, year = $12, month = $13
-         WHERE email = $14 AND book_name = $15`,
-        [
-          bookName,
-          author || null,
-          numPages,
-          coverUrl,
-          genre,
-          review,
-          rating || null,
-          format || null,
-          owned === true,
-          startDate || null,
-          endDate || null,
-          effectiveYear,
-          effectiveMonth,
-          email,
-          targetName,
-        ]
+         WHERE ${whereClause}`,
+        updateParams
       );
 
       await executeQuery(

@@ -338,6 +338,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
         body: JSON.stringify({
           action: "UPDATE_REVIEW",
           email: userEmail,
+          id: book.id,
           oldBookName: book.book_name,
           bookName: data.newName,
           author: data.author || book.author_name || book.author || null,
