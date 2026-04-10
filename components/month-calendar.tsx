@@ -307,15 +307,16 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
     try {
       let targetYear = book.year || year
       let targetMonth = book.month || (monthIndex + 1)
-      if (data.startDate) {
-        const parsed = new Date(data.startDate)
+      const dateRef = data.endDate || data.startDate
+      if (dateRef) {
+        const parsed = new Date(dateRef)
         if (!isNaN(parsed.getTime())) {
           targetYear = parsed.getUTCFullYear()
           targetMonth = parsed.getUTCMonth() + 1
         }
       }
 
-      await fetch("/api/reading-data", {
+      const response = await fetch("/api/reading-data", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -337,10 +338,16 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
           endDate: data.endDate ?? book.end_date ?? book.endDate ?? null,
         })
       })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData?.error || "Falha ao salvar edição")
+      }
       await loadData()
       toast.success("Informações salvas com sucesso!")
     } catch (err) {
-      toast.error("Erro ao salvar edição")
+      const message = err instanceof Error ? err.message : "Erro ao salvar edição"
+      toast.error(message)
     } finally {
       setIsUpdating(false)
     }

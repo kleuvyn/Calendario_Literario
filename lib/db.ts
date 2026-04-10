@@ -1,31 +1,155 @@
-import { Pool } from 'pg';
+import { createClient } from "@libsql/client";
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || process.env.POSTGRES_URL,
-  ssl: {
-    rejectUnauthorized: false 
-  }
+const databaseUrl = process.env.DATABASE_URL;
+
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL não definida.");
+}
+
+const client = createClient({
+  url: databaseUrl,
+  authToken: process.env.TURSO_AUTH_TOKEN,
 });
+
+const bootstrapStatements = [
+  `CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    email TEXT NOT NULL,
+    password TEXT,
+    image TEXT,
+    literary_goal INTEGER DEFAULT 12,
+    goals_by_year TEXT DEFAULT '{}',
+    theme TEXT DEFAULT 'rose',
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  )`,
+  "CREATE UNIQUE INDEX IF NOT EXISTS users_email_unique ON users (email)",
+  `CREATE TABLE IF NOT EXISTS reading_data (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    email TEXT,
+    book_name TEXT NOT NULL,
+    author TEXT,
+    author_name TEXT,
+    rating INTEGER,
+    cover_url TEXT,
+    genre TEXT,
+    format TEXT,
+    owned INTEGER DEFAULT 0,
+    review TEXT,
+    notes TEXT,
+    total_pages INTEGER DEFAULT 0,
+    status TEXT,
+    start_date TEXT,
+    end_date TEXT,
+    finish_month INTEGER,
+    year INTEGER,
+    month INTEGER,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  )`,
+  "CREATE INDEX IF NOT EXISTS reading_data_email_idx ON reading_data (email)",
+  "CREATE INDEX IF NOT EXISTS reading_data_user_id_idx ON reading_data (user_id)",
+  `CREATE TABLE IF NOT EXISTS book_reviews (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    rating INTEGER DEFAULT 0,
+    cover_url TEXT,
+    total_pages INTEGER DEFAULT 0,
+    genre TEXT,
+    review TEXT,
+    year INTEGER,
+    month INTEGER,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  )`,
+  "CREATE UNIQUE INDEX IF NOT EXISTS book_reviews_user_id_title_unique ON book_reviews (user_id, title)",
+  `CREATE TABLE IF NOT EXISTS books (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    email TEXT,
+    user_email TEXT,
+    title TEXT,
+    cover_url TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  )`,
+  "CREATE INDEX IF NOT EXISTS books_email_idx ON books (email)",
+  "CREATE INDEX IF NOT EXISTS books_user_email_idx ON books (user_email)",
+  "ALTER TABLE users ADD COLUMN password TEXT",
+  "ALTER TABLE users ADD COLUMN image TEXT",
+  "ALTER TABLE reading_data ADD COLUMN author TEXT",
+  "ALTER TABLE reading_data ADD COLUMN author_name TEXT",
+  "ALTER TABLE reading_data ADD COLUMN rating INTEGER",
+  "ALTER TABLE reading_data ADD COLUMN cover_url TEXT",
+  "ALTER TABLE reading_data ADD COLUMN genre TEXT",
+  "ALTER TABLE reading_data ADD COLUMN format TEXT",
+  "ALTER TABLE reading_data ADD COLUMN owned BOOLEAN",
+  "ALTER TABLE reading_data ADD COLUMN review TEXT",
+  "ALTER TABLE reading_data ADD COLUMN email TEXT",
+];
+
+let bootstrapPromise: Promise<void> | null = null;
+
+function normalizeSql(sql: string) {
+  return sql
+    .replace(/\bpublic\./gi, "")
+    .replace(/JSONB/gi, "TEXT")
+    .replace(/::jsonb/gi, "")
+    .replace(/NOW\(\)/gi, "CURRENT_TIMESTAMP")
+    .replace(/ALTER TABLE\s+([^\s]+)\s+ADD COLUMN IF NOT EXISTS\s+/gi, "ALTER TABLE $1 ADD COLUMN ");
+}
+
+function convertPgParams(sql: string, params: any[]) {
+  const indexes: number[] = [];
+  const convertedSql = sql.replace(/\$(\d+)/g, (_match, num) => {
+    indexes.push(Number(num) - 1);
+    return "?";
+  });
+
+  if (indexes.length === 0) {
+    return { sql: convertedSql, args: params ?? [] };
+  }
+
+  const args = indexes.map((index) => params[index]);
+  return { sql: convertedSql, args };
+}
+
+function isIgnorableSchemaError(error: unknown) {
+  const message = String((error as any)?.message || "").toLowerCase();
+  return (
+    message.includes("duplicate column name") ||
+    message.includes("already exists") ||
+    message.includes("no such table")
+  );
+}
+
+async function ensureBootstrapSchema() {
+  if (!bootstrapPromise) {
+    bootstrapPromise = (async () => {
+      for (const statement of bootstrapStatements) {
+        try {
+          await client.execute(statement);
+        } catch (error) {
+          if (!isIgnorableSchemaError(error)) {
+            throw error;
+          }
+        }
+      }
+    })();
+  }
+
+  await bootstrapPromise;
+}
 
 export async function executeQuery(query: string, params: any[] = []) {
   try {
+    await ensureBootstrapSchema();
 
-    await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT;');
-    await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS image TEXT;');
-    await pool.query('ALTER TABLE reading_data ADD COLUMN IF NOT EXISTS author TEXT;');
-    await pool.query('ALTER TABLE reading_data ADD COLUMN IF NOT EXISTS author_name TEXT;');
-    await pool.query('ALTER TABLE reading_data ADD COLUMN IF NOT EXISTS rating INTEGER;');
-    await pool.query('ALTER TABLE reading_data ADD COLUMN IF NOT EXISTS cover_url TEXT;');
-    await pool.query('ALTER TABLE reading_data ADD COLUMN IF NOT EXISTS genre TEXT;');
-    await pool.query('ALTER TABLE reading_data ADD COLUMN IF NOT EXISTS format TEXT;');
-    await pool.query('ALTER TABLE reading_data ADD COLUMN IF NOT EXISTS owned BOOLEAN;');
-    await pool.query('ALTER TABLE reading_data ADD COLUMN IF NOT EXISTS review TEXT;');
-    await pool.query('ALTER TABLE reading_data ADD COLUMN IF NOT EXISTS email TEXT;');
-
-    const result = await pool.query(query, params);
-    return result.rows; 
+    const normalizedQuery = normalizeSql(query);
+    const { sql, args } = convertPgParams(normalizedQuery, params);
+    const result = await client.execute({ sql, args });
+    return result.rows ?? [];
   } catch (error) {
-    console.error('Erro detalhado no Banco de Dados:', error);
+    console.error("Erro detalhado no Banco de Dados:", error);
     throw error;
   }
 }

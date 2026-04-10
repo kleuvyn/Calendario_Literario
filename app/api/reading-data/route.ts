@@ -287,17 +287,48 @@ export async function POST(request: Request) {
       await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS rating INTEGER`, []);
       await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS cover_url TEXT`, []);
       await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS total_pages INTEGER`, []);
+      await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS start_date TEXT`, []);
+      await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS end_date TEXT`, []);
 
       const userRes = await executeQuery(`SELECT id FROM public.users WHERE email = $1`, [email]);
       if (userRes.length === 0) return NextResponse.json({ error: "Usuário não encontrado" });
       const userId = userRes[0].id;
       const targetName = oldBookName || bookName;
 
+      // Recalcula o recorte temporal com base na data de conclusão (prioridade)
+      // e, se ausente, usa a data de início como fallback.
+      const dateRef = endDate || startDate;
+      let effectiveYear = year || null;
+      let effectiveMonth = month || null;
+      if (dateRef) {
+        const parsedDate = new Date(dateRef);
+        if (!isNaN(parsedDate.getTime())) {
+          effectiveYear = parsedDate.getUTCFullYear();
+          effectiveMonth = parsedDate.getUTCMonth() + 1;
+        }
+      }
+
       await executeQuery(
         `UPDATE public.reading_data 
-         SET book_name = $1, author_name = $2, total_pages = $3, cover_url = $4, genre = $5, review = $6, rating = $7, format = $8, owned = $9
-         WHERE email = $10 AND book_name = $11`,
-        [bookName, author || null, numPages, coverUrl, genre, review, rating || null, format || null, owned === true, email, targetName]
+         SET book_name = $1, author_name = $2, total_pages = $3, cover_url = $4, genre = $5, review = $6, rating = $7, format = $8, owned = $9, start_date = $10, end_date = $11, year = $12, month = $13
+         WHERE email = $14 AND book_name = $15`,
+        [
+          bookName,
+          author || null,
+          numPages,
+          coverUrl,
+          genre,
+          review,
+          rating || null,
+          format || null,
+          owned === true,
+          startDate || null,
+          endDate || null,
+          effectiveYear,
+          effectiveMonth,
+          email,
+          targetName,
+        ]
       );
 
       await executeQuery(
@@ -311,7 +342,7 @@ export async function POST(request: Request) {
            review = EXCLUDED.review,
            year = EXCLUDED.year,
            month = EXCLUDED.month`,
-        [userId, bookName, rating || 0, coverUrl || "", numPages, genre || "", review || "", year || null, month || null]
+          [userId, bookName, rating || 0, coverUrl || "", numPages, genre || "", review || "", effectiveYear, effectiveMonth]
       );
 
       if (oldBookName && oldBookName !== bookName) {
