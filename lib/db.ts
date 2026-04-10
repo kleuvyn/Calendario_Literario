@@ -11,6 +11,8 @@ const client = createClient({
   authToken: process.env.TURSO_AUTH_TOKEN,
 });
 
+const BOOTSTRAP_VERSION = "bootstrap_v1";
+
 const bootstrapStatements = [
   `CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -125,6 +127,22 @@ function isIgnorableSchemaError(error: unknown) {
 async function ensureBootstrapSchema() {
   if (!bootstrapPromise) {
     bootstrapPromise = (async () => {
+      await client.execute(
+        `CREATE TABLE IF NOT EXISTS __schema_bootstrap (
+          version TEXT PRIMARY KEY,
+          applied_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )`
+      );
+
+      const bootstrapState = await client.execute({
+        sql: "SELECT version FROM __schema_bootstrap WHERE version = ? LIMIT 1",
+        args: [BOOTSTRAP_VERSION],
+      });
+
+      if ((bootstrapState.rows ?? []).length > 0) {
+        return;
+      }
+
       for (const statement of bootstrapStatements) {
         try {
           await client.execute(statement);
@@ -134,6 +152,11 @@ async function ensureBootstrapSchema() {
           }
         }
       }
+
+      await client.execute({
+        sql: "INSERT OR IGNORE INTO __schema_bootstrap (version) VALUES (?)",
+        args: [BOOTSTRAP_VERSION],
+      });
     })();
   }
 

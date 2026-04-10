@@ -38,13 +38,14 @@ export async function GET(request: Request) {
 
     const query = `
       SELECT rd.*, br.rating,
-             COALESCE(NULLIF(br.cover_url, ''), NULLIF(rd.cover_url, ''), '') as cover_url,
+             COALESCE(NULLIF(br.cover_url, ''), NULLIF(rd.cover_url, ''), NULLIF(b.cover_url, ''), '') as cover_url,
              COALESCE(NULLIF(br.genre, ''), NULLIF(rd.genre, ''), '') as genre,
              COALESCE(NULLIF(br.review, ''), NULLIF(rd.review, ''), '') as review,
              COALESCE(br.total_pages, rd.total_pages, 0) as total_pages
       FROM public.reading_data rd
       LEFT JOIN public.users u ON u.email = rd.email
       LEFT JOIN public.book_reviews br ON (u.id = br.user_id AND rd.book_name = br.title)
+      LEFT JOIN public.books b ON (rd.book_name = b.title AND (rd.email = b.user_email OR rd.email = b.email))
       WHERE rd.email = $1 ${yearCondition}
       ${dateRangeCondition}
       ORDER BY rd.month ASC, rd.status DESC

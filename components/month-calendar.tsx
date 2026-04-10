@@ -18,7 +18,10 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
     const trimmed = url.trim()
     // permite URL padrão de imagem ou data URI para imagens base64
     if (/^data:image\/(?:png|jpe?g|webp|avif|gif);base64,[A-Za-z0-9+/=]+$/i.test(trimmed)) return trimmed
-    if (/^https?:\/\/[^\s]+$/i.test(trimmed)) return trimmed
+    if (/^https?:\/\/[^\s]+$/i.test(trimmed)) {
+      // Em produção HTTPS, evita bloqueio de mixed content para capas antigas.
+      return trimmed.replace(/^http:\/\//i, 'https://')
+    }
     return PLACEHOLDER_IMAGE
   }
 
