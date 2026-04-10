@@ -309,6 +309,13 @@ export async function POST(request: Request) {
         }
       }
 
+      if (!effectiveYear) {
+        effectiveYear = new Date().getUTCFullYear();
+      }
+      if (!effectiveMonth) {
+        effectiveMonth = new Date().getUTCMonth() + 1;
+      }
+
       await executeQuery(
         `UPDATE public.reading_data 
          SET book_name = $1, author_name = $2, total_pages = $3, cover_url = $4, genre = $5, review = $6, rating = $7, format = $8, owned = $9, start_date = $10, end_date = $11, year = $12, month = $13

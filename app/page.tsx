@@ -62,6 +62,7 @@ export default function Home() {
   const [isThemeLoading, setIsThemeLoading] = useState(true)
   const [goalsByYear, setGoalsByYear] = useState<Record<number, number>>({})
   const [totalReadThisYear, setTotalReadThisYear] = useState(0)
+  const [readingData, setReadingData] = useState<any[]>([])
   const [direction, setDirection] = useState(0)
   const [profileEditOpen, setProfileEditOpen] = useState(false)
 
@@ -94,7 +95,10 @@ export default function Home() {
           const books = response?.data || []
           if (response?.userGoal) setGoalsByYear(prev => ({ ...prev, [currentYear]: response.userGoal }))
           setTotalReadThisYear(books.filter((b: any) => b && (b.status === 'lido' || b.end_date)).length)
-        } catch (e) {}
+          setReadingData(books)
+        } catch (e) {
+          setReadingData([])
+        }
       }
     }
     fetchData()
@@ -316,7 +320,7 @@ export default function Home() {
               className="cursor-grab active:cursor-grabbing"
             >
               {!showBack ? (
-                <MonthCalendar month={months[currentMonth].name} days={months[currentMonth].days} year={currentYear} userEmail={session.user?.email?.toLowerCase() || ""} monthIndex={currentMonth} themePrimary={theme.primary} />
+                <MonthCalendar month={months[currentMonth].name} days={months[currentMonth].days} year={currentYear} userEmail={session.user?.email?.toLowerCase() || ""} monthIndex={currentMonth} themePrimary={theme.primary} initialReadings={readingData} />
               ) : (
                 <MonthReview month={months[currentMonth].name} userEmail={session.user?.email?.toLowerCase() || ""} monthIndex={currentMonth} year={currentYear} />
               )}

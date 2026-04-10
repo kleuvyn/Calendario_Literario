@@ -14,7 +14,7 @@ const getProxyUrl = (url: string) => {
   const trimmedUrl = url?.trim() || ""
   if (!trimmedUrl) return ""
   if (trimmedUrl.startsWith('data:image/')) return trimmedUrl
-  return `https://images.weserv.nl/?url=${encodeURIComponent(trimmedUrl.replace("http://", "https://"))}`
+  return trimmedUrl.replace(/^http:\/\//i, "https://")
 }
 
 const renderStars = (rating?: number, color?: string) => {
@@ -45,7 +45,7 @@ export default function BookDiaryPage() {
   const [activeTheme, setActiveTheme] = useState<ThemeKey>('light')
 
   const bookName = decodeURIComponent(Array.isArray(params?.bookName) ? params.bookName[0] : (params?.bookName || ""))
-  const currentYear = 2026
+  const currentYear = new Date().getFullYear()
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("app-theme") as keyof typeof THEMES

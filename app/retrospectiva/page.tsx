@@ -52,10 +52,7 @@ const getProxyUrl = (url: string) => {
   const trimmedUrl = url?.trim() || ""
   if (!trimmedUrl) return ""
   if (trimmedUrl.startsWith('data:image/')) return trimmedUrl
-  if (trimmedUrl.includes("googleusercontent.com") || trimmedUrl.includes("books.google.com")) {
-    return `https://images.weserv.nl/?url=${encodeURIComponent(trimmedUrl.replace("http://", "https://"))}`;
-  }
-  return trimmedUrl;
+  return trimmedUrl.replace(/^http:\/\//i, "https://")
 };
 
 export default function RetrospectivaPage() {
@@ -134,19 +131,21 @@ export default function RetrospectivaPage() {
       if (status === "authenticated" && session?.user?.email) {
         setLoadingData(true)
         try {
-          const data: any = await getReadingData(session.user.email, currentYear, true)
-          const booksArray = Array.isArray(data) ? data : (data?.data || [])
-          setAllBooks(booksArray)
+          const [data, profileRes] = await Promise.allSettled([
+            getReadingData(session.user.email, currentYear, true),
+            fetch(`/api/user/update-profile?email=${session.user.email}`)
+          ])
 
-          try {
-            const profileRes = await fetch(`/api/user/update-profile?email=${session.user.email}`)
-            if (profileRes.ok) {
-                const profileData = await profileRes.json()
-                if (profileData?.theme && THEMES[profileData.theme as keyof typeof THEMES]) {
-                  setCurrentTheme(profileData.theme as keyof typeof THEMES)
-                }
+          if (data.status === 'fulfilled') {
+            const booksArray = Array.isArray(data.value) ? data.value : (data.value?.data || [])
+            setAllBooks(booksArray)
+          }
+
+          if (profileRes.status === 'fulfilled' && profileRes.value.ok) {
+            const profileData = await profileRes.value.json()
+            if (profileData?.theme && THEMES[profileData.theme as keyof typeof THEMES]) {
+              setCurrentTheme(profileData.theme as keyof typeof THEMES)
             }
-          } catch (themeErr) {
           }
 
         } catch (err) { 

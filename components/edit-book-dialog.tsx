@@ -1,6 +1,6 @@
 "use client"
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -160,6 +160,9 @@ export function EditBookDialog({ open, onClose, bookName, bookData, onSave }: Ed
             <BookOpen className="text-primary" />
             Editar Livro
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Formulário de edição de livro para atualizar título, autor, datas e avaliação.
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5">

@@ -35,6 +35,23 @@ export interface Book {
   book_id?: number;
 }
 
+const readingDataCache = new Map<string, { expires: number; data: any }>();
+const READING_DATA_CACHE_TTL = 30_000;
+
+function getReadingDataCacheKey(email: string, year: number, isRetrospective: boolean, month?: number, includeAllYears?: boolean) {
+  return `readingData:${email.toLowerCase()}:${year}:${isRetrospective}:${month ?? 0}:${includeAllYears ? 1 : 0}`;
+}
+
+function invalidateReadingDataCache(email: string, year?: number, month?: number) {
+  const normalizedEmail = email.toLowerCase();
+  for (const key of Array.from(readingDataCache.keys())) {
+    if (!key.startsWith(`readingData:${normalizedEmail}:`)) continue;
+    if (year !== undefined && !key.includes(`:${year}:`)) continue;
+    if (month !== undefined && !key.includes(`:${month}:`)) continue;
+    readingDataCache.delete(key);
+  }
+}
+
 export async function loginUser(email: string, name?: string, image?: string): Promise<User> {
   const response = await fetch("/api/auth/login", {
     method: "POST",
@@ -54,16 +71,24 @@ export async function getReadingData(
   month?: number,
   includeAllYears: boolean = false
 ): Promise<any> {
+  const cacheKey = getReadingDataCacheKey(email, year, isRetrospective, month, includeAllYears);
+  const cached = readingDataCache.get(cacheKey);
+  if (cached && cached.expires > Date.now()) {
+    return cached.data;
+  }
+
   let url = `/api/reading-data?email=${encodeURIComponent(email.toLowerCase())}&year=${year}&isRetrospective=${isRetrospective}&includeAllYears=${includeAllYears}`;
   if (month) url += `&month=${month}`;
-  url += `&t=${Date.now()}`;
 
-  const response = await fetch(url, { cache: 'no-store', signal });
+  const response = await fetch(url, { cache: 'force-cache', signal });
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.error || "Erro ao buscar dados");
   }
-  return await response.json();
+
+  const data = await response.json();
+  readingDataCache.set(cacheKey, { expires: Date.now() + READING_DATA_CACHE_TTL, data });
+  return data;
 }
 
 export async function updateUserGoal(email: string, goal: number, currentYear: number) {
@@ -78,6 +103,7 @@ export async function updateUserGoal(email: string, goal: number, currentYear: n
     }),
   });
   if (!response.ok) throw new Error("Erro ao salvar meta");
+  invalidateReadingDataCache(email, currentYear);
   return response.json();
 }
 
@@ -114,6 +140,7 @@ export async function saveReadingDay(
     }),
   });
   if (!response.ok) throw new Error("Erro ao salvar dados");
+  invalidateReadingDataCache(email, year, month);
   return response.json();
 }
 
@@ -131,6 +158,7 @@ export async function saveReview(email: string, bookName: string, rating: number
     }),
   });
   if (!response.ok) throw new Error("Erro ao salvar avaliação");
+  invalidateReadingDataCache(email, undefined, undefined);
   return response.json();
 }
 
@@ -176,6 +204,7 @@ export async function editReading(
     body: JSON.stringify(body)
   });
   if (!response.ok) throw new Error('Erro ao editar leitura');
+  invalidateReadingDataCache(email);
   return response.json();
 }
 
@@ -213,6 +242,7 @@ export async function planReading(
     }),
   });
   if (!response.ok) throw new Error("Erro ao salvar planejado");
+  invalidateReadingDataCache(email, year || new Date().getUTCFullYear(), month);
   return response.json();
 }
 

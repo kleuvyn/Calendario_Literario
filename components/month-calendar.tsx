@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Loader2, Trash2, Edit2, BookMarked, Calendar, CheckCircle2, XCircle, Star, Plus, Info } from "lucide-react"
 import { getReadingData, saveReadingDay } from "@/lib/api-client"
@@ -11,8 +11,10 @@ import { EditBookDialog } from "@/components/edit-book-dialog"
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog"
 import type { BookSearchResult } from "@/lib/google-books"
 
-export function MonthCalendar({ month, days, year, userEmail, monthIndex, themePrimary }: any) {
+export function MonthCalendar({ month, days, year, userEmail, monthIndex, themePrimary, initialReadings }: any) {
   const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?q=80&w=300&auto=format&fit=crop"
+  const initialYearRef = useRef(year)
+  const hasInitialReadings = Array.isArray(initialReadings) && initialReadings.length > 0
   const safeCoverUrl = (url?: string) => {
     if (!url || !url.trim()) return PLACEHOLDER_IMAGE
     const trimmed = url.trim()
@@ -25,7 +27,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
     return PLACEHOLDER_IMAGE
   }
 
-  const [readings, setReadings] = useState<any[]>([])
+  const [readings, setReadings] = useState<any[]>(initialReadings ?? [])
   const [isUpdating, setIsUpdating] = useState(false)
   const [expandedDays, setExpandedDays] = useState<Set<number>>(new Set())
   const [activeSummary, setActiveSummary] = useState<'lendo' | 'lido' | 'planejados' | ''>('')
@@ -87,6 +89,13 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
   const [bookToEdit, setBookToEdit] = useState<any>(null)
   const [bookToDelete, setBookToDelete] = useState<string>("")
 
+  useEffect(() => {
+    if (Array.isArray(initialReadings) && initialReadings.length > 0) {
+      setReadings(initialReadings)
+      initialYearRef.current = year
+    }
+  }, [initialReadings, year])
+
   const summaryFilter = activeSummary
 
   const now = new Date()
@@ -104,7 +113,11 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
     }
   }
 
-  useEffect(() => { loadData() }, [userEmail, monthIndex, year])
+  useEffect(() => {
+    if (!userEmail) return
+    if (hasInitialReadings && year === initialYearRef.current) return
+    loadData()
+  }, [userEmail, monthIndex, year, hasInitialReadings])
 
   // Função para calcular dias (sua função de negócio)
   const calculateDays = (start: string, end: string) => {
