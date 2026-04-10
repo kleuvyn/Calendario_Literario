@@ -47,7 +47,8 @@ export default function PlanejadosPage() {
   const [books, setBooks] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTheme, setActiveTheme] = useState<ThemeKey>('light')
-  const [currentYear] = useState(() => new Date().getFullYear())
+  const [currentYear, setCurrentYear] = useState(() => new Date().getFullYear())
+  const [hasCheckedPreviousYears, setHasCheckedPreviousYears] = useState(false)
   
   // Estados do Formulário
   const [newTitle, setNewTitle] = useState('')
@@ -127,14 +128,30 @@ export default function PlanejadosPage() {
     const savedTheme = localStorage.getItem('app-theme') as keyof typeof THEMES
     if (savedTheme && THEMES[savedTheme]) setActiveTheme(savedTheme)
     loadData()
-  }, [session?.user?.email])
+  }, [session?.user?.email, currentYear])
 
   const loadData = async () => {
     if (!session?.user?.email) return
     setLoading(true)
     try {
       const response: any = await getReadingData(session.user.email, currentYear, false)
-      setBooks(Array.isArray(response) ? response : response?.data || [])
+      const books = Array.isArray(response) ? response : response?.data || []
+
+      if (books.length === 0 && !hasCheckedPreviousYears) {
+        const allYearsResponse: any = await getReadingData(session.user.email, currentYear, false, undefined, undefined, true)
+        const allBooksArr = Array.isArray(allYearsResponse) ? allYearsResponse : allYearsResponse?.data || []
+        const latestYear = allBooksArr.length > 0 ? Math.max(...allBooksArr.map((b: any) => Number(b.year) || 0)) : currentYear
+
+        if (latestYear && latestYear !== currentYear) {
+          setHasCheckedPreviousYears(true)
+          setCurrentYear(latestYear)
+          return
+        }
+
+        setHasCheckedPreviousYears(true)
+      }
+
+      setBooks(books)
     } catch (error) { console.error(error) } finally { setLoading(false) }
   }
 

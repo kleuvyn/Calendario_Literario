@@ -74,6 +74,7 @@ export default function RetrospectivaPage() {
   const [bookToDelete, setBookToDelete] = useState<string | null>(null)
   
   const [currentYear, setCurrentYear] = useState(() => new Date().getFullYear())
+  const [hasCheckedPreviousYears, setHasCheckedPreviousYears] = useState(false)
   const [selectedCardOption, setSelectedCardOption] = useState<'retrospectiva' | 'biblioteca' | 'a' | 'b' | 'c' | null>(null)
   
   const isDarkTheme = currentTheme === 'dark'
@@ -138,6 +139,20 @@ export default function RetrospectivaPage() {
 
           if (data.status === 'fulfilled') {
             const booksArray = Array.isArray(data.value) ? data.value : (data.value?.data || [])
+
+            if (booksArray.length === 0 && !hasCheckedPreviousYears) {
+              const allYearsResponse: any = await getReadingData(session.user.email, currentYear, true, undefined, undefined, true)
+              const allRows = Array.isArray(allYearsResponse) ? allYearsResponse : allYearsResponse?.data || []
+              const latestYear = allRows.length > 0 ? Math.max(...allRows.map((b: any) => Number(b.year) || 0)) : currentYear
+
+              if (latestYear && latestYear !== currentYear) {
+                setHasCheckedPreviousYears(true)
+                setCurrentYear(latestYear)
+                return
+              }
+              setHasCheckedPreviousYears(true)
+            }
+
             setAllBooks(booksArray)
           }
 

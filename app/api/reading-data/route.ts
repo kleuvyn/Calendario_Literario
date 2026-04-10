@@ -34,7 +34,9 @@ export async function GET(request: Request) {
         ? includeAllYears
           ? ''
           : `AND rd.year = $2`
-        : `AND (rd.year = $2 OR rd.status IN ('lendo', 'reading'))`;
+        : includeAllYears
+          ? ''
+          : `AND (rd.year = $2 OR rd.status IN ('lendo', 'reading'))`;
 
     const query = `
       SELECT rd.*, br.rating,

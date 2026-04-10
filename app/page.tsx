@@ -65,6 +65,7 @@ export default function Home() {
   const [readingData, setReadingData] = useState<any[]>([])
   const [direction, setDirection] = useState(0)
   const [profileEditOpen, setProfileEditOpen] = useState(false)
+  const [hasCheckedPreviousYears, setHasCheckedPreviousYears] = useState(false)
 
   const capitalize = (value: string) => value ? value.charAt(0).toUpperCase() + value.slice(1).toLowerCase() : ''
   const getFirstName = () => session?.user?.name ? capitalize(session.user.name.split(' ')[0]) : 'Usuário'
@@ -121,6 +122,21 @@ export default function Home() {
       try {
         const response: any = await getReadingData(email, currentYear);
         const books = response?.data || [];
+
+        if (books.length === 0 && !hasCheckedPreviousYears) {
+          const allYearsResponse: any = await getReadingData(email, currentYear, false, undefined, undefined, true);
+          const allRows = Array.isArray(allYearsResponse) ? allYearsResponse : allYearsResponse?.data || [];
+          const latestYear = allRows.length > 0 ? Math.max(...allRows.map((b: any) => Number(b.year) || 0)) : currentYear;
+
+          if (latestYear && latestYear !== currentYear) {
+            setHasCheckedPreviousYears(true);
+            setCurrentYear(latestYear);
+            return;
+          }
+
+          setHasCheckedPreviousYears(true);
+        }
+
         if (response?.userGoal) {
           setGoalsByYear(prev => ({ ...prev, [currentYear]: response.userGoal }));
           if (typeof window !== 'undefined') {
