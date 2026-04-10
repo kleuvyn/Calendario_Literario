@@ -152,7 +152,24 @@ export default function PlanejadosPage() {
       }
 
       setBooks(books)
-    } catch (error) { console.error(error) } finally { setLoading(false) }
+    } catch (error) {
+      console.error(error)
+      if (!hasCheckedPreviousYears) {
+        try {
+          const allYearsResponse: any = await getReadingData(session.user.email, currentYear, false, undefined, undefined, true);
+          const allBooksArr = Array.isArray(allYearsResponse) ? allYearsResponse : allYearsResponse?.data || [];
+          const latestYear = allBooksArr.length > 0 ? Math.max(...allBooksArr.map((b: any) => Number(b.year) || 0)) : currentYear;
+
+          if (latestYear && latestYear !== currentYear) {
+            setHasCheckedPreviousYears(true);
+            setCurrentYear(latestYear);
+            return;
+          }
+        } catch (fallbackError) {
+          console.error("Fallback all-years fetch falhou:", fallbackError);
+        }
+      }
+    } finally { setLoading(false) }
   }
 
   const plannedBooks = useMemo(() => {

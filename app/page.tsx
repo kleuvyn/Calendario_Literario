@@ -149,6 +149,22 @@ export default function Home() {
           localStorage.setItem(cacheKey, JSON.stringify(books));
         }
       } catch (e) {
+        if (!cacheLoaded && !hasCheckedPreviousYears) {
+          try {
+            const allYearsResponse: any = await getReadingData(email, currentYear, false, undefined, undefined, true);
+            const allRows = Array.isArray(allYearsResponse) ? allYearsResponse : allYearsResponse?.data || [];
+            const latestYear = allRows.length > 0 ? Math.max(...allRows.map((b: any) => Number(b.year) || 0)) : currentYear;
+
+            if (latestYear && latestYear !== currentYear) {
+              setHasCheckedPreviousYears(true);
+              setCurrentYear(latestYear);
+              return;
+            }
+          } catch (fallbackError) {
+            console.error("Fallback all-years fetch falhou:", fallbackError);
+          }
+        }
+
         if (!cacheLoaded) {
           setReadingData([]);
         }
