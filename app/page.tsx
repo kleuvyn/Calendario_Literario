@@ -89,20 +89,57 @@ export default function Home() {
 
   useEffect(() => {
     async function fetchData() {
-      if (session?.user?.email) {
-        try {
-          const response: any = await getReadingData(session.user.email.toLowerCase(), currentYear)
-          const books = response?.data || []
-          if (response?.userGoal) setGoalsByYear(prev => ({ ...prev, [currentYear]: response.userGoal }))
-          setTotalReadThisYear(books.filter((b: any) => b && (b.status === 'lido' || b.end_date)).length)
-          setReadingData(books)
-        } catch (e) {
-          setReadingData([])
+      if (!session?.user?.email) return;
+
+      const email = session.user.email.toLowerCase();
+      const cacheKey = `readingData_${email}_${currentYear}`;
+      const goalCacheKey = `readingGoal_${email}_${currentYear}`;
+      let cacheLoaded = false;
+
+      if (typeof window !== 'undefined') {
+        const cachedData = localStorage.getItem(cacheKey);
+        if (cachedData) {
+          try {
+            const books = JSON.parse(cachedData);
+            setReadingData(books);
+            setTotalReadThisYear(books.filter((b: any) => b && (b.status === 'lido' || b.end_date)).length);
+            cacheLoaded = true;
+          } catch {
+            localStorage.removeItem(cacheKey);
+          }
+        }
+
+        const cachedGoal = localStorage.getItem(goalCacheKey);
+        if (cachedGoal) {
+          const goalNumber = Number(cachedGoal);
+          if (!Number.isNaN(goalNumber)) {
+            setGoalsByYear(prev => ({ ...prev, [currentYear]: goalNumber }));
+          }
+        }
+      }
+
+      try {
+        const response: any = await getReadingData(email, currentYear);
+        const books = response?.data || [];
+        if (response?.userGoal) {
+          setGoalsByYear(prev => ({ ...prev, [currentYear]: response.userGoal }));
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(goalCacheKey, String(response.userGoal));
+          }
+        }
+        setTotalReadThisYear(books.filter((b: any) => b && (b.status === 'lido' || b.end_date)).length);
+        setReadingData(books);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(cacheKey, JSON.stringify(books));
+        }
+      } catch (e) {
+        if (!cacheLoaded) {
+          setReadingData([]);
         }
       }
     }
-    fetchData()
-  }, [session, currentYear])
+    fetchData();
+  }, [session, currentYear]);
 
   const myBooksGoal = goalsByYear[currentYear] || 12
   const progressPercent = Math.min(Math.round((totalReadThisYear / myBooksGoal) * 100), 100) || 0

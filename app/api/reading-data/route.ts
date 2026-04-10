@@ -81,10 +81,16 @@ export async function GET(request: Request) {
       status: b.status || '' 
     }));
 
-    return NextResponse.json({ data: cleanRows, userGoal });
+    return NextResponse.json(
+      { data: cleanRows, userGoal },
+      { headers: { 'Cache-Control': 'public, max-age=30, stale-while-revalidate=60' } }
+    );
   } catch (error: any) {
     console.error("Erro na API GET:", error);
-    return NextResponse.json({ data: [], userGoal: 12 });
+    return NextResponse.json(
+      { data: [], userGoal: 12 },
+      { headers: { 'Cache-Control': 'public, max-age=30, stale-while-revalidate=60' } }
+    );
   }
 }
 
