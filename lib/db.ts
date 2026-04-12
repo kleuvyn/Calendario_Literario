@@ -98,8 +98,7 @@ function normalizeSql(sql: string) {
     .replace(/\bpublic\./gi, "")
     .replace(/JSONB/gi, "TEXT")
     .replace(/::jsonb/gi, "")
-    .replace(/NOW\(\)/gi, "CURRENT_TIMESTAMP")
-    .replace(/ALTER TABLE\s+([^\s]+)\s+ADD COLUMN IF NOT EXISTS\s+/gi, "ALTER TABLE $1 ADD COLUMN ");
+    .replace(/NOW\(\)/gi, "CURRENT_TIMESTAMP");
 }
 
 function convertPgParams(sql: string, params: any[]) {
@@ -124,6 +123,34 @@ function isIgnorableSchemaError(error: unknown) {
     message.includes("already exists") ||
     message.includes("no such table")
   );
+}
+
+async function hasColumn(tableName: string, columnName: string) {
+  const normalizedTable = tableName.replace(/\bpublic\./gi, "");
+  const result = await client.execute({ sql: `PRAGMA table_info("${normalizedTable}")` });
+  const rows = result.rows ?? [];
+  return rows.some((row: any) => String(row.name).toLowerCase() === columnName.toLowerCase());
+}
+
+async function executeAlterTableAddColumnIfNotExists(sql: string) {
+  const match = /^\s*ALTER\s+TABLE\s+(["'\w\.]+)\s+ADD\s+COLUMN\s+IF\s+NOT\s+EXISTS\s+(.+)$/i.exec(sql);
+  if (!match) {
+    return null;
+  }
+
+  const tableName = match[1].replace(/^"|"$/g, "");
+  const columnDefinition = match[2].trim();
+  const columnNameMatch = /^(["']?)([^"'\s]+)\1/.exec(columnDefinition);
+  if (!columnNameMatch) {
+    return null;
+  }
+
+  const columnName = columnNameMatch[2];
+  if (await hasColumn(tableName, columnName)) {
+    return { sql: "", args: [] };
+  }
+
+  return { sql: `ALTER TABLE ${tableName} ADD COLUMN ${columnDefinition}`, args: [] };
 }
 
 async function ensureBootstrapSchema() {
@@ -170,6 +197,17 @@ export async function executeQuery(query: string, params: any[] = []) {
     await ensureBootstrapSchema();
 
     const normalizedQuery = normalizeSql(query);
+    const alterResponse = await executeAlterTableAddColumnIfNotExists(normalizedQuery);
+
+    if (alterResponse) {
+      if (!alterResponse.sql) {
+        return [];
+      }
+      const { sql, args } = convertPgParams(alterResponse.sql, params);
+      const result = await client.execute({ sql, args });
+      return result.rows ?? [];
+    }
+
     const { sql, args } = convertPgParams(normalizedQuery, params);
     const result = await client.execute({ sql, args });
     return result.rows ?? [];

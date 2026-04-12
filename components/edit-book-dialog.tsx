@@ -32,10 +32,12 @@ interface EditBookDialogProps {
   bookName: string
   bookData?: {
     author?: string
+    author_name?: string
     pages?: number
     total_pages?: number
     rating?: number
     notes?: string
+    review?: string
     cover_url?: string
     genre?: string
     categories?: string[] | string
@@ -75,10 +77,10 @@ export function EditBookDialog({ open, onClose, bookName, bookData, onSave }: Ed
   }
 
   const [newName, setNewName] = useState(bookName)
-  const [author, setAuthor] = useState(bookData?.author || "")
+  const [author, setAuthor] = useState(bookData?.author || bookData?.author_name || "")
   const [pages, setPages] = useState((bookData?.pages ?? bookData?.total_pages)?.toString() || "")
   const [rating, setRating] = useState(bookData?.rating || 0)
-  const [notes, setNotes] = useState(bookData?.notes || "")
+  const [notes, setNotes] = useState(bookData?.notes || bookData?.review || "")
   const [genre, setGenre] = useState(bookData?.genre || formatCategories(bookData?.categories) || "")
   const [categories, setCategories] = useState<string[]>(formatCategoriesArray(bookData?.categories))
   const [showCategorySuggestions, setShowCategorySuggestions] = useState(false)
@@ -94,10 +96,10 @@ export function EditBookDialog({ open, onClose, bookName, bookData, onSave }: Ed
     if (!open) return
 
     setNewName(bookName)
-    setAuthor(bookData?.author || "")
+    setAuthor(bookData?.author || bookData?.author_name || "")
     setPages((bookData?.pages ?? bookData?.total_pages)?.toString() || "")
     setRating(bookData?.rating ?? 0)
-    setNotes(bookData?.notes || "")
+    setNotes(bookData?.notes || bookData?.review || "")
     setGenre(bookData?.genre || formatCategories(bookData?.categories) || "")
     setCategories(formatCategoriesArray(bookData?.categories))
     setFormat(bookData?.format || "Físico")

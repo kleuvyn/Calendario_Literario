@@ -177,7 +177,17 @@ export function UserProfileEdit({ open, onCloseAction, user, onUpdateAction }: U
             <div className="relative">
               <div className="h-24 w-24 rounded-full border-2 border-slate-200 overflow-hidden shadow-md flex items-center justify-center bg-slate-100">
                 {photoUrl ? (
-                  <img src={photoUrl} alt="Perfil" className="h-full w-full object-cover" />
+                  <img
+                    src={photoUrl}
+                    alt="Perfil"
+                    className="h-full w-full object-cover"
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      const target = e.currentTarget as HTMLImageElement
+                      target.onerror = null
+                      target.src = "/logo.png"
+                    }}
+                  />
                 ) : (
                   <Camera size={32} className="text-slate-400" />
                 )}

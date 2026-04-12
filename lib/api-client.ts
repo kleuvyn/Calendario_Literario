@@ -42,7 +42,7 @@ function getReadingDataCacheKey(email: string, year: number, isRetrospective: bo
   return `readingData:${email.toLowerCase()}:${year}:${isRetrospective}:${month ?? 0}:${includeAllYears ? 1 : 0}`;
 }
 
-function invalidateReadingDataCache(email: string, year?: number, month?: number) {
+export function invalidateReadingDataCache(email: string, year?: number, month?: number) {
   const normalizedEmail = email.toLowerCase();
   for (const key of Array.from(readingDataCache.keys())) {
     if (!key.startsWith(`readingData:${normalizedEmail}:`)) continue;
@@ -80,7 +80,7 @@ export async function getReadingData(
   let url = `/api/reading-data?email=${encodeURIComponent(email.toLowerCase())}&year=${year}&isRetrospective=${isRetrospective}&includeAllYears=${includeAllYears}`;
   if (month) url += `&month=${month}`;
 
-  const response = await fetch(url, { cache: 'force-cache', signal });
+  const response = await fetch(url, { signal });
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.error || "Erro ao buscar dados");

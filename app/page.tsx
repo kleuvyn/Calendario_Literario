@@ -257,7 +257,21 @@ export default function Home() {
             
             <div className="flex items-center gap-3 sm:gap-5 relative z-10 w-full lg:w-auto min-w-0">
               <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-full border-2 border-white shadow-sm overflow-hidden bg-white/10 shrink-0">
-                {session.user?.image ? <img src={session.user.image} alt="Perfil" /> : <span className="flex h-full items-center justify-center italic text-xl">{getFirstName().charAt(0)}</span>}
+                {session.user?.image ? (
+                  <img
+                    src={session.user.image}
+                    alt="Perfil"
+                    className="h-full w-full object-cover"
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      const target = e.currentTarget as HTMLImageElement
+                      target.onerror = null
+                      target.src = "/logo.png"
+                    }}
+                  />
+                ) : (
+                  <span className="flex h-full items-center justify-center italic text-xl">{getFirstName().charAt(0)}</span>
+                )}
               </div>
               <div className="min-w-0">
                 <h1 className="text-2xl sm:text-3xl font-black italic leading-tight truncate">

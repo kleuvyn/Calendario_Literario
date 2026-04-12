@@ -19,6 +19,11 @@ export function UserProfile() {
               alt="Avatar" 
               className="h-full w-full object-cover"
               referrerPolicy="no-referrer"
+              onError={(e) => {
+                const target = e.currentTarget as HTMLImageElement
+                target.onerror = null
+                target.src = "/logo.png"
+              }}
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-primary/10">

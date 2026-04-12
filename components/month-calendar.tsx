@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Loader2, Trash2, Edit2, BookMarked, Calendar, CheckCircle2, XCircle, Star, Plus, Info } from "lucide-react"
-import { getReadingData, saveReadingDay } from "@/lib/api-client"
+import { getReadingData, saveReadingDay, invalidateReadingDataCache } from "@/lib/api-client"
 import { motion, AnimatePresence } from "framer-motion"
 import { toast } from "sonner"
 import { BookSearchDialog } from "@/components/book-search-dialog"
@@ -32,6 +32,10 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
   const [expandedDays, setExpandedDays] = useState<Set<number>>(new Set())
   const [activeSummary, setActiveSummary] = useState<'lendo' | 'lido' | 'planejados' | ''>('')
   const [isPlanning, setIsPlanning] = useState(false)
+
+  useEffect(() => {
+    setReadings(initialReadings ?? [])
+  }, [initialReadings])
 
   const normalizeStatus = (status: string | undefined) => (status || '').toLowerCase().trim()
 
@@ -81,6 +85,41 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
   const haveReadThisMonth = booksThisMonth.filter(r => FINISHED_STATUSES.includes(normalizeStatus(r.status))).length
   const readingNowThisMonth = booksThisMonth.filter(r => READING_STATUSES.includes(normalizeStatus(r.status))).length
   const havePlannedThisMonth = booksThisMonth.filter(r => PLANNED_STATUSES.includes(normalizeStatus(r.status))).length
+
+  const readingsByDay = useMemo(() => {
+    const map: any[][] = Array.from({ length: days || 31 }, () => [])
+    const normalizedMonthStart = monthStart.getTime()
+    const normalizedMonthEnd = monthEnd.getTime()
+
+    readings.forEach((r) => {
+      const status = normalizeStatus(r.status)
+      if (PLANNED_STATUSES.includes(status)) return
+
+      const startStr = r.start_date?.split('T')[0] || null
+      const endStr = r.end_date?.split('T')[0] || null
+      const readingStatus = READING_STATUSES.includes(status)
+      const finishedStatus = FINISHED_STATUSES.includes(status)
+
+      if (!startStr && !endStr) return
+      const startDate = startStr ? new Date(startStr) : null
+      const endDate = endStr ? new Date(endStr) : null
+      if (readingStatus && !startDate) return
+
+      const effectiveStart = startDate ? new Date(Math.max(startDate.getTime(), normalizedMonthStart)) : new Date(normalizedMonthStart)
+      const effectiveEnd = endDate ? new Date(Math.min(endDate.getTime(), normalizedMonthEnd)) : new Date(normalizedMonthEnd)
+      if (effectiveStart.getTime() > normalizedMonthEnd || effectiveEnd.getTime() < normalizedMonthStart) return
+
+      const startDay = effectiveStart.getUTCDate()
+      const endDay = effectiveEnd.getUTCDate()
+      for (let dayIndex = startDay; dayIndex <= endDay; dayIndex += 1) {
+        if (dayIndex >= 1 && dayIndex <= (days || 31)) {
+          map[dayIndex - 1].push(r)
+        }
+      }
+    })
+
+    return map
+  }, [readings, days, monthStart, monthEnd])
 
   const [searchDialogOpen, setSearchDialogOpen] = useState(false)
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
@@ -360,6 +399,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
         const errorData = await response.json().catch(() => ({}))
         throw new Error(errorData?.error || "Falha ao salvar edição")
       }
+      invalidateReadingDataCache(userEmail)
       await loadData()
       toast.success("Informações salvas com sucesso!")
     } catch (err) {
@@ -515,35 +555,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
           const isFuture = currentDayStr > todayStr
           const isToday = currentDayStr === todayStr
           const isExpanded = expandedDays.has(day)
-          
-          const dayReadings = readings.filter((r) => {
-            const startStr = r.start_date?.split('T')[0] || null
-            const endStr = r.end_date?.split('T')[0]
-
-            const status = normalizeStatus(r.status)
-            const readingStatus = READING_STATUSES.includes(status)
-            const finishedStatus = FINISHED_STATUSES.includes(status)
-            // planned não deve ser exibido diretamente nos dias do calendário
-            const plannedStatus = PLANNED_STATUSES.includes(status)
-
-            if (plannedStatus) {
-              return false
-            }
-
-            if (readingStatus) {
-              if (!startStr) return false
-              // Livro em leitura aparece do dia de início até hoje (ou até end_date se houver).
-              const effectiveEnd = endStr || todayStr
-              return currentDayStr >= startStr && currentDayStr <= effectiveEnd
-            }
-
-            if (finishedStatus) {
-              if (!startStr && !endStr) return false
-              return currentDayStr >= startStr && (!endStr || currentDayStr <= endStr)
-            }
-
-            return currentDayStr >= startStr && (!endStr || currentDayStr <= endStr)
-          })
+          const dayReadings = readingsByDay[day - 1] || []
 
           return (
             <motion.div 
@@ -555,7 +567,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
               className={`relative flex flex-col p-1 sm:p-3 rounded-xl sm:rounded-4xl border-2 transition-all 
                 ${isToday ? 'border-amber-300 bg-amber-50 shadow-lg' : 'border-slate-100 bg-white'}
                 ${isFuture ? 'opacity-30 grayscale' : 'hover:border-amber-300'}
-                ${isExpanded ? 'col-span-2 row-span-2 min-h-70 z-10 shadow-2xl' : 'aspect-square h-auto'}
+                ${isExpanded ? 'col-span-7 row-span-2 sm:col-span-2 sm:row-span-2 min-h-[20rem] sm:min-h-70 z-10 shadow-2xl overflow-hidden' : 'aspect-square h-auto'}
               `}
             >
               {/* Número do Dia */}

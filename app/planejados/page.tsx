@@ -269,8 +269,8 @@ export default function PlanejadosPage() {
         format: data.format || bookToEdit.format || 'Físico',
         owned: data.owned !== undefined ? data.owned : (bookToEdit.owned || false),
         status: bookToEdit.status || undefined,
-        startDate: bookToEdit.start_date || bookToEdit.startDate || undefined,
-        endDate: bookToEdit.end_date || bookToEdit.endDate || undefined,
+        startDate: data.startDate ?? bookToEdit.start_date ?? bookToEdit.startDate ?? undefined,
+        endDate: data.endDate ?? bookToEdit.end_date ?? bookToEdit.endDate ?? undefined,
       })
       toast.success('Dados do livro atualizados!')
       loadData()

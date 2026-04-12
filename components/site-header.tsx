@@ -47,11 +47,20 @@ export function SiteHeader({ activeTheme, setActiveTheme, leftContent, rightCont
           <div className="h-16 w-16 rounded-full border border-dashed flex items-center justify-center overflow-hidden shadow-sm" style={{ 
             borderColor: `${theme.primary}40`,
             backgroundColor: theme.card,
-            backgroundImage: session?.user?.image ? `url('${session.user.image}')` : 'none',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
           }}>
-            {!session?.user?.image && (
+            {session?.user?.image ? (
+              <img
+                src={session.user.image}
+                alt="Avatar"
+                className="h-full w-full object-cover"
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  const target = e.currentTarget as HTMLImageElement
+                  target.onerror = null
+                  target.src = "/logo.png"
+                }}
+              />
+            ) : (
               <span className="text-xl font-serif italic" style={{ color: theme.primary }}>
                 {session?.user?.name?.charAt(0)?.toUpperCase() || 'U'}
               </span>

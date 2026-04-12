@@ -280,10 +280,34 @@ export async function POST(request: Request) {
       const finishedYear = finishedDate.getUTCFullYear()
       const finishedMonth = finishedDate.getUTCMonth() + 1
 
-      await executeQuery(
-        `UPDATE public.reading_data SET end_date = $1, status = 'lido', year = $2, month = $3 WHERE email = $4 AND book_name = $5`,
-        [endDate, finishedYear, finishedMonth, email, bookName]
+      const existing = await executeQuery(
+        `SELECT id FROM public.reading_data WHERE email = $1 AND book_name = $2 LIMIT 1`,
+        [email, bookName]
       );
+
+      if (existing.length > 0) {
+        await executeQuery(
+          `UPDATE public.reading_data SET end_date = $1, status = 'lido', year = $2, month = $3 WHERE email = $4 AND book_name = $5`,
+          [endDate, finishedYear, finishedMonth, email, bookName]
+        );
+      } else {
+        await executeQuery(
+          `INSERT INTO public.reading_data (email, book_name, author_name, start_date, end_date, status, year, month, cover_url, total_pages, genre)
+           VALUES ($1, $2, $3, $4, $5, 'lido', $6, $7, $8, $9, $10)`,
+          [
+            email,
+            bookName,
+            author || null,
+            startDate || endDate || null,
+            endDate,
+            finishedYear,
+            finishedMonth,
+            coverUrl || null,
+            numPages,
+            genre || null,
+          ]
+        );
+      }
       return NextResponse.json({ success: true });
     }
 
