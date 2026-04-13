@@ -23,7 +23,18 @@ export async function GET(request: Request) {
 
   try {
     const dateRangeCondition = hasMonth
-      ? `AND ((rd.status IN ('lendo', 'reading', 'planejado', 'planned')) OR (rd.start_date IS NOT NULL AND rd.start_date <= $2 AND (rd.end_date IS NULL OR rd.end_date >= $3)))`
+      ? `AND (
+          rd.status IN ('lendo', 'reading', 'planejado', 'planned')
+          OR (
+            rd.start_date IS NOT NULL
+            AND rd.start_date <= $2
+            AND (rd.end_date IS NULL OR rd.end_date >= $3)
+          )
+          OR (
+            rd.end_date IS NOT NULL
+            AND rd.end_date BETWEEN $3 AND $2
+          )
+        )`
       : '';
 
     // Retrospectiva mostra o ano selecionado (e não mistura anos)

@@ -39,9 +39,9 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
 
   const normalizeStatus = (status: string | undefined) => (status || '').toLowerCase().trim()
 
-  const PLANNED_STATUSES = ['planejado', 'planned', 'quero-ler', 'quero ler', 'wishlist', 'desejado']
-  const READING_STATUSES = ['lendo', 'reading']
-  const FINISHED_STATUSES = ['lido', 'finished']
+  const PLANNED_STATUSES = ['planejado', 'planejados', 'planned', 'planning', 'quero-ler', 'quero ler', 'wishlist', 'desejado']
+  const READING_STATUSES = ['lendo', 'reading', 'in progress', 'em andamento', 'andamento']
+  const FINISHED_STATUSES = ['lido', 'finished', 'concluido', 'concluído', 'read', 'finalizado']
 
   const monthStart = new Date(Date.UTC(year, monthIndex, 1, 0, 0, 0))
   const monthEnd = new Date(Date.UTC(year, monthIndex, days || 31, 23, 59, 59))

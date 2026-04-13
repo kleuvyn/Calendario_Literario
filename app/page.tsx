@@ -103,7 +103,10 @@ export default function Home() {
           try {
             const books = JSON.parse(cachedData);
             setReadingData(books);
-            setTotalReadThisYear(books.filter((b: any) => b && (b.status === 'lido' || b.end_date)).length);
+            setTotalReadThisYear(books.filter((b: any) => {
+              const status = (b?.status || '').toLowerCase().trim()
+              return ['lido', 'finished', 'concluido', 'concluído', 'read', 'finalizado'].includes(status) || Boolean(b?.end_date)
+            }).length);
             cacheLoaded = true;
           } catch {
             localStorage.removeItem(cacheKey);
@@ -143,7 +146,10 @@ export default function Home() {
             localStorage.setItem(goalCacheKey, String(response.userGoal));
           }
         }
-        setTotalReadThisYear(books.filter((b: any) => b && (b.status === 'lido' || b.end_date)).length);
+        setTotalReadThisYear(books.filter((b: any) => {
+          const status = (b?.status || '').toLowerCase().trim()
+          return ['lido', 'finished', 'concluido', 'concluído', 'read', 'finalizado'].includes(status) || Boolean(b?.end_date)
+        }).length);
         setReadingData(books);
         if (typeof window !== 'undefined') {
           localStorage.setItem(cacheKey, JSON.stringify(books));

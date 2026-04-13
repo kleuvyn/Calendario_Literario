@@ -5,8 +5,14 @@ interface ReadingStatsProps {
   goal: number
 }
 
+const normalizeStatus = (status?: string) => (status || '').toLowerCase().trim()
+const isFinishedStatus = (status?: string) => {
+  const normalized = normalizeStatus(status)
+  return ['lido', 'finished', 'concluido', 'concluído', 'read', 'finalizado'].includes(normalized)
+}
+
 export function ReadingStats({ readings, goal }: ReadingStatsProps) {
-  const finishedCount = readings.filter(r => r.status === 'lido').length
+  const finishedCount = readings.filter(r => isFinishedStatus(r.status) || Boolean(r.end_date)).length
   const percentage = Math.min(Math.round((finishedCount / goal) * 100), 100)
 
   return (
