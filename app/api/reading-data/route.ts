@@ -10,7 +10,12 @@ export async function GET(request: Request) {
   const monthParam = Number(searchParams.get("month"));
   const hasMonth = Number.isInteger(monthParam) && monthParam >= 1 && monthParam <= 12;
 
-  if (!email || !year) return NextResponse.json({ data: [], userGoal: 12 });
+  if (!email || !year) {
+    return NextResponse.json(
+      { data: [], userGoal: 12 },
+      { headers: { 'Cache-Control': 'private, max-age=10, stale-while-revalidate=30' } }
+    );
+  }
 
   let monthStart = "";
   let monthEnd = "";
@@ -27,20 +32,21 @@ export async function GET(request: Request) {
           rd.status IN ('lendo', 'reading', 'planejado', 'planned')
           OR (
             rd.start_date IS NOT NULL
-            AND rd.start_date <= $2
-            AND (rd.end_date IS NULL OR rd.end_date >= $3)
+            AND rd.start_date <= $3
+            AND (rd.end_date IS NULL OR rd.end_date >= $4)
           )
           OR (
             rd.end_date IS NOT NULL
-            AND rd.end_date BETWEEN $3 AND $2
+            AND rd.end_date BETWEEN $4 AND $3
           )
         )`
       : '';
 
-    // Retrospectiva mostra o ano selecionado (e não mistura anos)
-    // Para o calendário normal também usamos ano corrente + leituras em andamento
     const yearCondition = hasMonth
-      ? ''
+      ? `AND (
+          rd.year = $2
+          OR rd.status IN ('lendo', 'reading')
+        )`
       : isRetrospective
         ? includeAllYears
           ? ''
@@ -50,22 +56,15 @@ export async function GET(request: Request) {
           : `AND (rd.year = $2 OR rd.status IN ('lendo', 'reading'))`;
 
     const query = `
-      SELECT rd.*, br.rating,
-             COALESCE(NULLIF(br.cover_url, ''), NULLIF(rd.cover_url, ''), NULLIF(b.cover_url, ''), '') as cover_url,
-             COALESCE(NULLIF(br.genre, ''), NULLIF(rd.genre, ''), '') as genre,
-             COALESCE(NULLIF(br.review, ''), NULLIF(rd.review, ''), '') as review,
-             COALESCE(br.total_pages, rd.total_pages, 0) as total_pages
+      SELECT rd.*
       FROM public.reading_data rd
-      LEFT JOIN public.users u ON u.email = rd.email
-      LEFT JOIN public.book_reviews br ON (u.id = br.user_id AND rd.book_name = br.title)
-      LEFT JOIN public.books b ON (rd.book_name = b.title AND (rd.email = b.user_email OR rd.email = b.email))
       WHERE rd.email = $1 ${yearCondition}
       ${dateRangeCondition}
       ORDER BY rd.month ASC, rd.status DESC
     `;
 
     const params = hasMonth
-      ? [email, monthEnd, monthStart]
+      ? [email, String(year), monthEnd, monthStart]
       : includeAllYears
         ? [email]
         : [email, year];
@@ -91,18 +90,18 @@ export async function GET(request: Request) {
       rating: Number(b.rating) || 0,
       total_pages: Number(b.total_pages) || 0,
       month: Number(b.month),
-      status: b.status || '' 
+      status: b.status || ''
     }));
 
     return NextResponse.json(
       { data: cleanRows, userGoal },
-      { headers: { 'Cache-Control': 'public, max-age=30, stale-while-revalidate=60' } }
+      { headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' } }
     );
   } catch (error: any) {
     console.error("Erro na API GET:", error);
     return NextResponse.json(
       { data: [], userGoal: 12 },
-      { headers: { 'Cache-Control': 'public, max-age=30, stale-while-revalidate=60' } }
+      { headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' } }
     );
   }
 }

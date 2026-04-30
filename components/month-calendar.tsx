@@ -11,7 +11,7 @@ import { EditBookDialog } from "@/components/edit-book-dialog"
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog"
 import type { BookSearchResult } from "@/lib/google-books"
 
-export function MonthCalendar({ month, days, year, userEmail, monthIndex, themePrimary, initialReadings }: any) {
+export function MonthCalendar({ month, days, year, userEmail, monthIndex, themePrimary, initialReadings, initialReadingsLoaded }: any) {
   const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?q=80&w=300&auto=format&fit=crop"
   const initialYearRef = useRef(year)
   const hasInitialReadings = Array.isArray(initialReadings) && initialReadings.length > 0
@@ -86,6 +86,29 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
   const readingNowThisMonth = booksThisMonth.filter(r => READING_STATUSES.includes(normalizeStatus(r.status))).length
   const havePlannedThisMonth = booksThisMonth.filter(r => PLANNED_STATUSES.includes(normalizeStatus(r.status))).length
 
+  const getBookDay = (book: any) => {
+    const status = normalizeStatus(book.status)
+    const dateStr = book.end_date || book.start_date || null
+    if (dateStr) {
+      const date = new Date(dateStr)
+      if (!isNaN(date.getTime())) return date.getUTCDate()
+    }
+    return Number(book.day) || 0
+  }
+
+  const todayDay = new Date().getDate()
+
+  const sortedBooksThisMonth = useMemo(() => {
+    return [...booksThisMonth].sort((a, b) => {
+      const dayA = getBookDay(a)
+      const dayB = getBookDay(b)
+      const groupA = dayA >= todayDay ? 0 : 1
+      const groupB = dayB >= todayDay ? 0 : 1
+      if (groupA !== groupB) return groupA - groupB
+      return dayB - dayA
+    })
+  }, [booksThisMonth, todayDay])
+
   const readingsByDay = useMemo(() => {
     const map: any[][] = Array.from({ length: days || 31 }, () => [])
     const normalizedMonthStart = monthStart.getTime()
@@ -153,10 +176,10 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
   }
 
   useEffect(() => {
-    if (!userEmail) return
+    if (!userEmail || !initialReadingsLoaded) return
     if (hasInitialReadings && year === initialYearRef.current) return
     loadData()
-  }, [userEmail, monthIndex, year, hasInitialReadings])
+  }, [userEmail, monthIndex, year, hasInitialReadings, initialReadingsLoaded])
 
   // Função para calcular dias (sua função de negócio)
   const calculateDays = (start: string, end: string) => {
@@ -269,15 +292,33 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
     }
   }
 
-  async function handleFinishReading(day: number, bookName: string, e: React.MouseEvent) {
+  async function handleFinishReading(day: number, book: any, e: React.MouseEvent) {
     e.stopPropagation()
     setIsUpdating(true)
     const dateFormatted = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T12:00:00Z`
     try {
-      await saveReadingDay(userEmail, year, monthIndex + 1, day, dateFormatted, dateFormatted, bookName, "FINISH_READING")
+      await saveReadingDay(
+        userEmail,
+        year,
+        monthIndex + 1,
+        day,
+        dateFormatted,
+        dateFormatted,
+        book.book_name || book.bookName || "",
+        "FINISH_READING",
+        book.cover_url || book.cover || "",
+        book.author_name || book.author || "",
+        book.genre || book.genres || "",
+        book.total_pages || book.pages || 0
+      )
       await loadData()
       toast.success("Parabéns pela conclusão! 🎉")
-    } catch (err) { toast.error("Erro ao finalizar") } finally { setIsUpdating(false) }
+    } catch (err) {
+      toast.error("Erro ao finalizar")
+      console.error(err)
+    } finally {
+      setIsUpdating(false)
+    }
   }
 
   async function handleStartPlanned(book: any) {
@@ -485,7 +526,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
               {summaryFilter === 'planejados' && 'Livros planejados'}
             </p>
             <div className="space-y-2">
-              {booksThisMonth
+              {sortedBooksThisMonth
                 .filter((r) => {
                   const status = normalizeStatus(r.status)
                   if (summaryFilter === 'lendo') return READING_STATUSES.includes(status)
@@ -536,7 +577,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
 
       {/* Container Principal do Calendário */}
       <div className="bg-white/60 backdrop-blur-sm rounded-[3rem] p-4 sm:p-8 shadow-[0_10px_40px_rgba(0,0,0,0.03)] border border-slate-100 relative">
-        <div className="absolute top-8 left-0 right-0 h-[1px] bg-slate-100 pointer-events-none" />
+        <div className="absolute top-8 left-0 right-0 h-px bg-slate-100 pointer-events-none" />
         
         {/* Dias da Semana */}
         <div className="grid grid-cols-7 gap-2 mb-6 px-2 sm:px-4">
@@ -567,7 +608,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
               className={`relative flex flex-col p-1 sm:p-3 rounded-xl sm:rounded-4xl border-2 transition-all 
                 ${isToday ? 'border-amber-300 bg-amber-50 shadow-lg' : 'border-slate-100 bg-white'}
                 ${isFuture ? 'opacity-30 grayscale' : 'hover:border-amber-300'}
-                ${isExpanded ? 'col-span-7 row-span-2 sm:col-span-2 sm:row-span-2 min-h-[20rem] sm:min-h-70 z-10 shadow-2xl overflow-hidden' : 'aspect-square h-auto'}
+                ${isExpanded ? 'col-span-7 row-span-2 sm:col-span-2 sm:row-span-2 min-h-80 sm:min-h-70 z-10 shadow-2xl overflow-hidden' : 'aspect-square h-auto'}
               `}
             >
               {/* Número do Dia */}
@@ -626,8 +667,8 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
                         <div className="border-t pt-2 flex items-center justify-between">
                           <div className="text-[9px] text-slate-400 uppercase tracking-wider">Ações</div>
                           <div className="flex gap-1">
-                            {r.status === 'lendo' && (
-                              <Button size="icon" className="h-6 w-6 bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-200" onClick={(e) => handleFinishReading(day, r.book_name, e)}><CheckCircle2 size={12}/></Button>
+                            {readingStatus && !finishedStatus && (
+                              <Button size="icon" className="h-6 w-6 bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-200" onClick={(e) => handleFinishReading(day, r, e)}><CheckCircle2 size={12}/></Button>
                             )}
                             <Button size="icon" variant="outline" className="h-6 w-6" onClick={(e) => {e.stopPropagation(); setBookToEdit(r); setEditDialogOpen(true)}}><Edit2 size={12}/></Button>
                             <Button size="icon" variant="outline" className="h-6 w-6 border-rose-200 text-rose-700 hover:bg-rose-50" onClick={(e) => {e.stopPropagation(); setBookToDelete(r.book_name); setDeleteDialogOpen(true)}}><Trash2 size={12}/></Button>

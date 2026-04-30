@@ -36,10 +36,61 @@ export interface Book {
 }
 
 const readingDataCache = new Map<string, { expires: number; data: any }>();
-const READING_DATA_CACHE_TTL = 30_000;
+const READING_DATA_CACHE_TTL = 5 * 60_000;
 
 function getReadingDataCacheKey(email: string, year: number, isRetrospective: boolean, month?: number, includeAllYears?: boolean) {
   return `readingData:${email.toLowerCase()}:${year}:${isRetrospective}:${month ?? 0}:${includeAllYears ? 1 : 0}`;
+}
+
+function getLocalStorageCacheKey(cacheKey: string) {
+  return `__reading_data_cache__:${cacheKey}`;
+}
+
+function loadReadingDataCache(cacheKey: string) {
+  const cached = readingDataCache.get(cacheKey);
+  if (cached && cached.expires > Date.now()) {
+    return cached.data;
+  }
+
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = window.localStorage.getItem(getLocalStorageCacheKey(cacheKey));
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed?.expires > Date.now() && parsed?.data) {
+          readingDataCache.set(cacheKey, { expires: parsed.expires, data: parsed.data });
+          return parsed.data;
+        }
+      }
+    } catch {
+      // ignore localStorage failures
+    }
+  }
+
+  return null;
+}
+
+function saveReadingDataCache(cacheKey: string, data: any) {
+  const expires = Date.now() + READING_DATA_CACHE_TTL;
+  readingDataCache.set(cacheKey, { expires, data });
+  if (typeof window !== 'undefined') {
+    try {
+      window.localStorage.setItem(getLocalStorageCacheKey(cacheKey), JSON.stringify({ expires, data }));
+    } catch {
+      // ignore localStorage failures
+    }
+  }
+}
+
+function removeReadingDataCache(cacheKey: string) {
+  readingDataCache.delete(cacheKey);
+  if (typeof window !== 'undefined') {
+    try {
+      window.localStorage.removeItem(getLocalStorageCacheKey(cacheKey));
+    } catch {
+      // ignore localStorage failures
+    }
+  }
 }
 
 export function invalidateReadingDataCache(email: string, year?: number, month?: number) {
@@ -49,6 +100,7 @@ export function invalidateReadingDataCache(email: string, year?: number, month?:
     if (year !== undefined && !key.includes(`:${year}:`)) continue;
     if (month !== undefined && !key.includes(`:${month}:`)) continue;
     readingDataCache.delete(key);
+    removeReadingDataCache(key);
   }
 }
 
@@ -72,22 +124,43 @@ export async function getReadingData(
   includeAllYears: boolean = false
 ): Promise<any> {
   const cacheKey = getReadingDataCacheKey(email, year, isRetrospective, month, includeAllYears);
-  const cached = readingDataCache.get(cacheKey);
-  if (cached && cached.expires > Date.now()) {
-    return cached.data;
+  const cached = loadReadingDataCache(cacheKey);
+  if (cached) {
+    return cached;
   }
 
   let url = `/api/reading-data?email=${encodeURIComponent(email.toLowerCase())}&year=${year}&isRetrospective=${isRetrospective}&includeAllYears=${includeAllYears}`;
   if (month) url += `&month=${month}`;
 
-  const response = await fetch(url, { signal });
+  const response = await fetch(url, { signal, cache: 'force-cache' });
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.error || "Erro ao buscar dados");
   }
 
   const data = await response.json();
-  readingDataCache.set(cacheKey, { expires: Date.now() + READING_DATA_CACHE_TTL, data });
+  saveReadingDataCache(cacheKey, data);
+  return data;
+}
+
+function getReadingSummaryCacheKey(email: string, year: number) {
+  return `readingSummary:${email.toLowerCase()}:${year}`;
+}
+
+export async function getReadingSummary(email: string, year: number): Promise<any> {
+  const cacheKey = getReadingSummaryCacheKey(email, year);
+  const cached = loadReadingDataCache(cacheKey);
+  if (cached) return cached;
+
+  const url = `/api/reading-summary?email=${encodeURIComponent(email.toLowerCase())}&year=${year}`;
+  const response = await fetch(url, { cache: 'force-cache' });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Erro ao buscar resumo');
+  }
+
+  const data = await response.json();
+  saveReadingDataCache(cacheKey, data);
   return data;
 }
 

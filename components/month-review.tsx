@@ -37,10 +37,10 @@ const THEMES = {
   purple: { primary: '#9B89B3', bg: '#F8F7FA', text: '#3D3547', name: 'Brisa' },
 }
 
-export function MonthReview({ month, userEmail, monthIndex, year }: any) {
+export function MonthReview({ month, userEmail, monthIndex, year, initialReadings, initialReadingsLoaded }: any) {
   const [activeTheme, setActiveTheme] = useState<keyof typeof THEMES>('light')
-  const [allBooks, setAllBooks] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const [allBooks, setAllBooks] = useState<any[]>(Array.isArray(initialReadings) ? initialReadings : [])
+  const [loading, setLoading] = useState(!initialReadingsLoaded)
   const [bookEdits, setBookEdits] = useState<Record<string, { name: string, cover: string, rating: number, pages: number, review: string, genre: string }>>({})
   const [editingId, setEditingId] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState<string | null>(null)
@@ -81,7 +81,20 @@ export function MonthReview({ month, userEmail, monthIndex, year }: any) {
     if (savedTheme && THEMES[savedTheme]) setActiveTheme(savedTheme)
   }, [])
 
-  useEffect(() => { loadData() }, [loadData])
+  useEffect(() => {
+    if (!userEmail) return
+    if (initialReadingsLoaded) {
+      if (Array.isArray(initialReadings)) {
+        setAllBooks(initialReadings)
+      } else {
+        setAllBooks([])
+      }
+      setLoading(false)
+      return
+    }
+
+    loadData()
+  }, [loadData, initialReadingsLoaded, initialReadings, userEmail])
 
   function getBookMonth(b: any) {
     if (b.end_date) {

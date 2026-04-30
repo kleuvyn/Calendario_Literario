@@ -53,6 +53,7 @@ const bootstrapStatements = [
   "CREATE INDEX IF NOT EXISTS reading_data_user_id_idx ON reading_data (user_id)",
   "CREATE INDEX IF NOT EXISTS reading_data_email_year_idx ON reading_data (email, year)",
   "CREATE INDEX IF NOT EXISTS reading_data_email_month_idx ON reading_data (email, month)",
+  "CREATE INDEX IF NOT EXISTS reading_data_email_year_month_idx ON reading_data (email, year, month)",
   `CREATE TABLE IF NOT EXISTS book_reviews (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
@@ -78,6 +79,8 @@ const bootstrapStatements = [
   )`,
   "CREATE INDEX IF NOT EXISTS books_email_idx ON books (email)",
   "CREATE INDEX IF NOT EXISTS books_user_email_idx ON books (user_email)",
+  "CREATE INDEX IF NOT EXISTS books_user_id_title_idx ON books (user_id, title)",
+  "CREATE INDEX IF NOT EXISTS books_title_idx ON books (title)",
   "ALTER TABLE users ADD COLUMN password TEXT",
   "ALTER TABLE users ADD COLUMN image TEXT",
   "ALTER TABLE reading_data ADD COLUMN author TEXT",

@@ -58,6 +58,17 @@ async function searchOpenLibrary(searchTerm: string, byIsbn: boolean) {
   return { items: mapOpenLibraryToGoogleShape(docs) }
 }
 
+async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 7000) {
+  const controller = new AbortController()
+  const id = setTimeout(() => controller.abort(), timeoutMs)
+
+  try {
+    return await fetch(url, { ...options, signal: controller.signal })
+  } finally {
+    clearTimeout(id)
+  }
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const query = searchParams.get("q")?.trim()
@@ -85,38 +96,40 @@ export async function GET(request: NextRequest) {
       url.searchParams.set("key", apiKey)
     }
 
-    const response = await fetch(url.toString(), {
+    const response = await fetchWithTimeout(url.toString(), {
       method: "GET",
       cache: "no-store",
       headers: {
         Accept: "application/json",
       },
-    })
+    }, 7000)
 
     const data = await response.json().catch(() => ({}))
+    const googleItems = Array.isArray(data?.items) ? data.items : []
 
-    if (!response.ok) {
-      const reason =
-        data?.error?.message ||
-        data?.error?.errors?.[0]?.message ||
-        "Falha na busca de livros"
-
-      if (response.status === 429 || response.status >= 500) {
+    if (!response.ok || (!isbn && googleItems.length === 0)) {
+      try {
         const fallbackData = await searchOpenLibrary(searchTerm, Boolean(isbn))
         return NextResponse.json(fallbackData)
+      } catch (fallbackError) {
+        console.error("Fallback OpenLibrary falhou:", fallbackError)
       }
-
-      return NextResponse.json(
-        { error: `Google Books: ${reason}` },
-        { status: response.status }
-      )
     }
 
-    return NextResponse.json({ items: data?.items || [] })
-  } catch (error) {
-    return NextResponse.json(
-      { error: "Não foi possível consultar o Google Books" },
-      { status: 500 }
-    )
+    return NextResponse.json({ items: googleItems })
+  } catch (error: any) {
+    console.error("Erro em /api/google-books:", error?.message || error)
+
+    try {
+      const searchTerm = isbn ? `isbn:${isbn}` : query!
+      const fallbackData = await searchOpenLibrary(searchTerm, Boolean(isbn))
+      return NextResponse.json(fallbackData)
+    } catch (fallbackError: any) {
+      console.error("Erro no fallback OpenLibrary:", fallbackError?.message || fallbackError)
+      return NextResponse.json(
+        { error: "Não foi possível consultar o Google Books nem o OpenLibrary" },
+        { status: 500 }
+      )
+    }
   }
 }

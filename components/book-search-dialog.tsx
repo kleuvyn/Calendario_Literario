@@ -18,25 +18,36 @@ export function BookSearchDialog({ open, onClose, onSelectBook }: BookSearchDial
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<BookSearchResult[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [searchError, setSearchError] = useState<string | null>(null)
   const [selectedCover, setSelectedCover] = useState<string>("")
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (!query) {
       setResults([])
+      setSearchError(null)
       return
     }
 
     if (query.length < 3) {
       setResults([])
+      setSearchError(null)
       return
     }
 
     const timeoutId = setTimeout(async () => {
       setIsLoading(true)
-      const books = await searchBooks(query)
-      setResults(books)
-      setIsLoading(false)
+      setSearchError(null)
+      try {
+        const books = await searchBooks(query)
+        setResults(books)
+      } catch (error) {
+        console.error("Erro na busca de livros:", error)
+        setResults([])
+        setSearchError("Não foi possível buscar livros. Tente novamente mais tarde.")
+      } finally {
+        setIsLoading(false)
+      }
     }, 500)
 
     return () => clearTimeout(timeoutId)
@@ -169,7 +180,12 @@ export function BookSearchDialog({ open, onClose, onSelectBook }: BookSearchDial
 
           {/* Resultados */}
           <ScrollArea className="h-100 pr-4">
-            {results.length === 0 && query && !isLoading && (
+            {searchError && (
+              <div className="text-center py-12 space-y-4">
+                <p className="text-rose-700">{searchError}</p>
+              </div>
+            )}
+            {results.length === 0 && query.length >= 3 && !isLoading && !searchError && (
               <div className="text-center py-12 space-y-4">
                 <p className="text-muted-foreground">Nenhum livro encontrado</p>
                 <Button
@@ -180,6 +196,11 @@ export function BookSearchDialog({ open, onClose, onSelectBook }: BookSearchDial
                   <FileText size={16} />
                   Adicionar "{query}" manualmente
                 </Button>
+              </div>
+            )}
+            {results.length === 0 && query.length > 0 && query.length < 3 && !isLoading && !searchError && (
+              <div className="text-center py-12 space-y-4">
+                <p className="text-muted-foreground">Digite pelo menos 3 caracteres para iniciar a busca.</p>
               </div>
             )}
 
