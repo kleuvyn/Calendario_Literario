@@ -22,7 +22,7 @@ const bootstrapStatements = [
     image TEXT,
     literary_goal INTEGER DEFAULT 12,
     goals_by_year TEXT DEFAULT '{}',
-    theme TEXT DEFAULT 'rose',
+    theme TEXT DEFAULT 'rose', 
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
   )`,
   "CREATE UNIQUE INDEX IF NOT EXISTS users_email_unique ON users (email)",
