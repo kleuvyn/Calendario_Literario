@@ -9,7 +9,14 @@ import { toast } from "sonner"
 import { BookSearchDialog } from "@/components/book-search-dialog"
 import { EditBookDialog } from "@/components/edit-book-dialog"
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog"
+import { OptimizedBookCover } from "@/components/optimized-book-cover"
 import type { BookSearchResult } from "@/lib/google-books"
+
+const yearlyReadingsCache = new Map<string, any[]>()
+
+function getYearlyCacheKey(email: string, year: number) {
+  return `${email.toLowerCase()}::${year}`
+}
 
 export function MonthCalendar({ month, days, year, userEmail, monthIndex, themePrimary, initialReadings, initialReadingsLoaded }: any) {
   const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?q=80&w=300&auto=format&fit=crop"
@@ -21,21 +28,25 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
     // permite URL padrão de imagem ou data URI para imagens base64
     if (/^data:image\/(?:png|jpe?g|webp|avif|gif);base64,[A-Za-z0-9+/=]+$/i.test(trimmed)) return trimmed
     if (/^https?:\/\/[^\s]+$/i.test(trimmed)) {
-      // Em produção HTTPS, evita bloqueio de mixed content para capas antigas.
+      // Mantém URL direta (com upgrade para https) para evitar indisponibilidade de proxy.
       return trimmed.replace(/^http:\/\//i, 'https://')
     }
     return PLACEHOLDER_IMAGE
   }
 
   const [readings, setReadings] = useState<any[]>(initialReadings ?? [])
+  const [isLoadingData, setIsLoadingData] = useState<boolean>(!hasInitialReadings)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
   const [expandedDays, setExpandedDays] = useState<Set<number>>(new Set())
   const [activeSummary, setActiveSummary] = useState<'lendo' | 'lido' | 'planejados' | ''>('')
   const [isPlanning, setIsPlanning] = useState(false)
 
   useEffect(() => {
-    setReadings(initialReadings ?? [])
-  }, [initialReadings])
+    if (!initialReadingsLoaded) return
+    setReadings(Array.isArray(initialReadings) ? initialReadings : [])
+    initialYearRef.current = year
+  }, [initialReadingsLoaded, initialReadings, year])
 
   const normalizeStatus = (status: string | undefined) => (status || '').toLowerCase().trim()
 
@@ -116,14 +127,22 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
 
     readings.forEach((r) => {
       const status = normalizeStatus(r.status)
-      if (PLANNED_STATUSES.includes(status)) return
-
       const startStr = r.start_date?.split('T')[0] || null
       const endStr = r.end_date?.split('T')[0] || null
       const readingStatus = READING_STATUSES.includes(status)
-      const finishedStatus = FINISHED_STATUSES.includes(status)
+      const plannedStatus = PLANNED_STATUSES.includes(status)
 
-      if (!startStr && !endStr) return
+      if (!startStr && !endStr) {
+        const bookDay = Number(r.day) || 0
+        if (bookDay >= 1 && bookDay <= (days || 31)) {
+          map[bookDay - 1].push(r)
+        } else if (plannedStatus && Number(r.month) === monthIndex + 1 && Number(r.year) === year) {
+          // Planned entries without dates are anchored to day 1 so they stay visible.
+          map[0].push(r)
+        }
+        return
+      }
+
       const startDate = startStr ? new Date(startStr) : null
       const endDate = endStr ? new Date(endStr) : null
       if (readingStatus && !startDate) return
@@ -151,13 +170,6 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
   const [bookToEdit, setBookToEdit] = useState<any>(null)
   const [bookToDelete, setBookToDelete] = useState<string>("")
 
-  useEffect(() => {
-    if (Array.isArray(initialReadings) && initialReadings.length > 0) {
-      setReadings(initialReadings)
-      initialYearRef.current = year
-    }
-  }, [initialReadings, year])
-
   const summaryFilter = activeSummary
 
   const now = new Date()
@@ -166,20 +178,44 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
   // Carregar dados
   async function loadData() {
     if (!userEmail) return
+    const cacheKey = getYearlyCacheKey(userEmail, year)
+
+    if (yearlyReadingsCache.has(cacheKey)) {
+      const cachedRows = yearlyReadingsCache.get(cacheKey) || []
+      setReadings(cachedRows)
+      setLoadError(null)
+      setIsLoadingData(false)
+      return
+    }
+
+    setIsLoadingData(true)
+    setLoadError(null)
+
     try {
-      const response: any = await getReadingData(userEmail, year, false, undefined, monthIndex + 1)
+      const response: any = await getReadingData(userEmail, year, false)
       const finalData = response?.data ? response.data : response
-      setReadings(Array.isArray(finalData) ? finalData : [])
+      const rows = Array.isArray(finalData) ? finalData : []
+      yearlyReadingsCache.set(cacheKey, rows)
+      setReadings(rows)
     } catch (err) {
       console.error("Erro ao carregar dados:", err)
+      setLoadError("Falha ao carregar livros do calendário")
+      setReadings([])
+      toast.error("Falha ao carregar livros do calendário")
+    } finally {
+      setIsLoadingData(false)
     }
   }
 
   useEffect(() => {
-    if (!userEmail || !initialReadingsLoaded) return
-    if (hasInitialReadings && year === initialYearRef.current) return
+    if (!userEmail) return
+    if (hasInitialReadings && year === initialYearRef.current && initialReadingsLoaded) {
+      setIsLoadingData(false)
+      setLoadError(null)
+      return
+    }
     loadData()
-  }, [userEmail, monthIndex, year, hasInitialReadings, initialReadingsLoaded])
+  }, [userEmail, year, hasInitialReadings, initialReadingsLoaded])
 
   // Função para calcular dias (sua função de negócio)
   const calculateDays = (start: string, end: string) => {
@@ -227,6 +263,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
         throw new Error(data?.error || 'Erro ao adicionar planejado')
       }
 
+      yearlyReadingsCache.delete(getYearlyCacheKey(userEmail, year))
       await loadData()
       setSearchDialogOpen(false)
       setIsPlanning(false)
@@ -260,7 +297,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
       : book.categories || ''
     const dateFormatted = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}T12:00:00Z`
     const dateOnly = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`
-    const shouldFinishReading = dateOnly <= todayStr
+    const shouldFinishReading = dateOnly < todayStr
     const action = shouldFinishReading ? 'FINISH_READING' : 'START_READING'
 
     try {
@@ -278,6 +315,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
         genre,
         book.pages
       )
+      yearlyReadingsCache.delete(getYearlyCacheKey(userEmail, year))
       await loadData()
       setSearchDialogOpen(false)
       setIsPlanning(false)
@@ -311,6 +349,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
         book.genre || book.genres || "",
         book.total_pages || book.pages || 0
       )
+      yearlyReadingsCache.delete(getYearlyCacheKey(userEmail, year))
       await loadData()
       toast.success("Parabéns pela conclusão! 🎉")
     } catch (err) {
@@ -354,6 +393,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
         genre,
         book.total_pages || 0
       )
+      yearlyReadingsCache.delete(getYearlyCacheKey(userEmail, yearValue))
       await loadData()
       toast.success("Plano iniciado! Agora está em leitura.")
       setActiveSummary('lendo')
@@ -388,6 +428,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
         book.author_name || book.author || "",
         book.total_pages || book.pages || 0
       )
+      yearlyReadingsCache.delete(getYearlyCacheKey(userEmail, now.getUTCFullYear()))
       await loadData()
       toast.success("Livro marcado como concluído!")
       setActiveSummary('lido')
@@ -441,6 +482,8 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
         throw new Error(errorData?.error || "Falha ao salvar edição")
       }
       invalidateReadingDataCache(userEmail)
+      yearlyReadingsCache.delete(getYearlyCacheKey(userEmail, targetYear))
+      yearlyReadingsCache.delete(getYearlyCacheKey(userEmail, year))
       await loadData()
       toast.success("Informações salvas com sucesso!")
     } catch (err) {
@@ -460,6 +503,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "DELETE_READING", email: userEmail, bookName: bookToDelete })
       })
+      yearlyReadingsCache.delete(getYearlyCacheKey(userEmail, year))
       await loadData()
       setDeleteDialogOpen(false)
       toast.success("Livro removido")
@@ -516,6 +560,21 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
         >
           <Plus size={12} strokeWidth={1.5} /> Adicionar novo livro planejado...
         </button>
+      </div>
+
+      <div className="mb-4 text-center text-sm text-slate-500 italic">
+        {isLoadingData ? (
+          <span className="inline-flex items-center justify-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Recarregando dados do calendário...
+          </span>
+        ) : loadError ? (
+          loadError
+        ) : booksThisMonth.length === 0 ? (
+          'Nenhum livro registrado para este mês. Adicione um livro ou verifique o mês selecionado.'
+        ) : (
+          <span className="text-slate-500">Dados atualizados para {month} {year}</span>
+        )}
       </div>
 
       {summaryFilter && (
@@ -602,7 +661,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
             <motion.div 
               key={day}
               layout
-              onClick={() => !isFuture && dayReadings.length > 0 && setExpandedDays(prev => {
+              onClick={() => !isFuture && setExpandedDays(prev => {
                 const next = new Set(prev); isExpanded ? next.delete(day) : next.add(day); return next;
               })}
               className={`relative flex flex-col p-1 sm:p-3 rounded-xl sm:rounded-4xl border-2 transition-all 
@@ -627,14 +686,21 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
                 {!isExpanded && dayReadings.length > 0 && (
                   <div className="flex flex-wrap gap-1 sm:gap-1.5">
                     {dayReadings.map((r, i) => (
-                      <img
+                      <OptimizedBookCover
                         key={`${r.book_name}-${r.id || i}`}
-                        src={safeCoverUrl(r.cover_url)}
-                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_IMAGE }}
+                        src={safeCoverUrl(r.cover_url || r.cover)}
+                        alt={r.book_name || "Capa do livro"}
+                        width={24}
+                        height={32}
                         className="w-5 h-7 sm:w-6 sm:h-8 rounded-md border border-white object-cover shadow-sm"
-                        alt=""
                       />
                     ))}
+                  </div>
+                )}
+
+                {isExpanded && dayReadings.length === 0 && (
+                  <div className="rounded-lg p-3 bg-slate-50 border border-slate-200 text-[11px] text-slate-500 italic">
+                    Nenhum livro neste dia ainda. Use "Iniciar" abaixo para adicionar uma leitura.
                   </div>
                 )}
 
@@ -654,9 +720,11 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
                       </div>
                       <div className="mt-2 space-y-2">
                         <div className="flex items-center gap-2">
-                          <img
-                            src={safeCoverUrl(r.cover_url)}
-                            onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_IMAGE }}
+                          <OptimizedBookCover
+                            src={safeCoverUrl(r.cover_url || r.cover)}
+                            alt={r.book_name || "Capa do livro"}
+                            width={40}
+                            height={56}
                             className="w-10 h-14 rounded shadow-md object-cover"
                           />
                           <div className="flex-1 text-[9px] font-bold text-slate-500">

@@ -206,10 +206,11 @@ export function BookSearchDialog({ open, onClose, onSelectBook }: BookSearchDial
 
             <div className="space-y-3">
               {results.map((book, index) => (
-                <div
+                <button
                   key={index}
+                  type="button"
                   onClick={() => handleSelect(book)}
-                  className="flex gap-4 p-4 rounded-xl border-2 border-slate-200 hover:border-primary hover:bg-primary/5 cursor-pointer transition-all group"
+                  className="w-full text-left flex gap-4 p-4 rounded-xl border-2 border-slate-200 hover:border-primary hover:bg-primary/5 cursor-pointer transition-all group"
                 >
                   {/* Capa */}
                   <div className="w-16 h-24 rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center shrink-0 shadow-md">
@@ -251,7 +252,7 @@ export function BookSearchDialog({ open, onClose, onSelectBook }: BookSearchDial
                       </div>
                     )}
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           </ScrollArea>

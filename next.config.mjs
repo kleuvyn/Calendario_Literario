@@ -37,6 +37,14 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'photos.enjoei.com.br',
       },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.public.blob.vercel-storage.com',
+      },
     ],
     formats: ['image/avif', 'image/webp'],
   },

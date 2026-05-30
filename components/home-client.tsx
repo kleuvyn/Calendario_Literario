@@ -8,7 +8,7 @@ import {
   ChevronLeft, ChevronRight, LogOut, BarChart3, 
   Flower2, Coffee, Edit3, Moon, Sun, Sparkles
 } from "lucide-react"
-import { getReadingSummary } from "@/lib/api-client"
+import { getReadingSummary, updateUserGoal } from "@/lib/api-client"
 import Link from "next/link"
 import { motion, AnimatePresence, PanInfo } from "framer-motion"
 import { toast } from "sonner"
@@ -84,12 +84,16 @@ interface HomeClientProps {
   initialSummary?: HomeClientSummary;
   currentYear: number;
   initialSession?: any;
+  initialReadings?: any[];
 }
 
-export function HomeClient({ initialSummary, currentYear, initialSession }: HomeClientProps) {
+export function HomeClient({ initialSummary, currentYear, initialSession, initialReadings = [] }: HomeClientProps) {
   const { data: sessionData, status } = useSession()
   const session = sessionData ?? initialSession
   const [summary, setSummary] = useState<HomeClientSummary | null>(initialSummary ?? null)
+  const [goalInput, setGoalInput] = useState<number>(initialSummary?.userGoal ?? 12)
+  const [isGoalEditing, setIsGoalEditing] = useState(false)
+  const [isGoalSaving, setIsGoalSaving] = useState(false)
   const [isSummaryLoading, setIsSummaryLoading] = useState(!initialSummary && !!session?.user?.email)
   const [currentMonth, setCurrentMonth] = useState(() => new Date().getMonth())
   const [showBack, setShowBack] = useState(false)
@@ -129,6 +133,7 @@ export function HomeClient({ initialSummary, currentYear, initialSession }: Home
       .then((data) => {
         if (active) {
           setSummary(data)
+          setGoalInput(data.userGoal)
         }
       })
       .catch((error) => {
@@ -141,6 +146,30 @@ export function HomeClient({ initialSummary, currentYear, initialSession }: Home
 
     return () => { active = false }
   }, [session?.user?.email, currentYear, summary])
+
+  useEffect(() => {
+    if (initialSummary) {
+      setGoalInput(initialSummary.userGoal)
+    }
+  }, [initialSummary])
+
+  const handleSaveGoal = async () => {
+    if (!session?.user?.email) return
+    const sanitizedGoal = Math.max(1, Math.round(goalInput))
+    setIsGoalSaving(true)
+    try {
+      await updateUserGoal(session.user.email, sanitizedGoal, currentYear)
+      setSummary((prev) => prev ? { ...prev, userGoal: sanitizedGoal } : { userGoal: sanitizedGoal, totalReadThisYear: 0, readingNowThisYear: 0, plannedThisYear: 0 })
+      setIsGoalEditing(false)
+      setGoalInput(sanitizedGoal)
+      toast.success('Meta atualizada!')
+    } catch (error) {
+      console.error('Erro ao salvar meta:', error)
+      toast.error('Não foi possível salvar a meta')
+    } finally {
+      setIsGoalSaving(false)
+    }
+  }
 
   const getFirstName = () => {
     if (session?.user?.name) {
@@ -333,8 +362,46 @@ export function HomeClient({ initialSummary, currentYear, initialSession }: Home
                     <p className="text-2xl font-black italic" style={{ color: theme.primary }}>{totalReadThisYear}</p>
                   </div>
                   <div className="rounded-2xl border border-dashed p-3" style={{ borderColor: 'rgba(0,0,0,0.08)' }}>
-                    <p className="text-[10px] uppercase tracking-wider opacity-40 font-bold">Meta</p>
-                    <p className="text-2xl font-black italic" style={{ color: theme.primary }}>{myBooksGoal}</p>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-[10px] uppercase tracking-wider opacity-40 font-bold">Meta</p>
+                      {!isGoalEditing && (
+                        <button
+                          type="button"
+                          onClick={() => setIsGoalEditing(true)}
+                          className="text-[10px] text-slate-500 hover:text-slate-700"
+                        >
+                          editar
+                        </button>
+                      )}
+                    </div>
+                    {isGoalEditing ? (
+                      <div className="mt-2 flex items-center gap-2">
+                        <input
+                          type="number"
+                          min={1}
+                          value={goalInput}
+                          onChange={(e) => setGoalInput(Number(e.target.value) || 1)}
+                          className="w-20 rounded-full border border-slate-200 px-3 py-1 text-base font-semibold text-slate-900"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleSaveGoal}
+                          disabled={isGoalSaving}
+                          className="rounded-full bg-emerald-500 px-3 py-1 text-[10px] font-bold uppercase text-white"
+                        >
+                          {isGoalSaving ? '...' : 'Salvar'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setIsGoalEditing(false); setGoalInput(summary?.userGoal ?? 12) }}
+                          className="rounded-full border border-slate-200 px-3 py-1 text-[10px] font-bold uppercase text-slate-700"
+                        >
+                          cancelar
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-2xl font-black italic" style={{ color: theme.primary }}>{myBooksGoal}</p>
+                    )}
                   </div>
                   <div className="rounded-2xl border border-dashed p-3" style={{ borderColor: 'rgba(0,0,0,0.08)' }}>
                     <p className="text-[10px] uppercase tracking-wider opacity-40 font-bold">Faltam</p>
@@ -390,9 +457,9 @@ export function HomeClient({ initialSummary, currentYear, initialSession }: Home
               className="cursor-grab active:cursor-grabbing"
             >
               {!showBack ? (
-                <MonthCalendar month={months[currentMonth].name} days={months[currentMonth].days} year={currentYear} userEmail={session.user?.email?.toLowerCase() || ""} monthIndex={currentMonth} themePrimary={theme.primary} initialReadings={[]} initialReadingsLoaded={false} />
+                <MonthCalendar month={months[currentMonth].name} days={months[currentMonth].days} year={currentYear} userEmail={session.user?.email?.toLowerCase() || ""} monthIndex={currentMonth} themePrimary={theme.primary} initialReadings={initialReadings} initialReadingsLoaded={true} />
               ) : (
-                <MonthReview month={months[currentMonth].name} userEmail={session.user?.email?.toLowerCase() || ""} monthIndex={currentMonth} year={currentYear} initialReadings={[]} initialReadingsLoaded={false} />
+                <MonthReview month={months[currentMonth].name} userEmail={session.user?.email?.toLowerCase() || ""} monthIndex={currentMonth} year={currentYear} initialReadings={initialReadings} initialReadingsLoaded={true} />
               )}
             </motion.div>
           </AnimatePresence>

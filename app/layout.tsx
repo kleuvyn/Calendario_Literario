@@ -122,7 +122,10 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className="antialiased bg-background text-foreground">
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, '\\u003c') }}
+        ></script>
         <ErrorBoundary>
           <AuthProvider>
             <main className="min-h-screen">

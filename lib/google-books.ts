@@ -47,7 +47,10 @@ export async function searchBooks(query: string): Promise<BookSearchResult[]> {
     return books.map((book) => ({
       title: book.volumeInfo.title || 'Título desconhecido',
       authors: book.volumeInfo.authors?.join(', ') || 'Autor desconhecido',
-      cover: book.volumeInfo.imageLinks?.thumbnail?.replace('http://', 'https://') || '',
+      cover:
+        book.volumeInfo.imageLinks?.thumbnail?.replace('http://', 'https://') ||
+        book.volumeInfo.imageLinks?.smallThumbnail?.replace('http://', 'https://') ||
+        '',
       pages: book.volumeInfo.pageCount || 0,
       isbn: book.volumeInfo.industryIdentifiers?.[0]?.identifier || '',
       description: book.volumeInfo.description || '',

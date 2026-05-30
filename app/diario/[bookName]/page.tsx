@@ -54,17 +54,35 @@ export default function BookDiaryPage() {
 
   useEffect(() => {
     if (status !== "authenticated" || !session?.user?.email) return
-    getReadingData(session.user.email, currentYear, true, undefined, undefined, true).then((data) => {
-      const books: any[] = Array.isArray(data) ? data : data?.data || []
-      setAllBooks(books)
-      setLoading(false)
-      
-      const currentBook = books.find(b => b.book_name?.toLowerCase() === bookName.toLowerCase())
-      if (currentBook) {
-        const year = currentBook.end_date ? new Date(currentBook.end_date).getFullYear() : currentYear
-        setOpenYears(prev => ({ ...prev, [year]: true }))
+
+    let active = true
+
+    async function loadBookHistory() {
+      try {
+        const data = await getReadingData(session.user.email, currentYear, true, undefined, undefined, true)
+        if (!active) return
+
+        const books: any[] = Array.isArray(data) ? data : data?.data || []
+        setAllBooks(books)
+
+        const currentBook = books.find((b) => b.book_name?.toLowerCase() === bookName.toLowerCase())
+        if (currentBook) {
+          const year = currentBook.end_date ? new Date(currentBook.end_date).getFullYear() : currentYear
+          setOpenYears((prev) => ({ ...prev, [year]: true }))
+        }
+      } catch (error) {
+        if (!active) return
+        console.error("Erro ao carregar diário do livro:", error)
+      } finally {
+        if (active) setLoading(false)
       }
-    })
+    }
+
+    loadBookHistory()
+
+    return () => {
+      active = false
+    }
   }, [status, session, bookName])
 
   const toggleYear = (year: number) => {

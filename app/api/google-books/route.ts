@@ -6,11 +6,11 @@ const OPEN_LIBRARY_SEARCH_API = "https://openlibrary.org/search.json"
 function mapOpenLibraryToGoogleShape(docs: any[]) {
   return docs.slice(0, 10).map((doc: any) => {
     const isbn = Array.isArray(doc.isbn) ? doc.isbn[0] : undefined
-    const coverFromIsbn = isbn
-      ? `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg`
-      : undefined
     const coverFromId = doc.cover_i
       ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg`
+      : undefined
+    const coverFromIsbn = isbn
+      ? `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg?default=false`
       : undefined
 
     return {
@@ -24,8 +24,8 @@ function mapOpenLibraryToGoogleShape(docs: any[]) {
           ? [{ type: "ISBN_13", identifier: isbn }]
           : [],
         imageLinks: {
-          thumbnail: coverFromIsbn || coverFromId || "",
-          smallThumbnail: coverFromIsbn || coverFromId || "",
+          thumbnail: coverFromId || coverFromIsbn || "",
+          smallThumbnail: coverFromId || coverFromIsbn || "",
         },
       },
     }
@@ -113,6 +113,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(fallbackData)
       } catch (fallbackError) {
         console.error("Fallback OpenLibrary falhou:", fallbackError)
+        return NextResponse.json({ items: [] })
       }
     }
 
@@ -126,10 +127,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(fallbackData)
     } catch (fallbackError: any) {
       console.error("Erro no fallback OpenLibrary:", fallbackError?.message || fallbackError)
-      return NextResponse.json(
-        { error: "Não foi possível consultar o Google Books nem o OpenLibrary" },
-        { status: 500 }
-      )
+      return NextResponse.json({ items: [] })
     }
   }
 }

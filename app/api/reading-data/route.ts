@@ -1,4 +1,5 @@
 import { executeQuery } from "@/lib/db";
+import { resolveCoverUrl } from "@/lib/blob";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
@@ -58,7 +59,7 @@ export async function GET(request: Request) {
     const query = `
       SELECT rd.*
       FROM public.reading_data rd
-      WHERE rd.email = $1 ${yearCondition}
+      WHERE LOWER(rd.email) = LOWER($1) ${yearCondition}
       ${dateRangeCondition}
       ORDER BY rd.month ASC, rd.status DESC
     `;
@@ -70,7 +71,7 @@ export async function GET(request: Request) {
         : [email, year];
     const rows = await executeQuery(query, params);
 
-    const userRow = await executeQuery(`SELECT literary_goal, goals_by_year FROM public.users WHERE email = $1`, [email]);
+    const userRow = await executeQuery(`SELECT literary_goal, goals_by_year FROM public.users WHERE LOWER(email) = LOWER($1)`, [email]);
     let userGoal = 12;
 
     if (userRow && userRow.length > 0) {
@@ -90,11 +91,7 @@ export async function GET(request: Request) {
       rating: Number(b.rating) || 0,
       total_pages: Number(b.total_pages) || 0,
       month: Number(b.month),
-      status: b.status || ''
-    }));
-
-    return NextResponse.json(
-      { data: cleanRows, userGoal },
+        day: Number(b.day) || 0,
       { headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' } }
     );
   } catch (error: any) {
@@ -115,11 +112,13 @@ export async function POST(request: Request) {
       totalPages, review, genre, year, month, 
       startDate, endDate, goal, author, pages: bodyPages, notes, cover_url, format, owned
     } = body;
+
+    const normalizedIncomingCover = await resolveCoverUrl(coverUrl ?? cover_url);
     
     if (action === "SET_GOAL") {
       await executeQuery(`ALTER TABLE public.users ADD COLUMN IF NOT EXISTS goals_by_year JSONB DEFAULT '{}'::jsonb`, []);
       
-      const userRes = await executeQuery(`SELECT goals_by_year FROM public.users WHERE email = $1`, [email]);
+      const userRes = await executeQuery(`SELECT goals_by_year FROM public.users WHERE LOWER(email) = LOWER($1)`, [email]);
       let currentGoals = {};
       
       if (userRes.length > 0 && userRes[0].goals_by_year) {
@@ -131,7 +130,7 @@ export async function POST(request: Request) {
       const updatedGoals = { ...currentGoals, [year.toString()]: Number(goal) };
 
       await executeQuery(
-        `UPDATE public.users SET goals_by_year = $1 WHERE email = $2`,
+        `UPDATE public.users SET goals_by_year = $1 WHERE LOWER(email) = LOWER($2)`,
         [JSON.stringify(updatedGoals), email]
       );
       return NextResponse.json({ success: true });
@@ -179,9 +178,11 @@ export async function POST(request: Request) {
         params.push(notes || null);
       }
 
-      if (cover_url !== undefined) {
-        updates.push(`cover_url = $${paramIndex++}`);
-        params.push(cover_url || null);
+      if (cover_url !== undefined || coverUrl !== undefined) {
+        if (normalizedIncomingCover) {
+          updates.push(`cover_url = $${paramIndex++}`);
+          params.push(normalizedIncomingCover);
+        }
       }
 
       if (genre !== undefined) {
@@ -204,6 +205,11 @@ export async function POST(request: Request) {
         params.push(body.status || null);
       }
 
+      if (body.day !== undefined) {
+        updates.push(`day = $${paramIndex++}`);
+        params.push(Number(body.day) || null);
+      }
+
       if (body.startDate !== undefined) {
         updates.push(`start_date = $${paramIndex++}`);
         params.push(body.startDate || null);
@@ -218,12 +224,12 @@ export async function POST(request: Request) {
       params.push(email, oldBookName);
 
       await executeQuery(
-        `UPDATE public.reading_data SET ${updates.join(', ')} WHERE email = $${paramIndex++} AND book_name = $${paramIndex}`,
+        `UPDATE public.reading_data SET ${updates.join(', ')} WHERE LOWER(email) = LOWER($${paramIndex++}) AND book_name = $${paramIndex}`,
         params
       );
       
       // Atualiza book_reviews se necessário
-      const userRes = await executeQuery(`SELECT id FROM public.users WHERE email = $1`, [email]);
+      const userRes = await executeQuery(`SELECT id FROM public.users WHERE LOWER(email) = LOWER($1)`, [email]);
       if (userRes.length > 0) {
         await executeQuery(
           `UPDATE public.book_reviews SET title = $1 WHERE user_id = $2 AND title = $3`,
@@ -234,8 +240,8 @@ export async function POST(request: Request) {
     }
 
     if (action === "DELETE_READING") {
-      await executeQuery(`DELETE FROM public.reading_data WHERE email = $1 AND book_name = $2`, [email, bookName]);
-      const userRes = await executeQuery(`SELECT id FROM public.users WHERE email = $1`, [email]);
+      await executeQuery(`DELETE FROM public.reading_data WHERE LOWER(email) = LOWER($1) AND book_name = $2`, [email, bookName]);
+      const userRes = await executeQuery(`SELECT id FROM public.users WHERE LOWER(email) = LOWER($1)`, [email]);
       if (userRes.length > 0) {
         await executeQuery(`DELETE FROM public.book_reviews WHERE user_id = $1 AND title = $2`, [userRes[0].id, bookName]);
       }
@@ -250,10 +256,10 @@ export async function POST(request: Request) {
         await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS format TEXT`, []);
         await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS genre TEXT`, []);
 
-        await executeQuery(`DELETE FROM public.reading_data WHERE email = $1 AND book_name = $2`, [email, bookName]);
+        await executeQuery(`DELETE FROM public.reading_data WHERE LOWER(email) = LOWER($1) AND book_name = $2`, [email, bookName]);
         await executeQuery(`
-          INSERT INTO public.reading_data (email, book_name, author_name, start_date, status, year, month, cover_url, total_pages, format, owned, notes, genre)
-          VALUES ($1, $2, $3, $4, 'planejado', $5, $6, $7, $8, $9, $10, $11, $12)
+          INSERT INTO public.reading_data (email, book_name, author_name, start_date, status, year, month, day, cover_url, total_pages, format, owned, notes, genre)
+          VALUES ($1, $2, $3, $4, 'planejado', $5, $6, $7, $8, $9, $10, $11, $12, $13)
         `, [
           email,
           bookName,
@@ -261,7 +267,8 @@ export async function POST(request: Request) {
           startDate || null,
           year,
           month,
-          coverUrl,
+          body.day || null,
+          normalizedIncomingCover,
           numPages,
           format || null,
           owned === true,
@@ -277,11 +284,11 @@ export async function POST(request: Request) {
       await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS cover_url TEXT`, []);
       await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS genre TEXT`, []);
       
-      await executeQuery(`DELETE FROM public.reading_data WHERE email = $1 AND book_name = $2`, [email, bookName]);
+      await executeQuery(`DELETE FROM public.reading_data WHERE LOWER(email) = LOWER($1) AND book_name = $2`, [email, bookName]);
       await executeQuery(`
-        INSERT INTO public.reading_data (email, book_name, author_name, start_date, status, year, month, cover_url, total_pages, genre)
-        VALUES ($1, $2, $3, $4, 'lendo', $5, $6, $7, $8, $9)
-      `, [email, bookName, author || null, startDate, year, month, coverUrl, numPages, genre || null]);
+        INSERT INTO public.reading_data (email, book_name, author_name, start_date, status, year, month, day, cover_url, total_pages, genre)
+        VALUES ($1, $2, $3, $4, 'lendo', $5, $6, $7, $8, $9, $10)
+      `, [email, bookName, author || null, startDate, year, month, body.day || null, normalizedIncomingCover, numPages, genre || null]);
       return NextResponse.json({ success: true });
     }
 
@@ -291,19 +298,19 @@ export async function POST(request: Request) {
       const finishedMonth = finishedDate.getUTCMonth() + 1
 
       const existing = await executeQuery(
-        `SELECT id FROM public.reading_data WHERE email = $1 AND book_name = $2 LIMIT 1`,
+        `SELECT id FROM public.reading_data WHERE LOWER(email) = LOWER($1) AND book_name = $2 LIMIT 1`,
         [email, bookName]
       );
 
       if (existing.length > 0) {
         await executeQuery(
-          `UPDATE public.reading_data SET end_date = $1, status = 'lido', year = $2, month = $3 WHERE email = $4 AND book_name = $5`,
+          `UPDATE public.reading_data SET end_date = $1, status = 'lido', year = $2, month = $3 WHERE LOWER(email) = LOWER($4) AND book_name = $5`,
           [endDate, finishedYear, finishedMonth, email, bookName]
         );
       } else {
         await executeQuery(
-          `INSERT INTO public.reading_data (email, book_name, author_name, start_date, end_date, status, year, month, cover_url, total_pages, genre)
-           VALUES ($1, $2, $3, $4, $5, 'lido', $6, $7, $8, $9, $10)`,
+          `INSERT INTO public.reading_data (email, book_name, author_name, start_date, end_date, status, year, month, day, cover_url, total_pages, genre)
+           VALUES ($1, $2, $3, $4, $5, 'lido', $6, $7, $8, $9, $10, $11)`,
           [
             email,
             bookName,
@@ -312,7 +319,8 @@ export async function POST(request: Request) {
             endDate,
             finishedYear,
             finishedMonth,
-            coverUrl || null,
+            body.day || null,
+            normalizedIncomingCover || null,
             numPages,
             genre || null,
           ]
@@ -334,7 +342,7 @@ export async function POST(request: Request) {
       await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS start_date TEXT`, []);
       await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS end_date TEXT`, []);
 
-      const userRes = await executeQuery(`SELECT id FROM public.users WHERE email = $1`, [email]);
+      const userRes = await executeQuery(`SELECT id FROM public.users WHERE LOWER(email) = LOWER($1)`, [email]);
       if (userRes.length === 0) return NextResponse.json({ error: "Usuário não encontrado" });
       const userId = userRes[0].id;
       const targetName = oldBookName || bookName;
@@ -363,7 +371,7 @@ export async function POST(request: Request) {
         bookName,
         author || null,
         numPages,
-        coverUrl,
+        normalizedIncomingCover || "",
         genre,
         review,
         rating || null,
@@ -386,7 +394,7 @@ export async function POST(request: Request) {
 
       await executeQuery(
         `UPDATE public.reading_data 
-         SET book_name = $1, author_name = $2, total_pages = $3, cover_url = $4, genre = $5, review = $6, rating = $7, format = $8, owned = $9, start_date = $10, end_date = $11, year = $12, month = $13
+         SET book_name = $1, author_name = $2, total_pages = $3, cover_url = COALESCE(NULLIF($4, ''), cover_url), genre = $5, review = $6, rating = $7, format = $8, owned = $9, start_date = $10, end_date = $11, year = $12, month = $13
          WHERE ${whereClause}`,
         updateParams
       );
@@ -396,7 +404,7 @@ export async function POST(request: Request) {
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          ON CONFLICT (user_id, title) DO UPDATE SET
            rating = EXCLUDED.rating,
-           cover_url = EXCLUDED.cover_url,
+           cover_url = COALESCE(NULLIF(EXCLUDED.cover_url, ''), public.book_reviews.cover_url),
            total_pages = EXCLUDED.total_pages,
            genre = EXCLUDED.genre,
            review = EXCLUDED.review,

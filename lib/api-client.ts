@@ -132,7 +132,7 @@ export async function getReadingData(
   let url = `/api/reading-data?email=${encodeURIComponent(email.toLowerCase())}&year=${year}&isRetrospective=${isRetrospective}&includeAllYears=${includeAllYears}`;
   if (month) url += `&month=${month}`;
 
-  const response = await fetch(url, { signal, cache: 'force-cache' });
+  const response = await fetch(url, { signal, cache: 'no-store' });
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.error || "Erro ao buscar dados");
@@ -149,18 +149,16 @@ function getReadingSummaryCacheKey(email: string, year: number) {
 
 export async function getReadingSummary(email: string, year: number): Promise<any> {
   const cacheKey = getReadingSummaryCacheKey(email, year);
-  const cached = loadReadingDataCache(cacheKey);
-  if (cached) return cached;
 
   const url = `/api/reading-summary?email=${encodeURIComponent(email.toLowerCase())}&year=${year}`;
-  const response = await fetch(url, { cache: 'force-cache' });
+  const response = await fetch(url, { cache: 'no-store' });
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.error || 'Erro ao buscar resumo');
   }
 
   const data = await response.json();
-  saveReadingDataCache(cacheKey, data);
+  removeReadingDataCache(cacheKey);
   return data;
 }
 

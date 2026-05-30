@@ -82,6 +82,7 @@ export function OptimizedBookCover({
         priority={priority}
         placeholder="empty"
         quality={85}
+        unoptimized
         style={{ objectFit: 'cover' }}
       />
     </>

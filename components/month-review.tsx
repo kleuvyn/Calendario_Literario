@@ -181,10 +181,10 @@ export function MonthReview({ month, userEmail, monthIndex, year, initialReading
   const buscarCapaAutomatica = async (bookId: string, bookName: string) => {
     if (!bookName) return
     setIsSearching(bookId)
-    const minhaChave = "AIzaSyB5F5pCIBIgZWCIpKwmBvKhh9RTSTwU9tw"
-    const url = `https://www.googleapis.com/books/v1/volumes?q=intitle:${encodeURIComponent(bookName)}&key=${minhaChave}&maxResults=1`
     try {
-      const response = await fetch(url)
+      const url = `/api/google-books?q=${encodeURIComponent(bookName)}`
+      const response = await fetch(url, { cache: 'no-store' })
+      if (!response.ok) return
       const data = await response.json()
       if (data?.items?.[0]?.volumeInfo?.imageLinks?.thumbnail) {
         const capaUrl = data.items[0].volumeInfo.imageLinks.thumbnail.replace("http://", "https://")
