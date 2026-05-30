@@ -141,7 +141,7 @@ export default function BookDiaryPage() {
     <div className="min-h-screen text-slate-900 font-serif pb-20" style={{ backgroundColor: editorial.bg, color: editorial.text }}>
       <div className="h-2 w-full border-t-[3px] border-dashed opacity-30" style={{ borderColor: editorial.accent }} />
 
-      <div className="max-w-7xl mx-auto px-6 pt-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-16">
         <SiteHeader
             activeTheme={activeTheme}
             setActiveTheme={setActiveTheme}
@@ -157,11 +157,11 @@ export default function BookDiaryPage() {
               </div>
             }
             rightContent={
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Link href="/" className="inline-flex items-center justify-center gap-3 text-xs uppercase tracking-widest font-bold transition-all px-8 py-3 rounded-full border border-dashed hover:opacity-70" style={{ color: editorial.text, borderColor: editorial.border, backgroundColor: editorial.card }}>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <Link href="/" className="w-full sm:w-auto inline-flex items-center justify-center gap-3 text-xs uppercase tracking-widest font-bold transition-all px-6 py-3 rounded-full border border-dashed hover:opacity-90 min-h-[3rem]" style={{ color: editorial.text, borderColor: editorial.border, backgroundColor: editorial.card }}>
                   <ArrowLeft size={14} /> Estante
                 </Link>
-                <Link href="/" className="inline-flex items-center justify-center gap-3 text-xs uppercase tracking-widest font-bold transition-all px-8 py-3 rounded-full border border-dashed hover:opacity-90 shadow-sm" style={{ color: editorial.accent, borderColor: editorial.border, backgroundColor: editorial.card }}>
+                <Link href="/" className="w-full sm:w-auto inline-flex items-center justify-center gap-3 text-xs uppercase tracking-widest font-bold transition-all px-6 py-3 rounded-full border border-dashed hover:opacity-90 shadow-sm min-h-[3rem]" style={{ color: editorial.accent, borderColor: editorial.border, backgroundColor: editorial.card }}>
                   <Sparkles size={14} style={{ opacity: 0.4 }} /> Meus livros lidos
                 </Link>
               </div>

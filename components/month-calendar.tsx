@@ -239,7 +239,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
     setIsUpdating(true)
 
     let startDateValue = null
-    if (selectedDay) {
+    if (selectedDay !== null) {
       startDateValue = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}T12:00:00Z`
     }
 
@@ -294,7 +294,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
       return
     }
 
-    if (!selectedDay) {
+    if (selectedDay === null) {
       toast.error('Selecione um dia para começar a leitura')
       setIsUpdating(false)
       return
@@ -304,9 +304,6 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
       ? book.categories.join(', ')
       : book.categories || ''
     const dateFormatted = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}T12:00:00Z`
-    const dateOnly = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`
-    const shouldFinishReading = dateOnly < todayStr
-    const action = shouldFinishReading ? 'FINISH_READING' : 'START_READING'
 
     try {
       await saveReadingDay(
@@ -317,7 +314,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
         dateFormatted,
         dateFormatted,
         book.title,
-        action,
+        'START_READING',
         book.cover,
         book.authors,
         genre,
@@ -327,7 +324,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
       await loadData()
       setSearchDialogOpen(false)
       setIsPlanning(false)
-      toast.success(shouldFinishReading ? 'Livro registrado como lido!' : 'Leitura iniciada!')
+      toast.success('Leitura iniciada! Conclua quando terminar de ler.')
       if (shouldFinishReading) setActiveSummary('lido')
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erro ao salvar'
@@ -556,7 +553,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
         </button>
       </div>
 
-      <div className="flex justify-end mb-6">
+      <div className="flex flex-col items-end gap-2 mb-6">
         <button
           onClick={() => {
             setIsPlanning(true)
@@ -568,6 +565,9 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
         >
           <Plus size={12} strokeWidth={1.5} /> Adicionar novo livro planejado...
         </button>
+        <p className="text-[10px] italic text-slate-500 max-w-xl text-right">
+          Livros adicionados aqui abrem em leitura; conclua manualmente quando terminar de ler.
+        </p>
       </div>
 
       <div className="mb-4 text-center text-sm text-slate-500 italic">

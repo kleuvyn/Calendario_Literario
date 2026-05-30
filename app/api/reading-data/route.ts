@@ -225,11 +225,6 @@ export async function POST(request: Request) {
         params.push(body.endDate || null);
       }
 
-      if (body.day !== undefined) {
-        updates.push(`day = $${paramIndex++}`);
-        params.push(Number(body.day) || null);
-      }
-
       // Adiciona email e oldBookName no final
       params.push(email, oldBookName);
 
@@ -397,8 +392,11 @@ export async function POST(request: Request) {
         endDate || null,
         effectiveYear,
         effectiveMonth,
-        effectiveDay,
       ];
+
+      if (effectiveDay !== null) {
+        updateParams.push(effectiveDay);
+      }
 
       let whereClause: string;
       if (id) {
@@ -409,12 +407,15 @@ export async function POST(request: Request) {
         updateParams.push(email, targetName);
       }
 
-      await executeQuery(
-        `UPDATE public.reading_data 
-         SET book_name = $1, author_name = $2, total_pages = $3, cover_url = COALESCE(NULLIF($4, ''), cover_url), genre = $5, review = $6, rating = $7, format = $8, owned = $9, start_date = $10, end_date = $11, year = $12, month = $13, day = $14
-         WHERE ${whereClause}`,
-        updateParams
-      );
+      let updateQuery = `UPDATE public.reading_data 
+         SET book_name = $1, author_name = $2, total_pages = $3, cover_url = COALESCE(NULLIF($4, ''), cover_url), genre = $5, review = $6, rating = $7, format = $8, owned = $9, start_date = $10, end_date = $11, year = $12, month = $13`;
+      if (effectiveDay !== null) {
+        updateQuery += `, day = $14`;
+      }
+
+      updateQuery += `\n         WHERE ${whereClause}`;
+
+      await executeQuery(updateQuery, updateParams);
 
       await executeQuery(
         `INSERT INTO public.book_reviews (user_id, title, rating, cover_url, total_pages, genre, review, year, month)
