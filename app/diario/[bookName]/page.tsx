@@ -40,7 +40,9 @@ export default function BookDiaryPage() {
   const params = useParams()
   const { data: session, status } = useSession()
   const [allBooks, setAllBooks] = useState<any[]>([])
+  const [archiveBooks, setArchiveBooks] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [archiveLoading, setArchiveLoading] = useState(true)
   const [openYears, setOpenYears] = useState<Record<number, boolean>>({})
   const [activeTheme, setActiveTheme] = useState<ThemeKey>('light')
 
@@ -59,22 +61,40 @@ export default function BookDiaryPage() {
 
     async function loadBookHistory() {
       try {
-        const data = await getReadingData(session.user.email, currentYear, true, undefined, undefined, true)
+        const [currentBookData, archiveData] = await Promise.allSettled([
+          getReadingData(session.user.email, currentYear, true, undefined, undefined, true, bookName),
+          getReadingData(session.user.email, currentYear, true, undefined, undefined, true, undefined, true),
+        ])
+
         if (!active) return
 
-        const books: any[] = Array.isArray(data) ? data : data?.data || []
-        setAllBooks(books)
+        if (currentBookData.status === 'fulfilled') {
+          const books: any[] = Array.isArray(currentBookData.value)
+            ? currentBookData.value
+            : currentBookData.value?.data || []
+          setAllBooks(books)
 
-        const currentBook = books.find((b) => b.book_name?.toLowerCase() === bookName.toLowerCase())
-        if (currentBook) {
-          const year = currentBook.end_date ? new Date(currentBook.end_date).getFullYear() : currentYear
-          setOpenYears((prev) => ({ ...prev, [year]: true }))
+          const currentBook = books.find((b) => b.book_name?.toLowerCase() === bookName.toLowerCase())
+          if (currentBook) {
+            const year = currentBook.end_date ? new Date(currentBook.end_date).getFullYear() : currentYear
+            setOpenYears((prev) => ({ ...prev, [year]: true }))
+          }
+        }
+
+        if (archiveData.status === 'fulfilled') {
+          const archiveRows: any[] = Array.isArray(archiveData.value)
+            ? archiveData.value
+            : archiveData.value?.data || []
+          setArchiveBooks(archiveRows)
         }
       } catch (error) {
         if (!active) return
         console.error("Erro ao carregar diário do livro:", error)
       } finally {
-        if (active) setLoading(false)
+        if (active) {
+          setLoading(false)
+          setArchiveLoading(false)
+        }
       }
     }
 
@@ -100,7 +120,7 @@ export default function BookDiaryPage() {
   }
 
   const book = allBooks.find(b => b.book_name?.toLowerCase() === bookName.toLowerCase())
-  const readBooks = allBooks.filter(b => isFinishedStatus(b.status))
+  const readBooks = archiveBooks.filter(b => isFinishedStatus(b.status))
 
   const theme = THEMES[activeTheme] || THEMES.light
   const isDark = activeTheme === 'dark'
@@ -133,7 +153,53 @@ export default function BookDiaryPage() {
     return Object.entries(groups)
       .sort(([a], [b]) => Number(b) - Number(a))
       .map(([year, books]) => ({ year: Number(year), books }))
-  }, [readBooks])
+  }, [archiveBooks])
+
+  const renderArchiveSection = () => {
+    if (archiveLoading) {
+      return (
+        <div className="text-xs text-slate-500 italic">Carregando arquivos...</div>
+      )
+    }
+
+    if (readBooksByYear.length === 0) {
+      return (
+        <div className="text-xs text-slate-500 italic">Nenhum livro arquivado ainda.</div>
+      )
+    }
+
+    return readBooksByYear.map(({ year, books }) => (
+      <div key={year} className="border border-dashed rounded-2xl px-3 py-1 transition-colors bg-white/50 hover:bg-white" style={{ borderColor: editorial.border }}>
+        <button
+          onClick={() => toggleYear(year)}
+          className="w-full flex items-center justify-between py-2 transition-colors"
+          style={{ color: editorial.text }}
+        >
+          <div className="flex items-center gap-3">
+            <div className={`transition-transform duration-300 ${openYears[year] ? "rotate-90" : ""}`} style={{ color: openYears[year] ? editorial.accent : editorial.subtle }}>
+              <ChevronRight size={14} />
+            </div>
+            <span className={`font-serif italic text-sm ${openYears[year] ? "font-bold" : ""}`}>{year}</span>
+          </div>
+          <span className="text-[10px] font-bold bg-white px-2 py-0.5 rounded-full border border-dashed shadow-sm" style={{ color: editorial.accent, borderColor: editorial.border }}>{books.length}</span>
+        </button>
+        {openYears[year] && (
+          <ul className="mt-1 space-y-1 pb-3 pl-6 animate-in slide-in-from-top-2 duration-300 border-l border-dashed" style={{ borderColor: editorial.border }}>
+            {books.map((b) => (
+              <li key={b.book_name}>
+                <Link href={`/diario/${encodeURIComponent(b.book_name)}`}
+                  className={`block text-xs py-1 transition-colors font-serif ${b.book_name && bookName.toLowerCase() === b.book_name.toLowerCase() ? "italic font-bold" : "hover:opacity-70"}`}
+                  style={{ color: b.book_name && bookName.toLowerCase() === b.book_name.toLowerCase() ? editorial.accent : editorial.text }}
+                >
+                  {b.book_name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    ))
+  }
 
   if (loading) return <div className="min-h-screen flex items-center justify-center font-serif italic" style={{ backgroundColor: editorial.bg, color: editorial.accent }}>Abrindo os arquivos de afeto...</div>
 
@@ -230,7 +296,6 @@ export default function BookDiaryPage() {
           </main>
 
           <aside className="space-y-8 lg:sticky lg:top-12">
-            {/* Arquivo de Memórias */}
             <section className="backdrop-blur-sm p-8 rounded-[2rem] border border-dashed shadow-[0_4px_20px_rgba(0,0,0,0.02)] transition-shadow duration-500" style={{ borderColor: editorial.border, backgroundColor: editorial.card }}>
               <div className="mb-6 flex items-center gap-4 border-b border-dashed pb-5" style={{ borderColor: editorial.border }}>
                 <div className="p-2.5 rounded-xl border border-dashed bg-white" style={{ color: editorial.accent, borderColor: editorial.border }}>
@@ -241,43 +306,8 @@ export default function BookDiaryPage() {
                     <p className="text-[10px] uppercase tracking-widest font-bold" style={{ color: editorial.subtle }}>cronologia de afeto</p>
                 </div>
               </div>
-
               <div className="space-y-3">
-                {readBooksByYear.map(({ year, books }) => (
-                  <div key={year} className="border border-dashed rounded-2xl px-3 py-1 transition-colors bg-white/50 hover:bg-white" style={{ borderColor: editorial.border }}>
-                    <button 
-                      onClick={() => toggleYear(year)}
-                      className="w-full flex items-center justify-between py-2 transition-colors" style={{ color: editorial.text }}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`transition-transform duration-300 ${openYears[year] ? 'rotate-90' : ''}`} style={{ color: openYears[year] ? editorial.accent : editorial.subtle }}>
-                           <ChevronRight size={14} />
-                        </div>
-                        <span className={`font-serif italic text-sm ${openYears[year] ? 'font-bold' : ''}`}>{year}</span>
-                      </div>
-                      <span className="text-[10px] font-bold bg-white px-2 py-0.5 rounded-full border border-dashed shadow-sm" style={{ color: editorial.accent, borderColor: editorial.border }}>{books.length}</span>
-                    </button>
-                    
-                    {openYears[year] && (
-                      <ul className="mt-1 space-y-1 pb-3 pl-6 animate-in slide-in-from-top-2 duration-300 border-l border-dashed" style={{ borderColor: editorial.border }}>
-                        {books.map((b) => (
-                          <li key={b.book_name}>
-                            <Link href={`/diario/${encodeURIComponent(b.book_name)}`}
-                              className={`block text-xs py-1 transition-colors font-serif ${
-                                bookName.toLowerCase() === b.book_name.toLowerCase() 
-                                ? 'italic font-bold' 
-                                : 'hover:opacity-70'
-                              }`}
-                              style={{ color: bookName.toLowerCase() === b.book_name.toLowerCase() ? editorial.accent : editorial.text }}
-                            >
-                              {b.book_name}
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                ))}
+                {renderArchiveSection()}
               </div>
             </section>
           </aside>

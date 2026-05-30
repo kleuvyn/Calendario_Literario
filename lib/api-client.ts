@@ -38,8 +38,8 @@ export interface Book {
 const readingDataCache = new Map<string, { expires: number; data: any }>();
 const READING_DATA_CACHE_TTL = 5 * 60_000;
 
-function getReadingDataCacheKey(email: string, year: number, isRetrospective: boolean, month?: number, includeAllYears?: boolean) {
-  return `readingData:${email.toLowerCase()}:${year}:${isRetrospective}:${month ?? 0}:${includeAllYears ? 1 : 0}`;
+function getReadingDataCacheKey(email: string, year: number, isRetrospective: boolean, month?: number, includeAllYears?: boolean, bookName?: string, minimal?: boolean) {
+  return `readingData:${email.toLowerCase()}:${year}:${isRetrospective}:${month ?? 0}:${includeAllYears ? 1 : 0}:${bookName ?? ''}:${minimal ? 1 : 0}`;
 }
 
 function getLocalStorageCacheKey(cacheKey: string) {
@@ -121,16 +121,19 @@ export async function getReadingData(
   isRetrospective: boolean = false,
   signal?: AbortSignal,
   month?: number,
-  includeAllYears: boolean = false
+  includeAllYears: boolean = false,
+  bookName?: string,
+  minimal: boolean = false
 ): Promise<any> {
-  const cacheKey = getReadingDataCacheKey(email, year, isRetrospective, month, includeAllYears);
+  const cacheKey = getReadingDataCacheKey(email, year, isRetrospective, month, includeAllYears, bookName, minimal);
   const cached = loadReadingDataCache(cacheKey);
   if (cached) {
     return cached;
   }
 
-  let url = `/api/reading-data?email=${encodeURIComponent(email.toLowerCase())}&year=${year}&isRetrospective=${isRetrospective}&includeAllYears=${includeAllYears}`;
+  let url = `/api/reading-data?email=${encodeURIComponent(email.toLowerCase())}&year=${year}&isRetrospective=${isRetrospective}&includeAllYears=${includeAllYears}&minimal=${minimal}`;
   if (month) url += `&month=${month}`;
+  if (bookName) url += `&bookName=${encodeURIComponent(bookName)}`;
 
   const response = await fetch(url, { signal, cache: 'no-store' });
   if (!response.ok) {

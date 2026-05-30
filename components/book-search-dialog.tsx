@@ -12,15 +12,26 @@ interface BookSearchDialogProps {
   open: boolean
   onClose: () => void
   onSelectBook: (book: BookSearchResult & { cover?: string }) => void
+  initialQuery?: string
 }
 
-export function BookSearchDialog({ open, onClose, onSelectBook }: BookSearchDialogProps) {
-  const [query, setQuery] = useState("")
+export function BookSearchDialog({ open, onClose, onSelectBook, initialQuery = "" }: BookSearchDialogProps) {
+  const [query, setQuery] = useState(initialQuery)
   const [results, setResults] = useState<BookSearchResult[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
   const [selectedCover, setSelectedCover] = useState<string>("")
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (open) {
+      setQuery(initialQuery)
+    } else {
+      setResults([])
+      setSearchError(null)
+      setSelectedCover("")
+    }
+  }, [open, initialQuery])
 
   useEffect(() => {
     if (!query) {

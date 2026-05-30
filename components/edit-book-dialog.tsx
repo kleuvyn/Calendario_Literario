@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Star, BookOpen, User, Hash, Upload, Image as ImageIcon } from "lucide-react"
+import { Star, BookOpen, User, Hash, Upload, Image as ImageIcon, Search } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
+import { BookSearchDialog } from "@/components/book-search-dialog"
 
 const GENRE_CATEGORIES = {
   "Ficção e Narrativa": [
@@ -60,7 +61,7 @@ interface EditBookDialogProps {
     owned?: boolean
     startDate?: string
     endDate?: string
-  }) => void
+  }) => Promise<void>
 }
 
 export function EditBookDialog({ open, onClose, bookName, bookData, onSave }: EditBookDialogProps) {
@@ -90,6 +91,7 @@ export function EditBookDialog({ open, onClose, bookName, bookData, onSave }: Ed
   const [previewCover, setPreviewCover] = useState(bookData?.cover_url || "")
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
+  const [searchDialogOpen, setSearchDialogOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -136,9 +138,23 @@ export function EditBookDialog({ open, onClose, bookName, bookData, onSave }: Ed
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSearchSelectedBook = (book: { title: string; authors: string; cover?: string }) => {
+    if (book.title) {
+      setNewName((current) => current.trim() ? current : book.title)
+    }
+    if (book.authors) {
+      setAuthor((current) => current.trim() ? current : book.authors)
+    }
+    if (book.cover) {
+      setCoverUrl(book.cover)
+      setPreviewCover(book.cover)
+    }
+    setSearchDialogOpen(false)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onSave({
+    await onSave({
       newName,
       author,
       pages: parseInt(pages) || 0,
@@ -261,14 +277,19 @@ export function EditBookDialog({ open, onClose, bookName, bookData, onSave }: Ed
               <ImageIcon size={16} />
               Link da Capa
             </Label>
-            <Input
-              id="coverUrl"
-              type="text"
-              value={coverUrl}
-              onChange={(e) => handleCoverUrlChange(e.target.value)}
-              placeholder="https://..."
-              className="h-11"
-            />
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Input
+                id="coverUrl"
+                type="text"
+                value={coverUrl}
+                onChange={(e) => handleCoverUrlChange(e.target.value)}
+                placeholder="https://..."
+                className="h-11 flex-1"
+              />
+              <Button type="button" size="sm" variant="outline" className="w-full sm:w-auto gap-2" onClick={() => setSearchDialogOpen(true)}>
+                <Search size={14} /> Buscar no Google Books
+              </Button>
+            </div>
           </div>
 
           {/* Título */}
@@ -526,6 +547,12 @@ export function EditBookDialog({ open, onClose, bookName, bookData, onSave }: Ed
           </div>
         </form>
       </DialogContent>
+      <BookSearchDialog
+        open={searchDialogOpen}
+        onClose={() => setSearchDialogOpen(false)}
+        onSelectBook={handleSearchSelectedBook}
+        initialQuery={newName}
+      />
     </Dialog>
   )
 }

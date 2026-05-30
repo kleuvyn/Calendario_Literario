@@ -8,6 +8,8 @@ export async function GET(request: Request) {
   const year = Number(searchParams.get("year"));
   const isRetrospective = searchParams.get("isRetrospective") === "true";
   const includeAllYears = searchParams.get("includeAllYears") === "true";
+  const bookName = searchParams.get("bookName") || undefined;
+  const minimal = searchParams.get("minimal") === "true";
   const monthParam = Number(searchParams.get("month"));
   const hasMonth = Number.isInteger(monthParam) && monthParam >= 1 && monthParam <= 12;
 
@@ -56,11 +58,16 @@ export async function GET(request: Request) {
           ? ''
           : `AND (rd.year = $2 OR rd.status IN ('lendo', 'reading'))`;
 
+    const selectFields = minimal
+      ? `rd.id, rd.book_name, rd.year, rd.month, rd.status, rd.start_date, rd.end_date`
+      : `rd.*`;
+
     const query = `
-      SELECT rd.*
+      SELECT ${selectFields}
       FROM public.reading_data rd
       WHERE LOWER(rd.email) = LOWER($1) ${yearCondition}
       ${dateRangeCondition}
+      ${bookName ? `AND LOWER(rd.book_name) = LOWER($${hasMonth ? 5 : includeAllYears ? 2 : 3})` : ``}
       ORDER BY rd.month ASC, rd.status DESC
     `;
 
@@ -69,6 +76,11 @@ export async function GET(request: Request) {
       : includeAllYears
         ? [email]
         : [email, year];
+
+    if (bookName) {
+      params.push(bookName)
+    }
+
     const rows = await executeQuery(query, params);
 
     const userRow = await executeQuery(`SELECT literary_goal, goals_by_year FROM public.users WHERE LOWER(email) = LOWER($1)`, [email]);

@@ -59,6 +59,7 @@ export default function RetrospectivaPage() {
   const { data: session, status } = useSession()
   const [allBooks, setAllBooks] = useState<any[]>([])
   const [loadingData, setLoadingData] = useState(true)
+  const [searchingPreviousYears, setSearchingPreviousYears] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [currentTheme, setCurrentTheme] = useState<ThemeKey>('light')
   const [filters, setFilters] = useState<FilterState>({
@@ -129,31 +130,42 @@ export default function RetrospectivaPage() {
 
   useEffect(() => {
     async function loadData() {
-      if (status === "authenticated" && session?.user?.email) {
+      const userEmail = session?.user?.email
+
+      if (status === "authenticated" && userEmail) {
         setLoadingData(true)
         try {
           const [data, profileRes] = await Promise.allSettled([
-            getReadingData(session.user.email, currentYear, true),
-            fetch(`/api/user/update-profile?email=${session.user.email}`)
+            getReadingData(userEmail, currentYear, true),
+            fetch(`/api/user/update-profile?email=${userEmail}`)
           ])
 
           if (data.status === 'fulfilled') {
             const booksArray = Array.isArray(data.value) ? data.value : (data.value?.data || [])
+            setAllBooks(booksArray)
+            setLoadingData(false)
 
             if (booksArray.length === 0 && !hasCheckedPreviousYears) {
-              const allYearsResponse: any = await getReadingData(session.user.email, currentYear, true, undefined, undefined, true)
-              const allRows = Array.isArray(allYearsResponse) ? allYearsResponse : allYearsResponse?.data || []
-              const latestYear = allRows.length > 0 ? Math.max(...allRows.map((b: any) => Number(b.year) || 0)) : currentYear
+              setSearchingPreviousYears(true)
+              getReadingData(userEmail, currentYear, true, undefined, undefined, true, undefined, true)
+                .then((allYearsResponse: any) => {
+                  const allRows = Array.isArray(allYearsResponse) ? allYearsResponse : allYearsResponse?.data || []
+                  const latestYear = allRows.length > 0 ? Math.max(...allRows.map((b: any) => Number(b.year) || 0)) : currentYear
 
-              if (latestYear && latestYear !== currentYear) {
-                setHasCheckedPreviousYears(true)
-                setCurrentYear(latestYear)
-                return
-              }
-              setHasCheckedPreviousYears(true)
+                  if (latestYear && latestYear !== currentYear) {
+                    setCurrentYear(latestYear)
+                  }
+                  setHasCheckedPreviousYears(true)
+                })
+                .catch(() => {
+                  setHasCheckedPreviousYears(true)
+                })
+                .finally(() => {
+                  setSearchingPreviousYears(false)
+                })
             }
-
-            setAllBooks(booksArray)
+          } else {
+            setLoadingData(false)
           }
 
           if (profileRes.status === 'fulfilled' && profileRes.value.ok) {
@@ -164,8 +176,11 @@ export default function RetrospectivaPage() {
           }
 
         } catch (err) { 
+          setLoadingData(false)
         } finally { 
-          setLoadingData(false) 
+          if (status !== "authenticated") {
+            setLoadingData(false)
+          }
         }
       } else if (status === "unauthenticated") { 
         setLoadingData(false) 
@@ -572,6 +587,13 @@ export default function RetrospectivaPage() {
             </div>
           }
         />
+
+        {searchingPreviousYears && (
+          <div className="no-export flex items-center gap-2 rounded-full border border-dashed px-4 py-2 text-xs font-serif italic w-fit" style={{ color: theme.text, borderColor: `${theme.primary}40`, backgroundColor: 'rgba(255,255,255,0.45)' }}>
+            <Loader2 size={14} className="animate-spin" />
+            buscando leituras em outros anos...
+          </div>
+        )}
 
         {/* Stats Cards - Destaque das métricas principais */}
         {stats && (
