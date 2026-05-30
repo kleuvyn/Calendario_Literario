@@ -148,7 +148,14 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
       if (readingStatus && !startDate) return
 
       const effectiveStart = startDate ? new Date(Math.max(startDate.getTime(), normalizedMonthStart)) : new Date(normalizedMonthStart)
-      const effectiveEnd = endDate ? new Date(Math.min(endDate.getTime(), normalizedMonthEnd)) : new Date(normalizedMonthEnd)
+      const effectiveEnd = endDate
+        ? new Date(Math.min(endDate.getTime(), normalizedMonthEnd))
+        : readingStatus
+          ? new Date(normalizedMonthEnd)
+          : startDate
+            ? new Date(Math.min(startDate.getTime(), normalizedMonthEnd))
+            : new Date(normalizedMonthEnd)
+
       if (effectiveStart.getTime() > normalizedMonthEnd || effectiveEnd.getTime() < normalizedMonthStart) return
 
       const startDay = effectiveStart.getUTCDate()
@@ -252,6 +259,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
           genre,
           coverUrl: book.cover || '',
           startDate: startDateValue,
+          day: selectedDay ?? null,
           year,
           month: monthIndex + 1,
           totalPages: book.pages || 0

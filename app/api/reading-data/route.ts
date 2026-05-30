@@ -91,7 +91,11 @@ export async function GET(request: Request) {
       rating: Number(b.rating) || 0,
       total_pages: Number(b.total_pages) || 0,
       month: Number(b.month),
-        day: Number(b.day) || 0,
+      day: Number(b.day) || 0,
+    }));
+
+    return NextResponse.json(
+      { data: cleanRows, userGoal },
       { headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' } }
     );
   } catch (error: any) {

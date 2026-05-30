@@ -368,9 +368,10 @@ export function HomeClient({ initialSummary, currentYear, initialSession, initia
                         <button
                           type="button"
                           onClick={() => setIsGoalEditing(true)}
-                          className="text-[10px] text-slate-500 hover:text-slate-700"
+                          className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition"
+                          title="Editar meta anual"
                         >
-                          editar
+                          editar meta
                         </button>
                       )}
                     </div>
