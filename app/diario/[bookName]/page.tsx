@@ -116,7 +116,17 @@ export default function BookDiaryPage() {
   const readBooksByYear = useMemo(() => {
     const groups: Record<number, any[]> = {}
     readBooks.forEach((b) => {
-      const year = b.end_date ? new Date(b.end_date).getFullYear() : (b.year ? Number(b.year) : currentYear)
+      let year = currentYear
+      if (b.end_date) {
+        const parsedDate = new Date(b.end_date)
+        if (!isNaN(parsedDate.getTime())) {
+          year = parsedDate.getUTCFullYear()
+        } else if (b.year) {
+          year = Number(b.year) || currentYear
+        }
+      } else if (b.year) {
+        year = Number(b.year) || currentYear
+      }
       if (!groups[year]) groups[year] = []
       groups[year].push(b)
     })

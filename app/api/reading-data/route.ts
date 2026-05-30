@@ -151,6 +151,7 @@ export async function POST(request: Request) {
       await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS owned BOOLEAN`, []);
       await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS format TEXT`, []);
       await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS genre TEXT`, []);
+      await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS day INTEGER`, []);
       
       // Construir query de atualização
       const updates: string[] = [];
@@ -224,6 +225,11 @@ export async function POST(request: Request) {
         params.push(body.endDate || null);
       }
 
+      if (body.day !== undefined) {
+        updates.push(`day = $${paramIndex++}`);
+        params.push(Number(body.day) || null);
+      }
+
       // Adiciona email e oldBookName no final
       params.push(email, oldBookName);
 
@@ -259,6 +265,7 @@ export async function POST(request: Request) {
         await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS owned BOOLEAN`, []);
         await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS format TEXT`, []);
         await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS genre TEXT`, []);
+        await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS day INTEGER`, []);
 
         await executeQuery(`DELETE FROM public.reading_data WHERE LOWER(email) = LOWER($1) AND book_name = $2`, [email, bookName]);
         await executeQuery(`
@@ -287,6 +294,7 @@ export async function POST(request: Request) {
       await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS author_name TEXT`, []);
       await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS cover_url TEXT`, []);
       await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS genre TEXT`, []);
+      await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS day INTEGER`, []);
       
       await executeQuery(`DELETE FROM public.reading_data WHERE LOWER(email) = LOWER($1) AND book_name = $2`, [email, bookName]);
       await executeQuery(`
@@ -297,6 +305,7 @@ export async function POST(request: Request) {
     }
 
     if (action === "FINISH_READING") {
+      await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS day INTEGER`, []);
       const finishedDate = new Date(endDate)
       const finishedYear = finishedDate.getUTCFullYear()
       const finishedMonth = finishedDate.getUTCMonth() + 1
@@ -345,6 +354,7 @@ export async function POST(request: Request) {
       await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS total_pages INTEGER`, []);
       await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS start_date TEXT`, []);
       await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS end_date TEXT`, []);
+      await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS day INTEGER`, []);
 
       const userRes = await executeQuery(`SELECT id FROM public.users WHERE LOWER(email) = LOWER($1)`, [email]);
       if (userRes.length === 0) return NextResponse.json({ error: "Usuário não encontrado" });
@@ -356,11 +366,13 @@ export async function POST(request: Request) {
       const dateRef = endDate || startDate;
       let effectiveYear = year || null;
       let effectiveMonth = month || null;
+      let effectiveDay = null;
       if (dateRef) {
         const parsedDate = new Date(dateRef);
         if (!isNaN(parsedDate.getTime())) {
           effectiveYear = parsedDate.getUTCFullYear();
           effectiveMonth = parsedDate.getUTCMonth() + 1;
+          effectiveDay = parsedDate.getUTCDate();
         }
       }
 
@@ -385,6 +397,7 @@ export async function POST(request: Request) {
         endDate || null,
         effectiveYear,
         effectiveMonth,
+        effectiveDay,
       ];
 
       let whereClause: string;
@@ -398,7 +411,7 @@ export async function POST(request: Request) {
 
       await executeQuery(
         `UPDATE public.reading_data 
-         SET book_name = $1, author_name = $2, total_pages = $3, cover_url = COALESCE(NULLIF($4, ''), cover_url), genre = $5, review = $6, rating = $7, format = $8, owned = $9, start_date = $10, end_date = $11, year = $12, month = $13
+         SET book_name = $1, author_name = $2, total_pages = $3, cover_url = COALESCE(NULLIF($4, ''), cover_url), genre = $5, review = $6, rating = $7, format = $8, owned = $9, start_date = $10, end_date = $11, year = $12, month = $13, day = $14
          WHERE ${whereClause}`,
         updateParams
       );

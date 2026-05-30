@@ -44,6 +44,7 @@ const bootstrapStatements = [
     status TEXT,
     start_date TEXT,
     end_date TEXT,
+    day INTEGER,
     finish_month INTEGER,
     year INTEGER,
     month INTEGER,
@@ -92,6 +93,7 @@ const bootstrapStatements = [
   "ALTER TABLE reading_data ADD COLUMN owned BOOLEAN",
   "ALTER TABLE reading_data ADD COLUMN review TEXT",
   "ALTER TABLE reading_data ADD COLUMN email TEXT",
+  "ALTER TABLE reading_data ADD COLUMN day INTEGER",
 ];
 
 let bootstrapPromise: Promise<void> | null = null;
