@@ -440,7 +440,7 @@ export async function POST(request: Request) {
            review = EXCLUDED.review,
            year = EXCLUDED.year,
            month = EXCLUDED.month`,
-          [userId, bookName, rating || 0, coverUrl || "", numPages, genre || "", review || "", effectiveYear, effectiveMonth]
+          [userId, bookName, rating || 0, normalizedIncomingCover || "", numPages, genre || "", review || "", effectiveYear, effectiveMonth]
       );
 
       if (oldBookName && oldBookName !== bookName) {
