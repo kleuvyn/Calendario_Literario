@@ -296,6 +296,10 @@ export async function planReading(
   notes?: string,
   genre?: string
 ) {
+  const now = new Date();
+  const effectiveYear = year || now.getFullYear();
+  const effectiveMonth = month || (now.getMonth() + 1);
+
   const response = await fetch("/api/reading-data", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -304,8 +308,8 @@ export async function planReading(
       bookName,
       author,
       startDate: startDate || null,
-      year: year || new Date().getUTCFullYear(),
-      month: month || (new Date().getUTCMonth() + 1),
+      year: effectiveYear,
+      month: effectiveMonth,
       coverUrl: coverUrl || null,
       totalPages: Number(totalPages) || 0,
       action: "PLAN_READING",
@@ -316,7 +320,7 @@ export async function planReading(
     }),
   });
   if (!response.ok) throw new Error("Erro ao salvar planejado");
-  invalidateReadingDataCache(email, year || new Date().getUTCFullYear(), month);
+  invalidateReadingDataCache(email, effectiveYear, effectiveMonth);
   return response.json();
 }
 

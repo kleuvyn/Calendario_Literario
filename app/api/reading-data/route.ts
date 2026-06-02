@@ -2,6 +2,37 @@ import { executeQuery } from "@/lib/db";
 import { resolveCoverUrl } from "@/lib/blob";
 import { NextResponse } from "next/server";
 
+function toDateOnlyString(input: Date): string {
+  const y = input.getUTCFullYear();
+  const m = String(input.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(input.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function parseCalendarParts(value: unknown): { year: number; month: number; day: number } | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})/.exec(trimmed);
+  if (dateOnly) {
+    const y = Number(dateOnly[1]);
+    const m = Number(dateOnly[2]);
+    const d = Number(dateOnly[3]);
+    if (y > 0 && m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+      return { year: y, month: m, day: d };
+    }
+  }
+
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return {
+    year: parsed.getFullYear(),
+    month: parsed.getMonth() + 1,
+    day: parsed.getDate(),
+  };
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const email = searchParams.get("email");
@@ -23,10 +54,10 @@ export async function GET(request: Request) {
   let monthStart = "";
   let monthEnd = "";
   if (hasMonth) {
-    const start = new Date(year, monthParam - 1, 1);
-    const end = new Date(year, monthParam, 0);
-    monthStart = start.toISOString().split("T")[0];
-    monthEnd = end.toISOString().split("T")[0];
+    const start = new Date(Date.UTC(year, monthParam - 1, 1));
+    const end = new Date(Date.UTC(year, monthParam, 0));
+    monthStart = toDateOnlyString(start);
+    monthEnd = toDateOnlyString(end);
   }
 
   try {
@@ -46,17 +77,14 @@ export async function GET(request: Request) {
       : '';
 
     const yearCondition = hasMonth
-      ? `AND (
-          rd.year = $2
-          OR rd.status IN ('lendo', 'reading')
-        )`
+      ? `AND rd.year = $2`
       : isRetrospective
         ? includeAllYears
           ? ''
           : `AND rd.year = $2`
         : includeAllYears
           ? ''
-          : `AND (rd.year = $2 OR rd.status IN ('lendo', 'reading'))`;
+          : `AND rd.year = $2`;
 
     const selectFields = minimal
       ? `rd.id, rd.book_name, rd.year, rd.month, rd.status, rd.start_date, rd.end_date`
@@ -313,9 +341,9 @@ export async function POST(request: Request) {
 
     if (action === "FINISH_READING") {
       await executeQuery(`ALTER TABLE public.reading_data ADD COLUMN IF NOT EXISTS day INTEGER`, []);
-      const finishedDate = new Date(endDate)
-      const finishedYear = finishedDate.getUTCFullYear()
-      const finishedMonth = finishedDate.getUTCMonth() + 1
+      const parsedCalendar = parseCalendarParts(endDate);
+      const finishedYear = Number(year) || parsedCalendar?.year || new Date().getFullYear();
+      const finishedMonth = Number(month) || parsedCalendar?.month || (new Date().getMonth() + 1);
 
       const existing = await executeQuery(
         `SELECT id FROM public.reading_data WHERE LOWER(email) = LOWER($1) AND book_name = $2 LIMIT 1`,
@@ -374,20 +402,20 @@ export async function POST(request: Request) {
       let effectiveYear = year || null;
       let effectiveMonth = month || null;
       let effectiveDay = null;
-      if (dateRef) {
-        const parsedDate = new Date(dateRef);
-        if (!isNaN(parsedDate.getTime())) {
-          effectiveYear = parsedDate.getUTCFullYear();
-          effectiveMonth = parsedDate.getUTCMonth() + 1;
-          effectiveDay = parsedDate.getUTCDate();
+      if ((!effectiveYear || !effectiveMonth) && dateRef) {
+        const parsedParts = parseCalendarParts(dateRef);
+        if (parsedParts) {
+          effectiveYear = effectiveYear || parsedParts.year;
+          effectiveMonth = effectiveMonth || parsedParts.month;
+          effectiveDay = parsedParts.day;
         }
       }
 
       if (!effectiveYear) {
-        effectiveYear = new Date().getUTCFullYear();
+        effectiveYear = new Date().getFullYear();
       }
       if (!effectiveMonth) {
-        effectiveMonth = new Date().getUTCMonth() + 1;
+        effectiveMonth = new Date().getMonth() + 1;
       }
 
       const updateParams: any[] = [

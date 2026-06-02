@@ -193,9 +193,9 @@ export default function PlanejadosPage() {
     try {
       const now = new Date()
       const dateFormatted = now.toISOString()
-      const yearValue = now.getUTCFullYear()
-      const monthValue = now.getUTCMonth() + 1
-      const dayValue = now.getUTCDate()
+      const yearValue = now.getFullYear()
+      const monthValue = now.getMonth() + 1
+      const dayValue = now.getDate()
 
       await saveReadingDay(
         session.user.email,
@@ -229,9 +229,9 @@ export default function PlanejadosPage() {
       const dateFormatted = now.toISOString()
       await saveReadingDay(
         session.user.email,
-        now.getUTCFullYear(),
-        now.getUTCMonth() + 1,
-        now.getUTCDate(),
+        now.getFullYear(),
+        now.getMonth() + 1,
+        now.getDate(),
         dateFormatted,
         dateFormatted,
         book.book_name,
