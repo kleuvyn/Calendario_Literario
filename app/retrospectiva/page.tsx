@@ -59,7 +59,6 @@ export default function RetrospectivaPage() {
   const { data: session, status } = useSession()
   const [allBooks, setAllBooks] = useState<any[]>([])
   const [loadingData, setLoadingData] = useState(true)
-  const [searchingPreviousYears, setSearchingPreviousYears] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [currentTheme, setCurrentTheme] = useState<ThemeKey>('light')
   const [filters, setFilters] = useState<FilterState>({
@@ -75,7 +74,6 @@ export default function RetrospectivaPage() {
   const [bookToDelete, setBookToDelete] = useState<string | null>(null)
   
   const [currentYear, setCurrentYear] = useState(() => new Date().getFullYear())
-  const [hasCheckedPreviousYears, setHasCheckedPreviousYears] = useState(false)
   const [selectedCardOption, setSelectedCardOption] = useState<'retrospectiva' | 'biblioteca' | 'a' | 'b' | 'c' | null>(null)
   
   const isDarkTheme = currentTheme === 'dark'
@@ -144,26 +142,6 @@ export default function RetrospectivaPage() {
             const booksArray = Array.isArray(data.value) ? data.value : (data.value?.data || [])
             setAllBooks(booksArray)
             setLoadingData(false)
-
-            if (booksArray.length === 0 && !hasCheckedPreviousYears) {
-              setSearchingPreviousYears(true)
-              getReadingData(userEmail, currentYear, true, undefined, undefined, true, undefined, true)
-                .then((allYearsResponse: any) => {
-                  const allRows = Array.isArray(allYearsResponse) ? allYearsResponse : allYearsResponse?.data || []
-                  const latestYear = allRows.length > 0 ? Math.max(...allRows.map((b: any) => Number(b.year) || 0)) : currentYear
-
-                  if (latestYear && latestYear !== currentYear) {
-                    setCurrentYear(latestYear)
-                  }
-                  setHasCheckedPreviousYears(true)
-                })
-                .catch(() => {
-                  setHasCheckedPreviousYears(true)
-                })
-                .finally(() => {
-                  setSearchingPreviousYears(false)
-                })
-            }
           } else {
             setLoadingData(false)
           }
@@ -587,13 +565,6 @@ export default function RetrospectivaPage() {
             </div>
           }
         />
-
-        {searchingPreviousYears && (
-          <div className="no-export flex items-center gap-2 rounded-full border border-dashed px-4 py-2 text-xs font-serif italic w-fit" style={{ color: theme.text, borderColor: `${theme.primary}40`, backgroundColor: 'rgba(255,255,255,0.45)' }}>
-            <Loader2 size={14} className="animate-spin" />
-            buscando leituras em outros anos...
-          </div>
-        )}
 
         {/* Stats Cards - Destaque das métricas principais */}
         {stats && (

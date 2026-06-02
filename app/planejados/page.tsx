@@ -46,10 +46,8 @@ export default function PlanejadosPage() {
   const { data: session, status } = useSession()
   const [books, setBooks] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchingPreviousYears, setSearchingPreviousYears] = useState(false)
   const [activeTheme, setActiveTheme] = useState<ThemeKey>('light')
   const [currentYear, setCurrentYear] = useState(() => new Date().getFullYear())
-  const [hasCheckedPreviousYears, setHasCheckedPreviousYears] = useState(false)
   
   // Estados do Formulário
   const [newTitle, setNewTitle] = useState('')
@@ -139,28 +137,6 @@ export default function PlanejadosPage() {
       const response: any = await getReadingData(userEmail, currentYear, false)
       const books = Array.isArray(response) ? response : response?.data || []
       setBooks(books)
-      setLoading(false)
-
-      if (books.length === 0 && !hasCheckedPreviousYears) {
-        setSearchingPreviousYears(true)
-        getReadingData(userEmail, currentYear, false, undefined, undefined, true, undefined, true)
-          .then((allYearsResponse: any) => {
-            const allBooksArr = Array.isArray(allYearsResponse) ? allYearsResponse : allYearsResponse?.data || []
-            const latestYear = allBooksArr.length > 0 ? Math.max(...allBooksArr.map((b: any) => Number(b.year) || 0)) : currentYear
-
-            if (latestYear && latestYear !== currentYear) {
-              setCurrentYear(latestYear)
-            }
-            setHasCheckedPreviousYears(true)
-          })
-          .catch((fallbackError) => {
-            console.error("Fallback all-years fetch falhou:", fallbackError)
-            setHasCheckedPreviousYears(true)
-          })
-          .finally(() => {
-            setSearchingPreviousYears(false)
-          })
-      }
     } catch (error) {
       console.error(error)
     } finally {
@@ -342,13 +318,6 @@ export default function PlanejadosPage() {
             <BarChart3 size={18} className="mr-2" style={{ opacity: 0.4 }} /> Retrospectiva
           </Link>
         </div>
-
-        {searchingPreviousYears && (
-          <div className="flex items-center gap-2 rounded-full border border-dashed px-4 py-2 text-xs font-serif italic w-fit" style={{ color: theme.text, borderColor: `${theme.primary}40`, backgroundColor: 'rgba(255,255,255,0.45)' }}>
-            <Loader2 size={14} className="animate-spin" />
-            buscando planejados em outros anos...
-          </div>
-        )}
 
         {/* FORMULÁRIO COM BUSCA INTELIGENTE */}
         <Card className="p-6 border border-dashed shadow-sm backdrop-blur-sm rounded-[2.5rem]" style={{ backgroundColor: editorial.card, borderColor: editorial.border }}>
