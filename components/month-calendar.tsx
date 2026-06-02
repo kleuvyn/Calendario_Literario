@@ -325,7 +325,7 @@ export function MonthCalendar({ month, days, year, userEmail, monthIndex, themeP
       setSearchDialogOpen(false)
       setIsPlanning(false)
       toast.success('Leitura iniciada! Conclua quando terminar de ler.')
-      if (shouldFinishReading) setActiveSummary('lido')
+      setActiveSummary('lendo')
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erro ao salvar'
       toast.error(message)

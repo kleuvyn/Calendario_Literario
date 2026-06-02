@@ -56,14 +56,15 @@ export default function BookDiaryPage() {
 
   useEffect(() => {
     if (status !== "authenticated" || !session?.user?.email) return
+    const userEmail = session.user.email
 
     let active = true
 
     async function loadBookHistory() {
       try {
         const [currentBookData, archiveData] = await Promise.allSettled([
-          getReadingData(session.user.email, currentYear, true, undefined, undefined, true, bookName),
-          getReadingData(session.user.email, currentYear, true, undefined, undefined, true, undefined, true),
+          getReadingData(userEmail, currentYear, true, undefined, undefined, true, bookName),
+          getReadingData(userEmail, currentYear, true, undefined, undefined, true, undefined, true),
         ])
 
         if (!active) return
