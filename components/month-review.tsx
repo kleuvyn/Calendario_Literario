@@ -96,30 +96,6 @@ export function MonthReview({ month, userEmail, monthIndex, year, initialReading
     loadData()
   }, [loadData, initialReadingsLoaded, initialReadings, userEmail])
 
-  function getBookMonth(b: any) {
-    if (b.end_date) {
-      const endDate = new Date(b.end_date)
-      if (!isNaN(endDate.getTime())) return endDate.getMonth() + 1
-    }
-    if (b.start_date) {
-      const startDate = new Date(b.start_date)
-      if (!isNaN(startDate.getTime())) return startDate.getMonth() + 1
-    }
-    return Number(b.month) || 0
-  }
-
-  function getBookYear(b: any) {
-    if (b.end_date) {
-      const endDate = new Date(b.end_date)
-      if (!isNaN(endDate.getTime())) return endDate.getFullYear()
-    }
-    if (b.start_date) {
-      const startDate = new Date(b.start_date)
-      if (!isNaN(startDate.getTime())) return startDate.getFullYear()
-    }
-    return Number(b.year) || 0
-  }
-
   const normalizeStatus = (status?: string) => (status || '').toLowerCase().trim()
   const isPlannedStatus = (status?: string) => {
     const normalized = normalizeStatus(status)
@@ -127,9 +103,26 @@ export function MonthReview({ month, userEmail, monthIndex, year, initialReading
   }
 
   const visibleBooks = useMemo(() => {
-    return allBooks.filter(
-      (b) => getBookYear(b) === year && getBookMonth(b) === (monthIndex + 1) && !isPlannedStatus(b.status)
-    )
+    const monthStart = new Date(year, monthIndex, 1, 0, 0, 0, 0)
+    const monthEnd = new Date(year, monthIndex + 1, 0, 23, 59, 59, 999)
+
+    return allBooks.filter((b) => {
+      if (isPlannedStatus(b.status)) return false
+
+      const start = b.start_date ? new Date(b.start_date) : null
+      const end = b.end_date ? new Date(b.end_date) : null
+
+      const hasValidStart = start && !isNaN(start.getTime())
+      const hasValidEnd = end && !isNaN(end.getTime())
+
+      if (!hasValidStart && !hasValidEnd) {
+        return Number(b.year) === year && Number(b.month) === (monthIndex + 1)
+      }
+
+      const startTime = hasValidStart ? start.getTime() : Number.NEGATIVE_INFINITY
+      const endTime = hasValidEnd ? end.getTime() : Number.POSITIVE_INFINITY
+      return startTime <= monthEnd.getTime() && endTime >= monthStart.getTime()
+    })
   }, [allBooks, monthIndex, year])
 
   const booksThisMonth = useMemo(() => visibleBooks.length, [visibleBooks])

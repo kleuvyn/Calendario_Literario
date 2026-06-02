@@ -39,7 +39,7 @@ const readingDataCache = new Map<string, { expires: number; data: any }>();
 const READING_DATA_CACHE_TTL = 5 * 60_000;
 
 function getReadingDataCacheKey(email: string, year: number, isRetrospective: boolean, month?: number, includeAllYears?: boolean, bookName?: string, minimal?: boolean) {
-  return `readingData:${email.toLowerCase()}:${year}:${isRetrospective}:${month ?? 0}:${includeAllYears ? 1 : 0}:${bookName ?? ''}:${minimal ? 1 : 0}`;
+  return `readingData:v2:${email.toLowerCase()}:${year}:${isRetrospective}:${month ?? 0}:${includeAllYears ? 1 : 0}:${bookName ?? ''}:${minimal ? 1 : 0}`;
 }
 
 function getLocalStorageCacheKey(cacheKey: string) {

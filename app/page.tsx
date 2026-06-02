@@ -25,9 +25,22 @@ export default async function HomePage() {
     }
 
     try {
+      const startOfYear = `${currentYear}-01-01`;
       const rows = await executeQuery(
-        `SELECT * FROM public.reading_data WHERE LOWER(email) = LOWER($1) AND year = $2 ORDER BY month, start_date`,
-        [session.user.email, currentYear]
+        `SELECT *
+         FROM public.reading_data
+         WHERE LOWER(email) = LOWER($1)
+           AND (
+             year = $2
+             OR (
+               start_date IS NOT NULL
+               AND start_date < $3
+               AND (end_date IS NULL OR end_date >= $3)
+               AND LOWER(COALESCE(status, '')) NOT IN ('planejado', 'planejados', 'planned', 'planning', 'quero-ler', 'quero ler', 'wishlist', 'desejado')
+             )
+           )
+         ORDER BY year, month, start_date`,
+        [session.user.email, currentYear, startOfYear]
       );
       initialReadings = JSON.parse(JSON.stringify(rows));
     } catch (error) {

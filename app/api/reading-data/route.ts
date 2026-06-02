@@ -43,6 +43,7 @@ export async function GET(request: Request) {
   const minimal = searchParams.get("minimal") === "true";
   const monthParam = Number(searchParams.get("month"));
   const hasMonth = Number.isInteger(monthParam) && monthParam >= 1 && monthParam <= 12;
+  const includeCarryOverReadings = !includeAllYears && !isRetrospective;
 
   if (!email || !year) {
     return NextResponse.json(
@@ -77,14 +78,34 @@ export async function GET(request: Request) {
       : '';
 
     const yearCondition = hasMonth
-      ? `AND rd.year = $2`
+      ? includeCarryOverReadings
+        ? `AND (
+            rd.year = $2
+            OR (
+              rd.start_date IS NOT NULL
+              AND rd.start_date <= $3
+              AND (rd.end_date IS NULL OR rd.end_date >= $4)
+              AND LOWER(COALESCE(rd.status, '')) IN ('lendo', 'reading', 'in progress', 'em andamento', 'andamento')
+            )
+          )`
+        : `AND rd.year = $2`
       : isRetrospective
         ? includeAllYears
           ? ''
           : `AND rd.year = $2`
         : includeAllYears
           ? ''
-          : `AND rd.year = $2`;
+          : includeCarryOverReadings
+            ? `AND (
+                rd.year = $2
+                OR (
+                  rd.start_date IS NOT NULL
+                  AND rd.start_date < $3
+                  AND (rd.end_date IS NULL OR rd.end_date >= $3)
+                  AND LOWER(COALESCE(rd.status, '')) IN ('lendo', 'reading', 'in progress', 'em andamento', 'andamento')
+                )
+              )`
+            : `AND rd.year = $2`;
 
     const selectFields = minimal
       ? `rd.id, rd.book_name, rd.year, rd.month, rd.status, rd.start_date, rd.end_date`
@@ -95,15 +116,17 @@ export async function GET(request: Request) {
       FROM public.reading_data rd
       WHERE LOWER(rd.email) = LOWER($1) ${yearCondition}
       ${dateRangeCondition}
-      ${bookName ? `AND LOWER(rd.book_name) = LOWER($${hasMonth ? 5 : includeAllYears ? 2 : 3})` : ``}
+      ${bookName ? `AND LOWER(rd.book_name) = LOWER($${hasMonth ? 5 : includeAllYears ? 2 : includeCarryOverReadings ? 4 : 3})` : ``}
       ORDER BY rd.month ASC, rd.status DESC
     `;
 
     const params = hasMonth
-      ? [email, String(year), monthEnd, monthStart]
+      ? [email, year, monthEnd, monthStart]
       : includeAllYears
         ? [email]
-        : [email, year];
+        : includeCarryOverReadings
+          ? [email, year, `${year}-01-01`]
+          : [email, year];
 
     if (bookName) {
       params.push(bookName)
