@@ -26,8 +26,8 @@ export default async function HomePage() {
 
     try {
       const rows = await executeQuery(
-        `SELECT * FROM public.reading_data WHERE LOWER(email) = LOWER($1) ORDER BY year, month, start_date`,
-        [session.user.email]
+        `SELECT * FROM public.reading_data WHERE LOWER(email) = LOWER($1) AND year = $2 ORDER BY month, start_date`,
+        [session.user.email, currentYear]
       );
       initialReadings = JSON.parse(JSON.stringify(rows));
     } catch (error) {

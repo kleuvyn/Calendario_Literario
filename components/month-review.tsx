@@ -108,6 +108,18 @@ export function MonthReview({ month, userEmail, monthIndex, year, initialReading
     return Number(b.month) || 0
   }
 
+  function getBookYear(b: any) {
+    if (b.end_date) {
+      const endDate = new Date(b.end_date)
+      if (!isNaN(endDate.getTime())) return endDate.getFullYear()
+    }
+    if (b.start_date) {
+      const startDate = new Date(b.start_date)
+      if (!isNaN(startDate.getTime())) return startDate.getFullYear()
+    }
+    return Number(b.year) || 0
+  }
+
   const normalizeStatus = (status?: string) => (status || '').toLowerCase().trim()
   const isPlannedStatus = (status?: string) => {
     const normalized = normalizeStatus(status)
@@ -115,8 +127,10 @@ export function MonthReview({ month, userEmail, monthIndex, year, initialReading
   }
 
   const visibleBooks = useMemo(() => {
-    return allBooks.filter(b => getBookMonth(b) === (monthIndex + 1) && !isPlannedStatus(b.status))
-  }, [allBooks, monthIndex])
+    return allBooks.filter(
+      (b) => getBookYear(b) === year && getBookMonth(b) === (monthIndex + 1) && !isPlannedStatus(b.status)
+    )
+  }, [allBooks, monthIndex, year])
 
   const booksThisMonth = useMemo(() => visibleBooks.length, [visibleBooks])
   const pagesThisMonth = useMemo(
