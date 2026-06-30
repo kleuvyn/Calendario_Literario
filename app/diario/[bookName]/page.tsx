@@ -111,9 +111,9 @@ export default function BookDiaryPage() {
   }
 
   const normalizeStatus = (status?: string) => (status || '').toLowerCase().trim()
-  const isFinishedStatus = (status?: string) => {
+  const isFinishedStatus = (status?: string, endDate?: string | null) => {
     const normalized = normalizeStatus(status)
-    return ['lido', 'finished', 'concluido', 'concluído', 'read', 'finalizado'].includes(normalized)
+    return Boolean(endDate) || ['lido', 'finished', 'concluido', 'concluído', 'read', 'finalizado'].includes(normalized)
   }
   const isPlannedStatus = (status?: string) => {
     const normalized = normalizeStatus(status)
@@ -121,7 +121,7 @@ export default function BookDiaryPage() {
   }
 
   const book = allBooks.find(b => b.book_name?.toLowerCase() === bookName.toLowerCase())
-  const readBooks = archiveBooks.filter(b => isFinishedStatus(b.status))
+  const readBooks = archiveBooks.filter(b => isFinishedStatus(b.status, b.end_date))
 
   const theme = THEMES[activeTheme] || THEMES.light
   const isDark = activeTheme === 'dark'

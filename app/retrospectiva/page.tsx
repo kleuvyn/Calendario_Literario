@@ -217,17 +217,20 @@ export default function RetrospectivaPage() {
     return value
   }
 
+  const PLANNED_STATUSES = ['planejado', 'planejados', 'planned', 'planning', 'quero-ler', 'quero ler', 'wishlist', 'desejado']
+  const READING_STATUSES = ['lendo', 'reading', 'in progress', 'em andamento', 'andamento']
+  const FINISHED_STATUSES = ['lido', 'finished', 'concluido', 'concluído', 'read', 'finalizado']
+
   const isPlannedStatus = (status: string) => {
-    return ['planejado', 'planejados', 'planned', 'planning', 'quero-ler', 'quero ler', 'wishlist', 'desejado'].includes(status)
+    return PLANNED_STATUSES.includes(status)
   }
 
   const isReadingStatus = (status: string) => {
-    return ['lendo', 'reading', 'in progress', 'em andamento', 'andamento'].includes(status)
+    return READING_STATUSES.includes(status)
   }
 
-  const isFinishedStatus = (status: string) => {
-    if (isPlannedStatus(status)) return false
-    return ['lido', 'finished', 'concluido', 'concluído', 'read', 'finalizado'].includes(status)
+  const isFinishedStatus = (status: string, endDate?: string | null) => {
+    return Boolean(endDate) || FINISHED_STATUSES.includes(status)
   }
 
   const filteredPlannedBooks = useMemo(() => {
@@ -247,7 +250,7 @@ export default function RetrospectivaPage() {
   const filteredFinishedBooks = useMemo(() => {
     return filteredBooks.filter(b => {
       const status = normalizeStatus(b.status)
-      return isFinishedStatus(status)
+      return isFinishedStatus(status, b.end_date)
     })
   }, [filteredBooks])
 
@@ -439,8 +442,8 @@ export default function RetrospectivaPage() {
 
   const finishedBooksData = useMemo(() => {
     return allBooks.filter(b => {
-      const status = (b.status || '').toLowerCase()
-      return !['lendo', 'reading', 'planejado', 'planned'].includes(status)
+      const status = normalizeStatus(b.status)
+      return isFinishedStatus(status, b.end_date)
     })
   }, [allBooks])
 

@@ -320,8 +320,7 @@ export function HomeClient({ initialSummary, currentYear, initialSession, initia
             </div>
           </motion.div>
 
-          {!showBack && (
-            <motion.div 
+          <motion.div 
               initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}
               className="mb-8 sm:mb-10 p-4 sm:p-6 md:p-10 rounded-3xl sm:rounded-[2.5rem] shadow-sm border border-black/3"
               style={{ backgroundColor: theme.card }}
@@ -411,7 +410,6 @@ export function HomeClient({ initialSummary, currentYear, initialSession, initia
                 </div>
               </div>
             </motion.div>
-          )}
 
           <motion.div className="flex flex-col sm:flex-row items-stretch gap-3 sm:gap-4 mb-10 sm:mb-14">
             <motion.button
